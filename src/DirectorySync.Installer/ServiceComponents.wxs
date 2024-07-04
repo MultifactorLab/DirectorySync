@@ -1,0 +1,30 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="WindowsServiceComponents" Directory="INSTALLFOLDER">
+		<Files Include="..\MultifactorApiSync\bin\Release\net8.0\**">
+            <Exclude Files="..\MultifactorApiSync\bin\Release\net8.0\MultifactorApiSync.exe" />
+		</Files>
+      <Component Id="ServiceExecutable">
+		  
+		  <File Id="DirectorySync.exe" Source="DirectorySync.exe" />
+
+		  <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+
+		  <ServiceInstall Id="ServiceInstaller"
+						  Type="ownProcess"
+						  Name="MultifactorApiSync"
+						  DisplayName="!(bind.Property.ProductName)"
+						  Description="MF API Sync"
+						  Start="auto"
+						  ErrorControl="normal" />
+
+		  <ServiceControl Id="StartService"
+						  Start="install"
+						  Stop="both"
+						  Remove="uninstall"
+						  Name="MultifactorApiSync"
+						  Wait="true" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

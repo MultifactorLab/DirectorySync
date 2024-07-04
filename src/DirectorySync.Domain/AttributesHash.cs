@@ -1,0 +1,50 @@
+using System.Security.Cryptography;
+using System.Text;
+
+namespace DirectorySync.Domain;
+
+public record AttributesHash
+{
+    private readonly string _value;
+
+    public AttributesHash(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(hash));
+        }
+
+        _value = hash;
+    }
+
+    public AttributesHash(IEnumerable<LdapAttribute> attributes)
+    {
+        ArgumentNullException.ThrowIfNull(attributes);
+
+        var attrs = attributes.Select(x =>
+        {
+            var values = x.Values.Length == 0
+                ? string.Empty
+                : $":{string.Join(',', x.Values)}";
+            return $"{x.Name}{values}";
+        });
+
+        var joinedAttrs = string.Join(';', attrs);
+        var bytes = Encoding.UTF8.GetBytes(joinedAttrs);
+        var hash = SHA256.HashData(bytes);
+        
+        _value = BitConverter.ToString(hash).Replace("-", string.Empty);
+    }
+    
+    public static implicit operator string(AttributesHash hash)
+    {
+        if (hash is null)
+        {
+            throw new InvalidCastException("Hash is null");
+        }
+
+        return hash._value;
+    }
+    
+    public override string ToString() => $"{nameof(AttributesHash)} '{_value}'";
+}

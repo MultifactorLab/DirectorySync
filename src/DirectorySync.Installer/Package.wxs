@@ -1,0 +1,28 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+	 xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+	<Package
+		Name="Multifactor Api Sync"
+		Manufacturer="Multifactor"
+		Version="1.0.0.0" 
+		UpgradeCode="0c9b82db-ff15-472f-9059-f4b018189bdb" Compressed="yes" Scope="perMachine">
+		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" 
+					  AllowDowngrades="no" 
+					  AllowSameVersionUpgrades="no" />
+		
+		
+		<MediaTemplate EmbedCab="yes" />
+		<UIRef Id="WixUI_Common" />
+
+		<WixVariable Id="WixUILicenseRtf" Overridable="yes" Value="$(sys.CURRENTDIR)Resources\license.rtf"/>
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER"/>
+
+		<UIRef Id="MainWizard" />
+
+		<Property Id="ApplicationFolderName" Value="My Application Folder" />
+		<Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+
+		<Feature Id="Main">
+			<ComponentGroupRef Id="WindowsServiceComponents" />
+		</Feature>
+	</Package>
+</Wix>
