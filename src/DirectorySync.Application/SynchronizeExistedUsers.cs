@@ -1,5 +1,6 @@
 using DirectorySync.Application.Integrations.Ldap.Windows;
 using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -98,17 +99,18 @@ public class SynchronizeExistedUsers
         ReferenceDirectoryGroupMember[] modified,
         CancellationToken token)
     {
-        var bucket = new UpdateBucket();
+        var bucket = new ModifiedUsersBucket();
 
         foreach (ReferenceDirectoryGroupMember member in modified)
         {
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
             
-            var cachedMember = group.Members.First(x => x.Guid == member.Guid);
-            var user = bucket.AddUser(cachedMember.UserId);
-
             var props = _propertyMapper.Map(member.Attributes);
-            foreach (KeyValuePair<string,string?> prop in props)
+            
+            var cachedMember = group.Members.First(x => x.Guid == member.Guid);
+            var user = bucket.AddModifiedUser(cachedMember.UserId, props[MultifactorProperty.IdentityProperty]!);
+
+            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorProperty.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
             {
                 user.AddProperty(prop.Key, prop.Value);
             }

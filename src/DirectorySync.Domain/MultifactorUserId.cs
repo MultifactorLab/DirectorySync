@@ -22,4 +22,6 @@ public record MultifactorUserId
 
         return userId.Value;
     }
+
+    public override string ToString() => Value;
 }

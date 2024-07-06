@@ -6,11 +6,7 @@ namespace DirectorySync.Application;
 
 public class MultifactorPropertyMapper
 {
-    private const string IdentityProperty = "Identity";
-    private const string NameProperty = "Name";
-    private const string EmailProperty = "Email";
-    private const string PhoneProperty = "Phone";
-    
+   
     private readonly LdapAttributeMappingOptions _options;
 
     public MultifactorPropertyMapper(IOptions<LdapAttributeMappingOptions> options)
@@ -18,54 +14,69 @@ public class MultifactorPropertyMapper
         _options = options.Value;
     }
 
-    public IEnumerable<KeyValuePair<string, string?>> Map(IEnumerable<LdapAttribute> attributes)
+    public IReadOnlyDictionary<string, string?> Map(IEnumerable<LdapAttribute> attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);
 
         var attrs = attributes.ToArray();
+        var dict = new Dictionary<string, string?>();
+
+        var identity = GetSingle(_options.IdentityAttribute, attrs);
+        dict[MultifactorProperty.IdentityProperty] = identity;
         
-        var identity = attrs.FirstOrDefault(x => x.Name == _options.IdentityAttribute);
-        if (identity is null || identity.Values.Length == 0)
+        var name = GetFirstOrNull([_options.NameAttribute], attrs);
+        if (name is not null)
         {
-            throw new InvalidOperationException("Identity property required");
+            dict[MultifactorProperty.NameProperty] = name;
+        }
+        
+        var email = GetFirstOrNull(_options.EmailAttributes, attrs);
+        if (email is not null)
+        {
+            dict[MultifactorProperty.EmailProperty] = email;
+        }
+        
+        var phone = GetFirstOrNull(_options.PhoneAttributes, attrs);
+        if (phone is not null)
+        {
+            dict[MultifactorProperty.PhoneProperty] = phone;
         }
 
-        if (identity.Values.Length != 1)
+        return dict;
+    }
+
+    private static string GetSingle(string name, LdapAttribute[] attrs)
+    {
+        var n = new LdapAttributeName(name);
+        
+        var attr = attrs.FirstOrDefault(x => x.Name == n);
+        if (attr is null || attr.Values.Length == 0)
         {
-            throw new InvalidOperationException("Single identity property value is required, but more than one was found");
+            throw new InvalidOperationException($"'{n}' attribute is required");
         }
 
-        yield return new (IdentityProperty, identity.Values[0]);
-        
-        if (!string.IsNullOrWhiteSpace(_options.NameAttribute))
+        if (attr.Values.Length != 1)
         {
-            var name = attrs.FirstOrDefault(x => x.Name == _options.NameAttribute);
-            if (name is not null)
-            {
-                yield return new (NameProperty, name.Values[0]);
-            }
+            throw new InvalidOperationException($"Single '{n}' attribute is required, but more than one was found");
+        }
+
+        return attr.Values[0] ?? throw new InvalidOperationException($"'{n}' attribute value is required");
+    }
+
+    private static string? GetFirstOrNull(string?[] names, LdapAttribute[] attrs)
+    {
+        if (names.Length == 0)
+        {
+            return default;
         }
         
-        if (_options.EmailAttributes.Length != 0)
-        {
-            var email = attrs
-                .Where(x => _options.EmailAttributes.Contains(x.Name))
-                .FirstOrDefault(x => x.Values.Length != 0);
-            if (email is not null)
-            {
-                yield return new (EmailProperty, email.Values[0]);
-            }
-        }
-        
-        if (_options.PhoneAttributes.Length != 0)
-        {
-            var phone = attrs
-                .Where(x => _options.PhoneAttributes.Contains(x.Name))
-                .FirstOrDefault(x => x.Values.Length != 0);
-            if (phone is not null)
-            {
-                yield return new (PhoneProperty, phone.Values[0]);
-            }
-        }
+        var n = names
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => new LdapAttributeName(x!));
+        var attr = attrs
+            .Where(x => n.Contains(x.Name))
+            .FirstOrDefault(x => x.Values.Length != 0);
+
+        return attr?.Values[0];
     }
 }
