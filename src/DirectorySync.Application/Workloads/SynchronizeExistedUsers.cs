@@ -1,11 +1,13 @@
+using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Ldap.Windows;
 using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
-namespace DirectorySync.Application;
+namespace DirectorySync.Application.Workloads;
 
 public class SynchronizeExistedUsers
 {
@@ -16,7 +18,7 @@ public class SynchronizeExistedUsers
     private readonly IMultifactorApi _api;
     private readonly ILogger<SynchronizeExistedUsers> _logger;
 
-    public SynchronizeExistedUsers(RequiredLdapAttributes requiredLdapAttributes,
+    internal SynchronizeExistedUsers(RequiredLdapAttributes requiredLdapAttributes,
         GetReferenceGroupByGuid getReferenceGroupByGuid,
         IApplicationStorage storage,
         MultifactorPropertyMapper propertyMapper,
@@ -33,21 +35,17 @@ public class SynchronizeExistedUsers
     
     public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
-        _logger.LogDebug("Users of group {group} synchronizing started", groupGuid);
+        using var withGroup = _logger.EnrichWithGroup(groupGuid);
+        _logger.LogDebug("Users synchronization started");
         
         var names = _requiredLdapAttributes.GetNames().ToArray();
         var referenceGroup = _getReferenceGroupByGuid.Execute(groupGuid, names);
         var cachedGroup = _storage.FindGroup(referenceGroup.Guid);
         if (cachedGroup is null)
         {
-            _logger.LogDebug(
-                "Users synchronizing skipping because group {group} doesn't exist in cache storage", 
-                groupGuid);
-            
+            _logger.LogDebug("Users synchronizing skipping because group doesn't exist in cache storage");
             return;
         }
-
-        using var withGroup = _logger.EnrichWithGroup(groupGuid);
 
         var referenceMembersHashe = new EntriesHash(referenceGroup.Members.Select(x => x.Guid));
         if (referenceMembersHashe != cachedGroup.Hash)
@@ -60,7 +58,9 @@ public class SynchronizeExistedUsers
             else
             {
                 _logger.LogDebug("Found deleted users: {Deleted}", deleted.Length);
+                
                 await DeleteAsync(cachedGroup, deleted, token);
+                _storage.UpdateGroup(cachedGroup);
             }
         }
 
@@ -72,6 +72,7 @@ public class SynchronizeExistedUsers
         }
 
         await UpdateAsync(cachedGroup, modifiedMembers, token);
+        _storage.UpdateGroup(cachedGroup);
     }
 
     private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup, 
@@ -79,7 +80,6 @@ public class SynchronizeExistedUsers
     {
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
         var cachedMemberGuids = cachedGroup.Members.Select(x => x.Guid);
-
         return refMemberGuids.Except(cachedMemberGuids);
     }
 
@@ -91,8 +91,22 @@ public class SynchronizeExistedUsers
             .Where(x => deletedUsers.Contains(x.Guid))
             .Select(x => x.UserId);
 
-        await _api.DeleteManyAsync(mfIds, token);
-        group.DeleteMembers(deletedUsers);
+        var bucket = new DeletedUsersBucket();
+        foreach (var id in mfIds)
+        {
+            bucket.AddDeletedUser(id);
+        }
+
+        var res = await _api.DeleteManyAsync(bucket, token);
+        
+        foreach (var id in res.DeletedUsers)
+        {
+            var cachedUser = group.Members.FirstOrDefault(x => x.UserId == id);
+            if (cachedUser is not null)
+            {
+                group.DeleteMembers(cachedUser.Guid);
+            }
+        }
     }
 
     private async Task UpdateAsync(CachedDirectoryGroup group, 
@@ -100,7 +114,6 @@ public class SynchronizeExistedUsers
         CancellationToken token)
     {
         var bucket = new ModifiedUsersBucket();
-
         foreach (ReferenceDirectoryGroupMember member in modified)
         {
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
@@ -108,14 +121,26 @@ public class SynchronizeExistedUsers
             var props = _propertyMapper.Map(member.Attributes);
             
             var cachedMember = group.Members.First(x => x.Guid == member.Guid);
-            var user = bucket.AddModifiedUser(cachedMember.UserId, props[MultifactorProperty.IdentityProperty]!);
+            var user = bucket.AddModifiedUser(cachedMember.UserId, props[MultifactorPropertyName.IdentityProperty]!);
 
-            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorProperty.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
+            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
             {
                 user.AddProperty(prop.Key, prop.Value);
             }
         }
 
-        await _api.UpdateManyAsync(bucket, token);
+        var res = await _api.UpdateManyAsync(bucket, token);
+        foreach (var id in res.UpdatedUsers)
+        {
+            var cachedUser = group.Members.FirstOrDefault(x => x.UserId == id);
+            if (cachedUser is null)
+            {
+                continue;
+            }
+            
+            var refMember = modified.First(x => x.Guid == cachedUser.Guid);
+            var hash = new AttributesHash(refMember.Attributes);
+            cachedUser.UpdateHash(hash);
+        }
     }
 }

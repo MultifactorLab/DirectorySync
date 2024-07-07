@@ -2,7 +2,8 @@ namespace DirectorySync.Application;
 
 public static class ApplicationEvent
 {
-    public const int ApplicationStarted = 0000;
+    public const int UserSyncStarted = 0001;
+    public const int NewUserHandleStarted = 0002;
     
     public const int UserSyncTimerTriggered = 1000;
     public const int UserSyncTimerSkipping = 1001;

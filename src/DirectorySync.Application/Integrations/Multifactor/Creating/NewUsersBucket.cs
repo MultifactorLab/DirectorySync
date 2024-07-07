@@ -1,7 +1,6 @@
 ﻿using System.Collections.ObjectModel;
-using DirectorySync.Application.Integrations.Multifactor.Creating;
 
-namespace DirectorySync.Application.Integrations.Multifactor.Updating;
+namespace DirectorySync.Application.Integrations.Multifactor.Creating;
 
 internal class NewUsersBucket : INewUsersBucket
 {
@@ -19,7 +18,6 @@ internal class NewUsersBucket : INewUsersBucket
         {
             throw new InvalidOperationException($"User '{identity}' already exists in this bucket");
         }
-
         
         var user = new NewUser(identity);
         _newUsers.Add(user);

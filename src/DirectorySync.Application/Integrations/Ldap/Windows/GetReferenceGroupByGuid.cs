@@ -43,15 +43,14 @@ public class GetReferenceGroupByGuid
         var mappedMembers = users.Except(withNoGuid)
             .Select(x => x.GetUnderlyingObject())
             .Cast<DirectoryEntry>()
-            .Select(x => Selector(x, attrs));
+            .Select(x => Select(x, attrs));
 
         return new ReferenceDirectoryGroup(guid, mappedMembers);
     }
 
-    private static ReferenceDirectoryGroupMember Selector(DirectoryEntry entry, string[] attrs)
+    private static ReferenceDirectoryGroupMember Select(DirectoryEntry entry, string[] attrs)
     {
-        var attributes = attrs.Select(attribute =>
-            new LdapAttribute(new LdapAttributeName(attribute), entry.GetFirstOrDefaultAttributeValue(attribute)));
+        var attributes = attrs.Select(attribute => new LdapAttribute(attribute, entry.GetFirstOrDefaultAttributeValue(attribute)));
 #if DEBUG
         _ = new DebugDirectoryAttributes(entry);
 #endif

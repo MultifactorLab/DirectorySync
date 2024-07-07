@@ -4,6 +4,8 @@ public record MultifactorUserId
 {
     public string Value { get; }
 
+    public static MultifactorUserId Undefined => new MultifactorUserId();
+
     public MultifactorUserId(string id)
     {
         if (string.IsNullOrWhiteSpace(id))
@@ -13,6 +15,11 @@ public record MultifactorUserId
         Value = id;
     }
 
+    private MultifactorUserId()
+    {
+        Value = "__UNDEFINED__";
+    }
+
     public static implicit operator string(MultifactorUserId userId)
     {
         if (userId is null)
@@ -20,6 +27,11 @@ public record MultifactorUserId
             throw new InvalidCastException("User id is null");
         }
 
+        if (userId == Undefined)
+        {
+            throw new InvalidCastException("User id is undefined");
+        }
+        
         return userId.Value;
     }
 

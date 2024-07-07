@@ -14,6 +14,10 @@ internal class ModifiedUser : IModifiedUser
     public ModifiedUser(MultifactorUserId id, string identity)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
+        if (id == MultifactorUserId.Undefined)
+        {
+            throw new ArgumentException("User id cannot be undefined", nameof(id));
+        }
         
         if (string.IsNullOrWhiteSpace(identity))
         {

@@ -1,5 +1,8 @@
 namespace DirectorySync.Domain;
 
+/// <summary>
+/// Ldap attribute name.
+/// </summary>
 public class LdapAttributeName
 {
     public string Value { get; }
@@ -22,6 +25,18 @@ public class LdapAttributeName
         }
 
         return name.Value;
+    }
+    
+    public static implicit operator LdapAttributeName(string name)
+    {
+        try
+        {
+            return new(name);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidCastException("Failed to cast", ex);
+        }
     }
 
     public override bool Equals(object? obj)

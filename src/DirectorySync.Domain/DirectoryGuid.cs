@@ -7,6 +7,11 @@ public record DirectoryGuid
     public Guid Value { get; }
     public string OctetString { get; }
     
+    /// <summary>
+    /// Creates DirectoryGuid from the base .net <see cref="Guid"/> structure.
+    /// </summary>
+    /// <param name="guid">Guid value.</param>
+    /// <exception cref="Exception"></exception>
     public DirectoryGuid(Guid guid)
     {
         if (guid == Guid.Empty)
@@ -25,6 +30,10 @@ public record DirectoryGuid
         OctetString = sb.ToString();
     }
 
+    /// <summary>
+    /// Creates DirectoryGuid from the bytes representation of the base .net <see cref="Guid"/> structure.
+    /// </summary>
+    /// <param name="guidBytes">Guid butes.</param>
     public DirectoryGuid(byte[] guidBytes) : this(new Guid(guidBytes))
     {
         ArgumentNullException.ThrowIfNull(guidBytes);

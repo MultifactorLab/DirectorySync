@@ -3,7 +3,8 @@ namespace DirectorySync.Domain.Entities;
 public class CachedDirectoryGroupMember : CachedDirectoryObject
 {
     public AttributesHash Hash { get; private set; }
-    public MultifactorUserId UserId { get; }
+    public MultifactorUserId UserId { get; private set; }
+    public bool Modified { get; private set; }
     
     public CachedDirectoryGroupMember(DirectoryGuid guid,
         AttributesHash hash,
@@ -12,6 +13,24 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
     {
         Hash = hash ?? throw new ArgumentNullException(nameof(hash));
         UserId = userId ?? throw new ArgumentNullException(nameof(userId));
+    }
+    
+    private CachedDirectoryGroupMember(DirectoryGuid guid,
+        AttributesHash hash) 
+        : base(guid)
+    {
+        Hash = hash ?? throw new ArgumentNullException(nameof(hash));
+        UserId = MultifactorUserId.Undefined;
+    }
+
+    public static CachedDirectoryGroupMember Create(DirectoryGuid guid,
+        IEnumerable<LdapAttribute> attributes)
+    {
+        ArgumentNullException.ThrowIfNull(guid);
+        ArgumentNullException.ThrowIfNull(attributes);
+
+        var hash = new AttributesHash(attributes);
+        return new CachedDirectoryGroupMember(guid, hash);
     }
 
     public void UpdateHash(AttributesHash hash)
@@ -23,5 +42,22 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
         }
 
         Modified = true;
+    }
+
+    public void SetUserId(MultifactorUserId id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+
+        if (UserId != id)
+        {
+            UserId = id;
+        }
+        
+        Modified = true;
+    }
+
+    public void Commit()
+    {
+        Modified = false;
     }
 }

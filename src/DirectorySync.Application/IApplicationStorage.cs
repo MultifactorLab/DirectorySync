@@ -6,6 +6,6 @@ namespace DirectorySync.Application;
 public interface IApplicationStorage
 {
     CachedDirectoryGroup? FindGroup(DirectoryGuid id);
-    void AddGroup(CachedDirectoryGroup group);
+    void CreateGroup(CachedDirectoryGroup group);
     void UpdateGroup(CachedDirectoryGroup group);
 }

@@ -6,7 +6,7 @@ using DirectorySync.Infrastructure.Data.Models;
 
 namespace DirectorySync.Infrastructure.Data;
 
-public class LiteDbApplicationStorage : IApplicationStorage
+internal class LiteDbApplicationStorage : IApplicationStorage
 {
     private readonly LiteDbConnection _connection;
 
@@ -31,10 +31,11 @@ public class LiteDbApplicationStorage : IApplicationStorage
         return directoryGroup;
     }
 
-    public void AddGroup(CachedDirectoryGroup group)
+    public void CreateGroup(CachedDirectoryGroup group)
     {
+        ArgumentNullException.ThrowIfNull(group);
+
         var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
-        
         if (collection.FindById(group.Guid.Value) is not null)
         {
             throw new Exception($"Group '{group}' already exists");
@@ -46,8 +47,14 @@ public class LiteDbApplicationStorage : IApplicationStorage
 
     public void UpdateGroup(CachedDirectoryGroup group)
     {
-        var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
+        ArgumentNullException.ThrowIfNull(group);
 
+        if (!group.Modified)
+        {
+            return;
+        }
+
+        var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
         var existed = collection.FindById(group.Guid.Value);
         if (existed is null)
         {

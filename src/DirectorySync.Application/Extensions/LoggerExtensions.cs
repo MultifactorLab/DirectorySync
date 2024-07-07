@@ -1,7 +1,7 @@
 using DirectorySync.Domain;
 using Microsoft.Extensions.Logging;
 
-namespace DirectorySync.Application;
+namespace DirectorySync.Application.Extensions;
 
 public static class LoggerExtensions
 {

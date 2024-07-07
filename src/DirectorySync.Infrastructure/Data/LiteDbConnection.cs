@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Infrastructure.Data;
 
-public class LiteDbConnection : IDisposable
+internal class LiteDbConnection : ILiteDbConnection, IDisposable
 {
     public LiteDatabase Database { get; }
     
@@ -14,6 +14,6 @@ public class LiteDbConnection : IDisposable
     
     public void Dispose()
     {
-        Database?.Dispose();
+        Database.Dispose();
     }
 }

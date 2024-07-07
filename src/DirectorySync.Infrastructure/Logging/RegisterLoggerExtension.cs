@@ -9,6 +9,8 @@ public static class RegisterLoggerExtension
 {
     public static void RegisterLogger(this HostApplicationBuilder builder)
     {
+        ArgumentNullException.ThrowIfNull(builder);
+
         Serilog.Debugging.SelfLog.Enable(Console.Error);
         var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration);

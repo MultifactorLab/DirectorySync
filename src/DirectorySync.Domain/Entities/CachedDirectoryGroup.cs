@@ -9,6 +9,9 @@ public class CachedDirectoryGroup : CachedDirectoryObject
     private readonly List<CachedDirectoryGroupMember> _members;
     public ReadOnlyCollection<CachedDirectoryGroupMember> Members => new(_members);
 
+    private bool _modified;
+    public bool Modified => _modified || _members.Any(x => x.Modified);
+
     public CachedDirectoryGroup(DirectoryGuid guid, 
         IEnumerable<CachedDirectoryGroupMember> members, 
         EntriesHash hash)
@@ -49,7 +52,7 @@ public class CachedDirectoryGroup : CachedDirectoryObject
         _members.AddRange(members);
         UpdateHash();
         
-        Modified = true;
+        _modified = true;
     }
     
     public void DeleteMembers(params DirectoryGuid[] memberGuids)
@@ -64,7 +67,20 @@ public class CachedDirectoryGroup : CachedDirectoryObject
         _members.RemoveAll(x => memberGuids.Contains(x.Guid));
         UpdateHash();
         
-        Modified = true;
+        _modified = true;
+    }
+    
+    public void Commit()
+    {
+        if (!Modified)
+        {
+            return;
+        }
+        _modified = false;
+        foreach (var member in _members)
+        {
+            member.Commit();
+        }
     }
 
     private void UpdateHash()

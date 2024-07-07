@@ -1,11 +1,12 @@
+using DirectorySync.Application.Integrations.Multifactor.Creating;
+using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
-using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor;
 
 public interface IMultifactorApi
 {
-    Task CreateManyAsync(IModifiedUsersBucket bucket, CancellationToken token = default);
-    Task UpdateManyAsync(IModifiedUsersBucket bucket, CancellationToken token = default);
-    Task DeleteManyAsync(IEnumerable<MultifactorUserId> identifiers, CancellationToken token = default);
+    Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken token = default);
+    Task<IUpdateUsersOperationResult> UpdateManyAsync(IModifiedUsersBucket bucket, CancellationToken token = default);
+    Task<IDeleteUsersOperationResult> DeleteManyAsync(IDeletedUsersBucket bucket, CancellationToken token = default);
 }

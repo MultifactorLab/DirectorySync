@@ -1,6 +1,6 @@
-﻿namespace DirectorySync.Application;
+﻿namespace DirectorySync.Application.Integrations.Multifactor;
 
-internal static class MultifactorProperty
+internal static class MultifactorPropertyName
 {
     public const string IdentityProperty = "Identity";
     public const string NameProperty = "Name";

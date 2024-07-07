@@ -3,10 +3,18 @@ using System.Text;
 
 namespace DirectorySync.Domain;
 
+/// <summary>
+/// Hash of the LDAP attribute names and its values.
+/// </summary>
 public record AttributesHash
 {
     private readonly string _value;
 
+    /// <summary>
+    /// Creates AttributesHash from the string representation.
+    /// </summary>
+    /// <param name="hash">Hash string.</param>
+    /// <exception cref="ArgumentException"></exception>
     public AttributesHash(string hash)
     {
         if (string.IsNullOrWhiteSpace(hash))

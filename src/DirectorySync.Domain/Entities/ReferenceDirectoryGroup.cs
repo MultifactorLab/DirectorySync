@@ -3,6 +3,9 @@ using System.Text;
 
 namespace DirectorySync.Domain.Entities;
 
+/// <summary>
+/// Group from LDAP. Acts as a point of truth.
+/// </summary>
 public record ReferenceDirectoryGroup
 {
     public DirectoryGuid Guid { get; }

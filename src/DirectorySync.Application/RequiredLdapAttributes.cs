@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application;
 
-public class RequiredLdapAttributes
+internal class RequiredLdapAttributes
 {
     private readonly LdapAttributeMappingOptions _options;
 

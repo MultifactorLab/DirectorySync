@@ -1,10 +1,9 @@
-using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Domain;
 using Microsoft.Extensions.Options;
 
-namespace DirectorySync.Application;
+namespace DirectorySync.Application.Integrations.Multifactor;
 
-public class MultifactorPropertyMapper
+internal class MultifactorPropertyMapper
 {
    
     private readonly LdapAttributeMappingOptions _options;
@@ -22,29 +21,29 @@ public class MultifactorPropertyMapper
         var dict = new Dictionary<string, string?>();
 
         var identity = GetSingle(_options.IdentityAttribute, attrs);
-        dict[MultifactorProperty.IdentityProperty] = identity;
+        dict[MultifactorPropertyName.IdentityProperty] = identity;
         
         var name = GetFirstOrNull([_options.NameAttribute], attrs);
         if (name is not null)
         {
-            dict[MultifactorProperty.NameProperty] = name;
+            dict[MultifactorPropertyName.NameProperty] = name;
         }
         
         var email = GetFirstOrNull(_options.EmailAttributes, attrs);
         if (email is not null)
         {
-            dict[MultifactorProperty.EmailProperty] = email;
+            dict[MultifactorPropertyName.EmailProperty] = email;
         }
         
         var phone = GetFirstOrNull(_options.PhoneAttributes, attrs);
         if (phone is not null)
         {
-            dict[MultifactorProperty.PhoneProperty] = phone;
+            dict[MultifactorPropertyName.PhoneProperty] = phone;
         }
 
         return dict;
     }
-
+    
     private static string GetSingle(string name, LdapAttribute[] attrs)
     {
         var n = new LdapAttributeName(name);

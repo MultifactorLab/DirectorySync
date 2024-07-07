@@ -3,7 +3,6 @@ namespace DirectorySync.Domain.Entities;
 public abstract class CachedDirectoryObject
 {
     public DirectoryGuid Guid { get; }
-    public bool Modified { get; protected set; }
     
     protected CachedDirectoryObject(DirectoryGuid guid)
     {

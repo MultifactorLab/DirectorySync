@@ -7,6 +7,11 @@ public record EntriesHash
 {
     private readonly string _value;
 
+    /// <summary>
+    /// Creates EntriesHash from string representation.
+    /// </summary>
+    /// <param name="hash">Hash string.</param>
+    /// <exception cref="ArgumentException"></exception>
     public EntriesHash(string hash)
     {
         if (string.IsNullOrWhiteSpace(hash))
@@ -17,6 +22,10 @@ public record EntriesHash
         _value = hash;
     }
     
+    /// <summary>
+    /// Computes and returns EntriesHash from guids.
+    /// </summary>
+    /// <param name="guids">Guid collection.</param>
     public EntriesHash(IEnumerable<DirectoryGuid> guids)
     {
         ArgumentNullException.ThrowIfNull(guids);

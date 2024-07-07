@@ -1,4 +1,5 @@
 using DirectorySync.Application;
+using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Services;
@@ -7,7 +8,7 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
 {
     private readonly SyncOptions _syncOptions;
     private readonly SynchronizeExistedUsers _synchronizeExistedUsers;
-    private readonly WorkloadState _state;
+    private readonly WorkloadsTasks _workloads;
     private readonly ILogger<UserSynchronizer> _logger;
 
     private readonly CancellationTokenSource _cts = new();
@@ -15,12 +16,12 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
 
     public UserSynchronizer(IOptions<SyncOptions> syncOptions,
         SynchronizeExistedUsers synchronizeExistedUsers,
-        WorkloadState state,
+        WorkloadsTasks workloads,
         ILogger<UserSynchronizer> logger)
     {
         _syncOptions = syncOptions.Value;
         _synchronizeExistedUsers = synchronizeExistedUsers;
-        _state = state;
+        _workloads = workloads;
         _logger = logger;
     }
     
@@ -31,7 +32,7 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
             return Task.CompletedTask;
         }
         
-        _logger.LogInformation(ApplicationEvent.ApplicationStarted, 
+        _logger.LogInformation(ApplicationEvent.UserSyncStarted, 
             "{Service:l} is starting at {DateTime}",
             nameof(UserSynchronizer),
             DateTime.Now);
@@ -52,7 +53,7 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
         _cts.Cancel();
         
         _logger.LogInformation(ApplicationEvent.UserSyncStopping, 
-            "{Service:l} is topping at {DateTime}",
+            "{Service:l} is stopping at {DateTime}",
             nameof(UserSynchronizer),
             DateTime.Now);
         
@@ -63,13 +64,13 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
     {
         while (await _timer!.WaitForNextTickAsync(_cts.Token))
         {
-            if (_state.NewUserHandlePerforming || _state.UserSyncPerforming)
+            if (_workloads.IsBusy())
             {
                 _logger.LogInformation(ApplicationEvent.UserSyncTimerSkipping, "Some service workloads are already performing, skipping");
-                return;
+                continue;
             }
         
-            _state.StartUserSync();
+            _workloads.Add(Workload.Synchronize);
             
             foreach (var guid in _syncOptions.Groups)
             {
@@ -80,7 +81,7 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
                 "{Service:l} timer triggered, start of user synchronization",
                 nameof(UserSynchronizer));
         
-            _state.StopUserSync();
+            _workloads.Complete(Workload.Synchronize);
         }
     }
 

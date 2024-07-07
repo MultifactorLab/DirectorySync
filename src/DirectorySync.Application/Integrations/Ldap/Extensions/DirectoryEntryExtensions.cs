@@ -1,22 +1,17 @@
 using System.DirectoryServices;
+using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Ldap.Extensions;
 
 internal static class DirectoryEntryExtensions
 {
-    public static string? GetFirstOrDefaultAttributeValue(this DirectoryEntry entry, string name)
+    public static string? GetFirstOrDefaultAttributeValue(this DirectoryEntry entry, LdapAttributeName name)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
-        }
+        ArgumentNullException.ThrowIfNull(name);
 
-        if (!entry.Properties.Contains(name))
-        {
-            return default;
-        }
-
-        return entry.Properties[name][0]?.ToString();
+        return !entry.Properties.Contains(name) 
+            ? default 
+            : entry.Properties[name][0]?.ToString();
     }
 }
