@@ -33,7 +33,7 @@ public class HandleNewUsers
         _logger = logger;
     }
 
-    public Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
+    public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogDebug("New users handling started");
@@ -55,10 +55,11 @@ public class HandleNewUsers
         if (created.Length == 0)
         {
             _logger.LogDebug("Nothing to create");
-            return Task.CompletedTask;
+            return;
         }
 
-        return CreateAsync(cachedGroup, created, token);
+        await CreateAsync(cachedGroup, created, token);
+        _storage.UpdateGroup(cachedGroup);
     }
 
     private async Task CreateAsync(CachedDirectoryGroup group, 
@@ -66,6 +67,7 @@ public class HandleNewUsers
         CancellationToken token)
     {
         var bucket = new NewUsersBucket();
+        var identityWithGuids = new Dictionary<string, DirectoryGuid>();
         foreach (var member in created)
         {
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
@@ -77,13 +79,20 @@ public class HandleNewUsers
             {
                 user.AddProperty(prop.Key, prop.Value);
             }
+            
+            identityWithGuids[user.Identity] = member.Guid;
         }
         
         var res = await _api.CreateManyAsync(bucket, token);
         foreach (var user in res.CreatedUsers)
         {
-            var props = _propertyMapper.Map(member.Attributes);
-            var guid = created.FirstOrDefault(x => x.)
+            if (!identityWithGuids.TryGetValue(user.Identity, out var guid))
+            {
+                continue;
+            }
+
+            var cached = group.Members.First(x => x.Guid == guid);
+            cached.SetUserId(user.Id);
         }
     }
 }

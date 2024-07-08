@@ -30,6 +30,6 @@ public static class AddApplicationServicesExtension
 
     private static void AddMultifactorIntegration(this HostApplicationBuilder builder)
     {
-        builder.Services.AddSingleton<IMultifactorApi>();
+        builder.Services.AddSingleton<IMultifactorApi, FakeMultifactorApi>();
     }
 }

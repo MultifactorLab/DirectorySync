@@ -48,11 +48,12 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
     {
         ArgumentNullException.ThrowIfNull(id);
 
-        if (UserId != id)
+        if (UserId != MultifactorUserId.Undefined)
         {
-            UserId = id;
+            throw new InvalidOperationException("Cached member already has a user id");
         }
         
+        UserId = id;
         Modified = true;
     }
 
