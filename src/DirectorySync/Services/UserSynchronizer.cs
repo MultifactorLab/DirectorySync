@@ -7,7 +7,7 @@ namespace DirectorySync.Services;
 internal class UserSynchronizer : IHostedService, IAsyncDisposable
 {
     private readonly SyncOptions _syncOptions;
-    private readonly SynchronizeExistedUsers _synchronizeExistedUsers;
+    private readonly ISynchronizeExistedUsers _synchronizeExistedUsers;
     private readonly WorkloadsTasks _workloads;
     private readonly ILogger<UserSynchronizer> _logger;
 
@@ -15,7 +15,7 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
     private PeriodicTimer? _timer;
 
     public UserSynchronizer(IOptions<SyncOptions> syncOptions,
-        SynchronizeExistedUsers synchronizeExistedUsers,
+        ISynchronizeExistedUsers synchronizeExistedUsers,
         WorkloadsTasks workloads,
         ILogger<UserSynchronizer> logger)
     {
@@ -36,6 +36,8 @@ internal class UserSynchronizer : IHostedService, IAsyncDisposable
             "{Service:l} is starting at {DateTime}",
             nameof(UserSynchronizer),
             DateTime.Now);
+        
+        return Task.CompletedTask;
         
         _timer = new PeriodicTimer(_syncOptions.SyncTimer);
         _ = Task.Run(DoWork, _cts.Token);

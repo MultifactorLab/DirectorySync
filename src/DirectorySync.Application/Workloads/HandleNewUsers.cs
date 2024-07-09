@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Workloads;
 
-public class HandleNewUsers
+internal class HandleNewUsers : IHandleNewUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
     private readonly GetReferenceGroupByGuid _getReferenceGroupByGuid;
@@ -18,7 +18,7 @@ public class HandleNewUsers
     private readonly IMultifactorApi _api;
     private readonly ILogger<HandleNewUsers> _logger;
 
-    internal HandleNewUsers(RequiredLdapAttributes requiredLdapAttributes,
+    public HandleNewUsers(RequiredLdapAttributes requiredLdapAttributes,
         GetReferenceGroupByGuid getReferenceGroupByGuid,
         IApplicationStorage storage,
         MultifactorPropertyMapper propertyMapper,

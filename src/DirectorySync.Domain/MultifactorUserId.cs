@@ -4,7 +4,7 @@ public record MultifactorUserId
 {
     public string Value { get; }
 
-    public static MultifactorUserId Undefined => new MultifactorUserId();
+    public static MultifactorUserId Undefined => new ();
 
     public MultifactorUserId(string id)
     {

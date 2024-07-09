@@ -6,5 +6,21 @@
 			</Directory>
 		</Directory>
     </StandardDirectory>
+    <StandardDirectory Id="LocalAppDataFolder">
+        <Directory Id="PRODUCTDIR" Name="!(bind.Property.Manufacturer)">
+            <Directory Id="COMMONFILESDIR" Name="!(bind.Property.ProductName)">
+                <Component Id="ProductCommonFiles" Guid="fe622b1c-9b30-4fdb-b219-2afd77f681fb">
+                    <CreateFolder/>
+                    <RemoveFolder Id='RemoveCOMMONFILESDIR' Directory="COMMONFILESDIR" On='uninstall' />
+                    <RemoveFolder Id='RemovePRODUCTDIR' Directory="PRODUCTDIR" On='uninstall' />
+                    <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]'
+                                   Type='string'
+                                   Name='Path'
+                                   Value='[COMMONFILESDIR]'
+                                   KeyPath='yes'/>
+                </Component>
+            </Directory>
+        </Directory>
+    </StandardDirectory>
   </Fragment>
 </Wix>

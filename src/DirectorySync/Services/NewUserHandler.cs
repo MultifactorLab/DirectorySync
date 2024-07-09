@@ -8,7 +8,7 @@ internal class NewUserHandler : IHostedService, IAsyncDisposable
 {
     private readonly SyncOptions _syncOptions;
     private readonly WorkloadsTasks _workloads;
-    private readonly HandleNewUsers _handleNewUsers;
+    private readonly IHandleNewUsers _handleNewUsers;
     private readonly ILogger<NewUserHandler> _logger;
 
     private readonly CancellationTokenSource _cts = new();
@@ -16,7 +16,7 @@ internal class NewUserHandler : IHostedService, IAsyncDisposable
     
     public NewUserHandler(IOptions<SyncOptions> syncOptions,
         WorkloadsTasks workloads,
-        HandleNewUsers handleNewUsers,
+        IHandleNewUsers handleNewUsers,
         ILogger<NewUserHandler> logger)
     {
         _syncOptions = syncOptions.Value;
@@ -31,6 +31,8 @@ internal class NewUserHandler : IHostedService, IAsyncDisposable
         {
             return Task.CompletedTask;
         }
+        
+        return Task.CompletedTask;
         
         _timer = new PeriodicTimer(_syncOptions.NewUserHandleTimer);
         _ = Task.Run(DoWork, _cts.Token);

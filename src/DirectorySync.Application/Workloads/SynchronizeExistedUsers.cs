@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Workloads;
 
-public class SynchronizeExistedUsers
+internal class SynchronizeExistedUsers : ISynchronizeExistedUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
     private readonly GetReferenceGroupByGuid _getReferenceGroupByGuid;
@@ -18,7 +18,7 @@ public class SynchronizeExistedUsers
     private readonly IMultifactorApi _api;
     private readonly ILogger<SynchronizeExistedUsers> _logger;
 
-    internal SynchronizeExistedUsers(RequiredLdapAttributes requiredLdapAttributes,
+    public SynchronizeExistedUsers(RequiredLdapAttributes requiredLdapAttributes,
         GetReferenceGroupByGuid getReferenceGroupByGuid,
         IApplicationStorage storage,
         MultifactorPropertyMapper propertyMapper,

@@ -10,8 +10,8 @@ public static class AddApplicationServicesExtension
 {
     public static void AddApplicationServices(this HostApplicationBuilder builder)
     {
-        builder.Services.AddSingleton<SynchronizeExistedUsers>();
-        builder.Services.AddSingleton<HandleNewUsers>();
+        builder.Services.AddSingleton<ISynchronizeExistedUsers, SynchronizeExistedUsers>();
+        builder.Services.AddSingleton<IHandleNewUsers, HandleNewUsers>();
         
         builder.Services.AddSingleton<GetReferenceGroupByGuid>();
         builder.Services.AddOptions<LdapOptions>()
