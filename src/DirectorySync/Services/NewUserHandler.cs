@@ -13,6 +13,7 @@ internal class NewUserHandler : IHostedService, IAsyncDisposable
 
     private readonly CancellationTokenSource _cts = new();
     private PeriodicTimer? _timer;
+    private Task? _task;
     
     public NewUserHandler(IOptions<SyncOptions> syncOptions,
         WorkloadsTasks workloads,
@@ -27,58 +28,64 @@ internal class NewUserHandler : IHostedService, IAsyncDisposable
     
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!_syncOptions.Enabled)
+        if (!_syncOptions.NewUserHandleEnabled)
         {
+            _logger.LogInformation(ApplicationEvent.NewUserHandlingServiceStartedDisabled, "{Service:l} is started but disabled", nameof(NewUserHandler));
             return Task.CompletedTask;
         }
         
-        return Task.CompletedTask;
-        
         _timer = new PeriodicTimer(_syncOptions.NewUserHandleTimer);
-        _ = Task.Run(DoWork, _cts.Token);
+        _task = Task.Run(DoWork, _cts.Token);
         
-        _logger.LogInformation(ApplicationEvent.NewUserHandleStarted, "{Service:l} is started", nameof(NewUserHandler));
+        _logger.LogInformation(ApplicationEvent.NewUserHandlingServiceStarted, "{Service:l} is started", nameof(NewUserHandler));
         
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        if (!_syncOptions.Enabled)
+        if (!_syncOptions.NewUserHandleEnabled)
         {
             return Task.CompletedTask;
         }
         
         _cts.Cancel();
         
-        _logger.LogInformation(ApplicationEvent.NewUserHandleStopping, "{Service:l} is stopping", nameof(NewUserHandler));
+        _logger.LogInformation(ApplicationEvent.NewUserHandlingServiceStopping, "{Service:l} is stopping", nameof(NewUserHandler));
         
-        return Task.FromCanceled(_cts.Token);
+        return Task.WhenAny(
+            _task ?? Task.CompletedTask,
+            Task.Run(() => { }, cancellationToken));    
     }
     
     private async Task DoWork()
     {
-        while (await _timer!.WaitForNextTickAsync(_cts.Token))
+        await Task.Delay(5000);
+        do
         {
-            if (_workloads.IsBusy())
+            try
             {
-                _logger.LogInformation(ApplicationEvent.NewUserHandleTimerSkipping, "Some service workloads are already performing, skipping");
-                continue;
+                if (_workloads.IsBusy())
+                {
+                    _logger.LogDebug("Some service workloads are already performing, skipping");
+                    continue;
+                }
+
+                _logger.LogDebug("{Service:l} timer triggered, start of new user handle", nameof(NewUserHandler));
+                _workloads.Add(Workload.HandleNew);
+
+                foreach (var guid in _syncOptions.Groups)
+                {
+                    await _handleNewUsers.ExecuteAsync(guid, _cts.Token);
+                }
+
+                _workloads.Complete(Workload.HandleNew);
             }
-        
-            _workloads.Add(Workload.HandleNew);
-            
-            foreach (var guid in _syncOptions.Groups)
+            catch (Exception ex)
             {
-                await _handleNewUsers.ExecuteAsync(guid, _cts.Token);
+                _logger.LogError(ApplicationEvent.NewUserHandlingServiceError, ex, "Error occured while handling new users");
             }
-        
-            _logger.LogInformation(ApplicationEvent.NewUserHandleTimerTriggered,
-                "{Service:l} timer triggered, start of new user handle",
-                nameof(NewUserHandler));
-        
-            _workloads.Complete(Workload.HandleNew);
-        }
+        } while (await _timer!.WaitForNextTickAsync(_cts.Token));
     }
 
     public ValueTask DisposeAsync()

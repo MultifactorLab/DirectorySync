@@ -8,9 +8,9 @@ namespace DirectorySync.Infrastructure.Data;
 
 internal class LiteDbApplicationStorage : IApplicationStorage
 {
-    private readonly LiteDbConnection _connection;
+    private readonly ILiteDbConnection _connection;
 
-    public LiteDbApplicationStorage(LiteDbConnection connection)
+    public LiteDbApplicationStorage(ILiteDbConnection connection)
     {
         _connection = connection;
     }

@@ -36,7 +36,8 @@ internal class SynchronizeExistedUsers : ISynchronizeExistedUsers
     public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
-        _logger.LogDebug("Users synchronization started");
+        _logger.LogInformation(ApplicationEvent.StartUserSynchronization, "Start users synchronization for group {group}", groupGuid);
+        var stamp = DateTime.Now;
         
         var names = _requiredLdapAttributes.GetNames().ToArray();
         var referenceGroup = _getReferenceGroupByGuid.Execute(groupGuid, names);
@@ -73,6 +74,11 @@ internal class SynchronizeExistedUsers : ISynchronizeExistedUsers
 
         await UpdateAsync(cachedGroup, modifiedMembers, token);
         _storage.UpdateGroup(cachedGroup);
+        
+        var elapsed = DateTime.Now - stamp;
+        _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete new users handling for group {group}. Elapsed: {Elapsed} sec", 
+            groupGuid,
+            elapsed.TotalSeconds);
     }
 
     private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup, 

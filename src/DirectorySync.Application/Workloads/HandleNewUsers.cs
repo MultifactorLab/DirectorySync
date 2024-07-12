@@ -36,7 +36,8 @@ internal class HandleNewUsers : IHandleNewUsers
     public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
-        _logger.LogDebug("New users handling started");
+        _logger.LogInformation(ApplicationEvent.StartNewUserHandling, "Start new users handling for group {group}", groupGuid);
+        var stamp = DateTime.Now;
         
         var names = _requiredLdapAttributes.GetNames().ToArray();
         var referenceGroup = _getReferenceGroupByGuid.Execute(groupGuid, names);
@@ -59,7 +60,12 @@ internal class HandleNewUsers : IHandleNewUsers
         }
 
         await CreateAsync(cachedGroup, created, token);
-        _storage.UpdateGroup(cachedGroup);
+        _storage.CreateGroup(cachedGroup);
+
+        var elapsed = DateTime.Now - stamp;
+        _logger.LogInformation(ApplicationEvent.CompleteNewUserHandling, "Complete new users handling for group {group}. Elapsed: {Elapsed} sec", 
+            groupGuid,
+            elapsed.TotalSeconds);
     }
 
     private async Task CreateAsync(CachedDirectoryGroup group, 

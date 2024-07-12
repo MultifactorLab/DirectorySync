@@ -33,3 +33,4 @@ public static class AddApplicationServicesExtension
         builder.Services.AddSingleton<IMultifactorApi, FakeMultifactorApi>();
     }
 }
+ 

@@ -2,15 +2,20 @@ namespace DirectorySync.Application;
 
 public static class ApplicationEvent
 {
-    public const int UserSyncStarted = 0001;
-    public const int NewUserHandleStarted = 0002;
+    public const ushort ApplicationStarted = 10000;
+    public const ushort ApplicationStopped = 19999;
     
-    public const int UserSyncTimerTriggered = 1000;
-    public const int UserSyncTimerSkipping = 1001;
+    public const ushort UserSynchronizationServiceStarted = 11000;
+    public const ushort UserSynchronizationServiceStartedDisabled = 11001;
+    public const ushort StartUserSynchronization = 1102;
+    public const ushort CompleteUsersSynchronization = 1103;
+    public const ushort UserSynchronizationServiceError = 11050;
+    public const ushort UserSynchronizationServiceStopping = 11999;
     
-    public const int NewUserHandleTimerTriggered = 1100;
-    public const int NewUserHandleTimerSkipping = 1101;
-    
-    public const int UserSyncStopping = 9000;
-    public const int NewUserHandleStopping = 9100;
+    public const ushort NewUserHandlingServiceStarted = 10100;
+    public const ushort NewUserHandlingServiceStartedDisabled = 10101;
+    public const ushort StartNewUserHandling = 10102;
+    public const ushort CompleteNewUserHandling = 10103;
+    public const ushort NewUserHandlingServiceError = 10150;
+    public const ushort NewUserHandlingServiceStopping = 10199;
 }

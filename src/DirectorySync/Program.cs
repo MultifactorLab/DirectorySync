@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DirectorySync.Application;
 using DirectorySync.Application.Extensions;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
@@ -32,4 +33,6 @@ builder.AddHostedServices();
 
 
 var host = builder.Build();
+host.RegisterApplicationHostEventsLogging();
+
 host.Run();
