@@ -3,11 +3,11 @@ using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Workloads;
 
-internal class FakeHandleNewUsers : IHandleNewUsers
+internal class FakeSynchronizeUsers : ISynchronizeUsers
 {
-    private readonly ILogger<FakeHandleNewUsers> _logger;
+    private readonly ILogger<FakeSynchronizeUsers> _logger;
 
-    public FakeHandleNewUsers(ILogger<FakeHandleNewUsers> logger)
+    public FakeSynchronizeUsers(ILogger<FakeSynchronizeUsers> logger)
     {
         _logger = logger;
     }
@@ -15,8 +15,8 @@ internal class FakeHandleNewUsers : IHandleNewUsers
     public Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
-        _logger.LogDebug("New users handling started");
-        _logger.LogDebug("New users handling complete");
+        _logger.LogDebug("Users synchronization started");
+        _logger.LogDebug("Users synchronization complete");
         return Task.CompletedTask;
     }
 }

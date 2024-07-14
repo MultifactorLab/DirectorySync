@@ -1,6 +1,6 @@
 namespace DirectorySync.Application.Workloads;
 
-public interface ISynchronizeExistedUsers
+public interface ISynchronizeUsers
 {
     Task ExecuteAsync(Guid groupGuid, CancellationToken token = default);
 }

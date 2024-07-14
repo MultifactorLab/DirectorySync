@@ -1,5 +1,4 @@
 using DirectorySync.Application;
-using DirectorySync.Application.Extensions;
 
 namespace DirectorySync.Extensions
 {

@@ -3,11 +3,11 @@ using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Workloads;
 
-internal class FakeSynchronizeExistedUsers : ISynchronizeExistedUsers
+internal class FakeScanUsers : IScanUsers
 {
-    private readonly ILogger<FakeSynchronizeExistedUsers> _logger;
+    private readonly ILogger<FakeScanUsers> _logger;
 
-    public FakeSynchronizeExistedUsers(ILogger<FakeSynchronizeExistedUsers> logger)
+    public FakeScanUsers(ILogger<FakeScanUsers> logger)
     {
         _logger = logger;
     }
@@ -15,8 +15,8 @@ internal class FakeSynchronizeExistedUsers : ISynchronizeExistedUsers
     public Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
-        _logger.LogDebug("Users synchronization started");
-        _logger.LogDebug("Users synchronization complete");
+        _logger.LogDebug("Users scanning started");
+        _logger.LogDebug("Users scanning complete");
         return Task.CompletedTask;
     }
 }

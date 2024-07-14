@@ -8,9 +8,8 @@ internal static class AddHostedServicesExtension
     {
         ArgumentNullException.ThrowIfNull(builder);
         
-        builder.Services.AddSingleton<WorkloadsTasks>();
-        builder.Services.AddHostedService<UserSynchronizer>();
-        builder.Services.AddHostedService<NewUserHandler>();
+        builder.Services.AddSingleton<OrderBoard>();
+        builder.Services.AddHostedService<OrderManager>();
         builder.Services.AddOptions<SyncOptions>()
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();

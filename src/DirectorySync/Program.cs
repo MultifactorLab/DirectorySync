@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using DirectorySync.Application;
 using DirectorySync.Application.Extensions;
+using DirectorySync.Application.Measuring;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
 using DirectorySync.Infrastructure.Data.Extensions;
@@ -30,6 +31,7 @@ builder.RegisterLogger();
 builder.AddApplicationServices();
 builder.AddLiteDbStorage();
 builder.AddHostedServices();
+builder.AddCodeTimer("Logging");
 
 
 var host = builder.Build();

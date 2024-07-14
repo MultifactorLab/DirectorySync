@@ -20,17 +20,25 @@ public record ReferenceDirectoryGroup
 
     public override string ToString()
     {
-        var sb = new StringBuilder($"group: {Guid}");
+        var sb = new StringBuilder($"group: {Guid}{Environment.NewLine}");
+        sb.Append($"Members: {Members.Count}");
+        
         if (Members.Count == 0)
         {
             return sb.ToString();
         }
         
-        sb.AppendLine(Environment.NewLine);
-        foreach (var member in Members)
+        sb.AppendLine();
+        foreach (var member in Members.Take(10))
         {
             sb.AppendLine($"  member: {member.Guid}");
         }
+
+        if (Members.Count > 10)
+        {
+            sb.AppendLine($"  ...and {Members.Count - 10} more members");
+        }
+        
         return sb.ToString();
     }
 }

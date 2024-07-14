@@ -1,38 +1,13 @@
-using System.ComponentModel.DataAnnotations;
-using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Core;
+using Serilog.Debugging;
 using Serilog.Events;
-using Serilog.Filters;
-using Serilog.Expressions;
-using Serilog.Formatting.Json;
 
 namespace DirectorySync.Infrastructure.Logging;
-
-public class LoggingOptions
-{
-    public FileLoggingOptions File { get; set; } = new();
-}
-
-public class FileLoggingOptions
-{
-    public string? Path { get; set; }
-    
-    public string RollingInterval { get; set; } = "Day";
-    
-    // From 1 kb to 2 gb
-    [Range(1024, 2L * 1024 * 1024 * 1024)]
-    // default: 100 mb
-    public long FileSizeLimitBytes { get; set; } = 100 * 1024 * 1024;
-
-    [Range(1, 100)]
-    public int RetainedFileCountLimit { get; set; } = 20;
-}
 
 public static class RegisterLoggerExtension
 {
@@ -49,7 +24,7 @@ public static class RegisterLoggerExtension
 
         DataAnnotationsValidator.Validate(options);
 
-        Serilog.Debugging.SelfLog.Enable(Console.Error);
+        SelfLog.Enable(Console.Error);
         var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
             .Enrich.FromLogContext();
@@ -59,7 +34,7 @@ public static class RegisterLoggerExtension
             loggerConfig.WriteTo.Logger(x =>
             {
                 x.WriteTo.Console(levelSwitch: new LoggingLevelSwitch(LogEventLevel.Debug),
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}");
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}");
             });
         }
 
@@ -95,7 +70,7 @@ public static class RegisterLoggerExtension
         else
         {
             var baseDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-            path = Path.Combine(baseDir!, "log-.txt");
+            path = Path.Combine(baseDir!, "logs", "log-.txt");
         }
 
         RollingInterval rollingInterval;
@@ -107,13 +82,17 @@ public static class RegisterLoggerExtension
         {
             rollingInterval = RollingInterval.Day;
         }
-        
+
         logger
-            .WriteTo.File(path: path,
-                rollingInterval: rollingInterval,
-                fileSizeLimitBytes: options.FileSizeLimitBytes,
-                rollOnFileSizeLimit: true,
-                retainedFileCountLimit: options.RetainedFileCountLimit,
-                levelSwitch: new LoggingLevelSwitch(LogEventLevel.Debug));
+            .WriteTo.Logger(x =>
+            {
+                x.WriteTo.File(path: path,
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}",
+                    rollingInterval: rollingInterval,
+                    fileSizeLimitBytes: options.FileSizeLimitBytes,
+                    rollOnFileSizeLimit: true,
+                    retainedFileCountLimit: options.RetainedFileCountLimit,
+                    levelSwitch: new LoggingLevelSwitch(LogEventLevel.Debug));
+            });
     }
 }

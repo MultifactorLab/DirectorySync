@@ -7,11 +7,11 @@ using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Integrations.Ldap.Windows;
 
-public class GetReferenceGroupByGuid
+internal class GetReferenceGroupWithPrincipalApi : IGetReferenceGroup
 {
     private readonly LdapOptions _ldapOptions;
     
-    public GetReferenceGroupByGuid(IOptions<LdapOptions> ldapOptions)
+    public GetReferenceGroupWithPrincipalApi(IOptions<LdapOptions> ldapOptions)
     {
         _ldapOptions = ldapOptions.Value;
     }
@@ -22,7 +22,7 @@ public class GetReferenceGroupByGuid
         ArgumentNullException.ThrowIfNull(requiredAttributes);
 
         using var ctx = new PrincipalContext(ContextType.Domain,
-            _ldapOptions.Name,
+            _ldapOptions.Path,
             _ldapOptions.Container,
             _ldapOptions.Username,
             _ldapOptions.Password);
@@ -52,7 +52,7 @@ public class GetReferenceGroupByGuid
     {
         var attributes = attrs.Select(attribute => new LdapAttribute(attribute, entry.GetFirstOrDefaultAttributeValue(attribute)));
 #if DEBUG
-        _ = new DebugDirectoryAttributes(entry);
+        //_ = new DebugDirectoryAttributes(entry);
 #endif
         return new ReferenceDirectoryGroupMember(entry.Guid, attributes);
     }
