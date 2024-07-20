@@ -73,7 +73,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
             {
                 _logger.LogDebug("Found deleted users: {Deleted}", deleted.Length);
 
-                await DeleteAsync(cachedGroup, deleted, token);
+                await DeleteInPortionsAsync(cachedGroup, deleted, token);
 
                 var updateDeletedTimer = _codeTimer.Start("Update Cached Group: Deleted Users");
                 _storage.UpdateGroup(cachedGroup);
@@ -110,7 +110,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         return refMemberGuids.Except(cachedMemberGuids);
     }
 
-    private async Task DeleteAsync(CachedDirectoryGroup group, 
+    private async Task DeleteInPortionsAsync(CachedDirectoryGroup group, 
         DirectoryGuid[] deletedUsers,
         CancellationToken token)
     {
@@ -119,6 +119,10 @@ internal class SynchronizeUsers : ISynchronizeUsers
             .Select(x => x.UserId);
 
         var bucket = new DeletedUsersBucket();
+
+        var skeep = 0;
+        const int take = 50;
+        
         foreach (var id in mfIds)
         {
             bucket.AddDeletedUser(id);

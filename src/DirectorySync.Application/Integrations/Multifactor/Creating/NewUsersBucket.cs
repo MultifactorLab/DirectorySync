@@ -24,4 +24,6 @@ internal class NewUsersBucket : INewUsersBucket
 
         return user;
     }
+
+    public void Clear() => _newUsers.Clear();
 }

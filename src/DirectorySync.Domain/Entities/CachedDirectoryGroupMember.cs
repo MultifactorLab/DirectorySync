@@ -16,21 +16,23 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
     }
     
     private CachedDirectoryGroupMember(DirectoryGuid guid,
+        MultifactorUserId userId,
         AttributesHash hash) 
         : base(guid)
     {
         Hash = hash ?? throw new ArgumentNullException(nameof(hash));
-        UserId = MultifactorUserId.Undefined;
+        UserId = userId;
     }
 
-    public static CachedDirectoryGroupMember Create(DirectoryGuid guid,
+    public static CachedDirectoryGroupMember Create(DirectoryGuid guid, MultifactorUserId userId,
         IEnumerable<LdapAttribute> attributes)
     {
         ArgumentNullException.ThrowIfNull(guid);
+        ArgumentNullException.ThrowIfNull(userId);
         ArgumentNullException.ThrowIfNull(attributes);
 
         var hash = new AttributesHash(attributes);
-        return new CachedDirectoryGroupMember(guid, hash);
+        return new CachedDirectoryGroupMember(guid, userId, hash);
     }
 
     public void UpdateHash(AttributesHash hash)
@@ -41,19 +43,6 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
             Hash = hash;
         }
 
-        Modified = true;
-    }
-
-    public void SetUserId(MultifactorUserId id)
-    {
-        ArgumentNullException.ThrowIfNull(id);
-
-        if (UserId != MultifactorUserId.Undefined)
-        {
-            throw new InvalidOperationException("Cached member already has a user id");
-        }
-        
-        UserId = id;
         Modified = true;
     }
 
