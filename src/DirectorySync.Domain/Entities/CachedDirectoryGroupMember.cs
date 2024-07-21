@@ -2,35 +2,30 @@ namespace DirectorySync.Domain.Entities;
 
 public class CachedDirectoryGroupMember : CachedDirectoryObject
 {
+    public MultifactorIdentity Identity { get; }
     public AttributesHash Hash { get; private set; }
-    public MultifactorUserId UserId { get; private set; }
     public bool Modified { get; private set; }
+    public bool Propagated { get; private set; }
     
-    public CachedDirectoryGroupMember(DirectoryGuid guid,
-        AttributesHash hash,
-        MultifactorUserId userId) 
-        : base(guid)
-    {
-        Hash = hash ?? throw new ArgumentNullException(nameof(hash));
-        UserId = userId ?? throw new ArgumentNullException(nameof(userId));
-    }
-    
-    private CachedDirectoryGroupMember(DirectoryGuid guid,
+    public CachedDirectoryGroupMember(DirectoryGuid guid, 
+        MultifactorIdentity identity,
         AttributesHash hash) 
         : base(guid)
     {
+        Identity = identity ?? throw new ArgumentNullException(nameof(identity));
         Hash = hash ?? throw new ArgumentNullException(nameof(hash));
-        UserId = MultifactorUserId.Undefined;
     }
 
     public static CachedDirectoryGroupMember Create(DirectoryGuid guid,
+        MultifactorIdentity identity,
         IEnumerable<LdapAttribute> attributes)
     {
         ArgumentNullException.ThrowIfNull(guid);
+        ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(attributes);
 
         var hash = new AttributesHash(attributes);
-        return new CachedDirectoryGroupMember(guid, hash);
+        return new CachedDirectoryGroupMember(guid, identity, hash);
     }
 
     public void UpdateHash(AttributesHash hash)
@@ -44,16 +39,9 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
         Modified = true;
     }
 
-    public void SetUserId(MultifactorUserId id)
+    public void Propagate()
     {
-        ArgumentNullException.ThrowIfNull(id);
-
-        if (UserId != MultifactorUserId.Undefined)
-        {
-            throw new InvalidOperationException("Cached member already has a user id");
-        }
-        
-        UserId = id;
+        Propagated = true;
         Modified = true;
     }
 

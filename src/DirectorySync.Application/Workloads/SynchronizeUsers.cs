@@ -116,7 +116,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
     {
         var mfIds = group.Members
             .Where(x => deletedUsers.Contains(x.Guid))
-            .Select(x => x.UserId);
+            .Select(x => x.Identity);
 
         var bucket = new DeletedUsersBucket();
         foreach (var id in mfIds)
@@ -130,7 +130,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         
         foreach (var id in res.DeletedUsers)
         {
-            var cachedUser = group.Members.FirstOrDefault(x => x.UserId == id);
+            var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
             if (cachedUser is not null)
             {
                 group.DeleteMembers(cachedUser.Guid);
@@ -150,7 +150,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
             var props = _propertyMapper.Map(member.Attributes);
             
             var cachedMember = group.Members.First(x => x.Guid == member.Guid);
-            var user = bucket.AddModifiedUser(cachedMember.UserId, props[MultifactorPropertyName.IdentityProperty]!);
+            var user = bucket.AddModifiedUser(cachedMember.Identity);
 
             foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
             {
@@ -164,7 +164,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
 
         foreach (var id in res.UpdatedUsers)
         {
-            var cachedUser = group.Members.FirstOrDefault(x => x.UserId == id);
+            var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
             if (cachedUser is null)
             {
                 continue;

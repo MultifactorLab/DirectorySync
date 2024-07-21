@@ -53,7 +53,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         searcher.Filter = $"(&(objectCategory=group)(objectGUID={guid.OctetString}))";
         
         searcher.PropertiesToLoad.Clear();
-        searcher.PropertiesToLoad.AddRange(["ObjectGUID", "sAMAccountName", "distinguishedName"]);
+        searcher.PropertiesToLoad.AddRange(["ObjectGUID", "distinguishedName"]);
         
         var result = searcher.FindOne();
         return result?.GetDirectoryEntry().GetSingleAttributeValue("distinguishedName");

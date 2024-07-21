@@ -1,5 +1,4 @@
 ﻿using DirectorySync.Application.Extensions;
-using DirectorySync.Application.Integrations.Ldap.Extensions;
 using DirectorySync.Application.Integrations.Ldap.Windows;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
@@ -41,7 +40,6 @@ internal class ScanUsers : IScanUsers
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogInformation(ApplicationEvent.StartUserScanning, "Start users scanning for group {group}", groupGuid);
-        var stamp = DateTime.Now;
         
         var names = _requiredLdapAttributes.GetNames().ToArray();
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", names));
@@ -59,12 +57,12 @@ internal class ScanUsers : IScanUsers
             _storage.CreateGroup(cachedGroup);
         }
 
-        var withNoId = cachedGroup.Members
-            .Where(x => x.UserId == MultifactorUserId.Undefined)
+        var nonPropagated = cachedGroup.Members
+            .Where(x => !x.Propagated)
             .Select(x => x.Guid);
         
         _logger.LogDebug("Searching for new users...");
-        var created = referenceGroup.Members.Where(x => withNoId.Contains(x.Guid)).ToArray();
+        var created = referenceGroup.Members.Where(x => nonPropagated.Contains(x.Guid)).ToArray();
         if (created.Length == 0)
         {
             _logger.LogDebug("New users was not found");
@@ -117,7 +115,7 @@ internal class ScanUsers : IScanUsers
             }
 
             var cached = group.Members.First(x => x.Guid == guid);
-            cached.SetUserId(user.Id);
+            cached.Propagate();
         }
     }
 }
