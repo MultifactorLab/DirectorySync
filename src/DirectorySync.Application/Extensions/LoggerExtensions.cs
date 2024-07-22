@@ -21,7 +21,7 @@ public static class LoggerExtensions
         return logger.BeginScope(GetState("LdapUserGuid", ldapUserGuid));
     }
     
-    public static IDisposable? EnrichWithMultifactorUser(this ILogger logger, MultifactorUserId userId)
+    public static IDisposable? EnrichWithMultifactorUser(this ILogger logger, MultifactorIdentity userId)
     {
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(userId);

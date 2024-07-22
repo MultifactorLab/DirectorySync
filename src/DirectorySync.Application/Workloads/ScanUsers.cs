@@ -50,89 +50,45 @@ internal class ScanUsers : IScanUsers
         _logger.LogDebug("Reference group found: {Group:l}", referenceGroup);
         
         var cachedGroup = _storage.FindGroup(referenceGroup.Guid);
-        ReferenceDirectoryGroupMember[] createdUsers;
-        
         if (cachedGroup is null)
         {
             _logger.LogDebug("Reference group is not cached and now it will");
             cachedGroup = CachedDirectoryGroup.Create(referenceGroup.Guid, []);
             _storage.CreateGroup(cachedGroup);
+        }
 
-            createdUsers = referenceGroup.Members.ToArray();
-        }
-        else
-        {
-            _logger.LogDebug("Searching for new users...");
-            createdUsers = referenceGroup.Members
-                .Where(x => !cachedGroup.Members.Select(s => s.Guid).Contains(x.Guid))
-                .ToArray();
-        }
+        var nonPropagated = cachedGroup.Members
+            .Where(x => !x.Propagated)
+            .Select(x => x.Guid);
         
-        if (createdUsers.Length == 0)
+        _logger.LogDebug("Searching for new users...");
+        var created = referenceGroup.Members.Where(x => nonPropagated.Contains(x.Guid)).ToArray();
+        if (created.Length == 0)
         {
             _logger.LogDebug("New users was not found");
             _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
             return;
         }
 
-        _logger.LogDebug("Found new users: {New}", createdUsers.Length);
+        _logger.LogDebug("Found new users: {New}", created.Length);
         
-        await ProcessInPortionsAsync(createdUsers, cachedGroup, token);
+        await CreateAsync(cachedGroup, created, token);
         
+        var cacheGroupTimer = _timer.Start("Cache Group");
+        _storage.UpdateGroup(cachedGroup);
+        cacheGroupTimer.Stop();
+        _logger.LogDebug("New users was created on the MF server side and group was cached");
+
         _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
     }
-    
-    private async Task ProcessInPortionsAsync(ReferenceDirectoryGroupMember[] members, 
-        CachedDirectoryGroup group, 
+
+    private async Task CreateAsync(CachedDirectoryGroup group, 
+        ReferenceDirectoryGroupMember[] created,
         CancellationToken token)
     {
         var bucket = new NewUsersBucket();
         var identityWithGuids = new Dictionary<string, DirectoryGuid>();
-
-        var skip = 0;
-        const int take = 50;
-        
-        do
-        {
-            var portion = members.Skip(skip).Take(take).ToArray();
-
-            PrepareCollections(portion, bucket, identityWithGuids);
-            
-            var createApiTimer = _timer.Start("Api Request: Create Users");
-            var res = await _api.CreateManyAsync(bucket, token);
-            createApiTimer.Stop();
-        
-            // mutate cached group
-            foreach (var user in res.CreatedUsers)
-            {
-                if (!identityWithGuids.TryGetValue(user.Identity, out var guid))
-                {
-                    continue;
-                }
-
-                var member = members.First(x => x.Guid == guid);
-                var cachedMember = CachedDirectoryGroupMember.Create(member.Guid, user.Id, member.Attributes);
-                group.AddMembers(cachedMember);
-            }
-            
-            // update cached group
-            var cacheGroupTimer = _timer.Start("Cache Created Users");
-            _storage.UpdateGroup(group);
-            cacheGroupTimer.Stop();
-            
-            skip += portion.Length;
-            _logger.LogDebug("Users was created and cached ({Processed} of {Total})", skip, members.Length);
-            
-            bucket.Clear();
-            identityWithGuids.Clear();
-        } while (skip < members.Length);
-    }
-
-    private void PrepareCollections(ReferenceDirectoryGroupMember[] portion, 
-        NewUsersBucket bucket,
-        Dictionary<string, DirectoryGuid> identityWithGuids)
-    {
-        foreach (var member in portion)
+        foreach (var member in created)
         {
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
             
@@ -145,6 +101,21 @@ internal class ScanUsers : IScanUsers
             }
             
             identityWithGuids[user.Identity] = member.Guid;
+        }
+        
+        var createApiTimer = _timer.Start("Api Request: Create Users");
+        var res = await _api.CreateManyAsync(bucket, token);
+        createApiTimer.Stop();
+        
+        foreach (var user in res.CreatedUsers)
+        {
+            if (!identityWithGuids.TryGetValue(user.Identity, out var guid))
+            {
+                continue;
+            }
+
+            var cached = group.Members.First(x => x.Guid == guid);
+            cached.Propagate();
         }
     }
 }

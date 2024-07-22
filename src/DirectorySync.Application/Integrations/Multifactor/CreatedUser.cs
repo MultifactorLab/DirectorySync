@@ -2,4 +2,4 @@
 
 namespace DirectorySync.Application.Integrations.Multifactor;
 
-public record CreatedUser(string Identity, MultifactorUserId Id);
+public record CreatedUser(string Identity, MultifactorIdentity Id);

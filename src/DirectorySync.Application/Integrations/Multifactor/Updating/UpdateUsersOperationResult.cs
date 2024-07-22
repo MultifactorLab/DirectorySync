@@ -5,10 +5,10 @@ namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
 internal class UpdateUsersOperationResult : IUpdateUsersOperationResult
 {
-    private readonly HashSet<MultifactorUserId> _updatedUsers = new();
-    public ReadOnlyCollection<MultifactorUserId> UpdatedUsers => new (_updatedUsers.ToArray());
+    private readonly HashSet<MultifactorIdentity> _updatedUsers = new();
+    public ReadOnlyCollection<MultifactorIdentity> UpdatedUsers => new (_updatedUsers.ToArray());
 
-    public UpdateUsersOperationResult AddUserId(MultifactorUserId userId)
+    public UpdateUsersOperationResult AddUserId(MultifactorIdentity userId)
     {
         _updatedUsers.Add(userId);
         return this;

@@ -2,37 +2,30 @@ namespace DirectorySync.Domain.Entities;
 
 public class CachedDirectoryGroupMember : CachedDirectoryObject
 {
+    public MultifactorIdentity Identity { get; }
     public AttributesHash Hash { get; private set; }
-    public MultifactorUserId UserId { get; private set; }
     public bool Modified { get; private set; }
+    public bool Propagated { get; private set; }
     
-    public CachedDirectoryGroupMember(DirectoryGuid guid,
-        AttributesHash hash,
-        MultifactorUserId userId) 
-        : base(guid)
-    {
-        Hash = hash ?? throw new ArgumentNullException(nameof(hash));
-        UserId = userId ?? throw new ArgumentNullException(nameof(userId));
-    }
-    
-    private CachedDirectoryGroupMember(DirectoryGuid guid,
-        MultifactorUserId userId,
+    public CachedDirectoryGroupMember(DirectoryGuid guid, 
+        MultifactorIdentity identity,
         AttributesHash hash) 
         : base(guid)
     {
+        Identity = identity ?? throw new ArgumentNullException(nameof(identity));
         Hash = hash ?? throw new ArgumentNullException(nameof(hash));
-        UserId = userId;
     }
 
-    public static CachedDirectoryGroupMember Create(DirectoryGuid guid, MultifactorUserId userId,
+    public static CachedDirectoryGroupMember Create(DirectoryGuid guid,
+        MultifactorIdentity identity,
         IEnumerable<LdapAttribute> attributes)
     {
         ArgumentNullException.ThrowIfNull(guid);
-        ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(attributes);
 
         var hash = new AttributesHash(attributes);
-        return new CachedDirectoryGroupMember(guid, userId, hash);
+        return new CachedDirectoryGroupMember(guid, identity, hash);
     }
 
     public void UpdateHash(AttributesHash hash)
@@ -43,6 +36,12 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
             Hash = hash;
         }
 
+        Modified = true;
+    }
+
+    public void Propagate()
+    {
+        Propagated = true;
         Modified = true;
     }
 

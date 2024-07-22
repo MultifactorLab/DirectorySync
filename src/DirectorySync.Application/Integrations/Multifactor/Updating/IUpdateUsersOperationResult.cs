@@ -5,5 +5,5 @@ namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
 public interface IUpdateUsersOperationResult
 {
-    ReadOnlyCollection<MultifactorUserId> UpdatedUsers { get; }
+    ReadOnlyCollection<MultifactorIdentity> UpdatedUsers { get; }
 }

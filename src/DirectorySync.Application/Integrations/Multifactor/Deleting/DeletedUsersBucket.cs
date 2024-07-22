@@ -5,19 +5,14 @@ namespace DirectorySync.Application.Integrations.Multifactor.Deleting
 {
     internal class DeletedUsersBucket : IDeletedUsersBucket
     {
-        private readonly HashSet<MultifactorUserId> _deleted = [];
-        public ReadOnlyCollection<MultifactorUserId> DeletedUsers => new (_deleted.ToArray());
+        private readonly HashSet<MultifactorIdentity> _deleted = [];
+        public ReadOnlyCollection<MultifactorIdentity> DeletedUsers => new (_deleted.ToArray());
     
-        public void AddDeletedUser(MultifactorUserId id)
+        public void AddDeletedUser(MultifactorIdentity identity)
         {
-            ArgumentNullException.ThrowIfNull(id);
-        
-            if (id == MultifactorUserId.Undefined)
-            {
-                throw new ArgumentException("User id cannot be undefined", nameof(id));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
-            _deleted.Add(id);
+            _deleted.Add(identity);
         }
     }
 }

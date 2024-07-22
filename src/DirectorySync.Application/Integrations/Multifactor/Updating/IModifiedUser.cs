@@ -5,7 +5,6 @@ namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
 public interface IModifiedUser
 {
-    MultifactorUserId Id { get; }
-    string Identity { get; }
+    MultifactorIdentity Identity { get; }
     ReadOnlyCollection<MultifactorProperty> Properties { get; }
 }
