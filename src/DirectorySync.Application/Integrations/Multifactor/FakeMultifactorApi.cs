@@ -23,7 +23,7 @@ internal class FakeMultifactorApi : IMultifactorApi
         var users = new CreateUsersOperationResult();
         foreach (var user in bucket.NewUsers)
         {
-            users.AddUser(new CreatedUser(user.Identity, new MultifactorIdentity(Guid.NewGuid().ToString())));
+            users.AddUser(new CreatedUser(new MultifactorIdentity(user.Identity)));
         }
         _logger.LogDebug("Got successful response from API");
         return Task.FromResult<ICreateUsersOperationResult>(users);

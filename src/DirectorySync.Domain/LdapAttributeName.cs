@@ -3,7 +3,7 @@ namespace DirectorySync.Domain;
 /// <summary>
 /// Ldap attribute name.
 /// </summary>
-public class LdapAttributeName
+public class LdapAttributeName : IComparable<LdapAttributeName>
 {
     public string Value { get; }
     
@@ -37,6 +37,11 @@ public class LdapAttributeName
         {
             throw new InvalidCastException("Failed to cast", ex);
         }
+    }
+
+    public int CompareTo(LdapAttributeName? other)
+    {
+        throw new NotImplementedException();
     }
 
     public override bool Equals(object? obj)

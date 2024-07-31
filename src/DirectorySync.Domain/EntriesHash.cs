@@ -26,15 +26,17 @@ public record EntriesHash
     /// Computes and returns EntriesHash from guids.
     /// </summary>
     /// <param name="guids">Guid collection.</param>
-    public EntriesHash(IEnumerable<DirectoryGuid> guids)
+    public static EntriesHash Create(IEnumerable<DirectoryGuid> guids)
     {
         ArgumentNullException.ThrowIfNull(guids);
 
-        var joinedGuids = string.Join(';', guids.Select(x => (string)x));
+        var ordered = guids.Select(x => (string)x).OrderDescending();
+        var joinedGuids = string.Join(';', ordered);
         var bytes = Encoding.UTF8.GetBytes(joinedGuids);
         var hash = SHA256.HashData(bytes);
 
-        _value = BitConverter.ToString(hash).Replace("-", string.Empty);
+        var value = BitConverter.ToString(hash).Replace("-", string.Empty);
+        return new(value);
     }
 
     public static implicit operator string(EntriesHash hash)

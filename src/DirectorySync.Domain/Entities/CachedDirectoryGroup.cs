@@ -29,7 +29,7 @@ public class CachedDirectoryGroup : CachedDirectoryObject
         ArgumentNullException.ThrowIfNull(members);
 
         var membersArr = members.ToArray();
-        var hash = new EntriesHash(membersArr.Select(x => x.Guid));
+        var hash = EntriesHash.Create(membersArr.Select(x => x.Guid));
         return new CachedDirectoryGroup(guid, membersArr, hash);
     }
     
@@ -85,7 +85,7 @@ public class CachedDirectoryGroup : CachedDirectoryObject
 
     private void UpdateHash()
     {
-        Hash = new EntriesHash(_members.Select(x => x.Guid));
+        Hash = EntriesHash.Create(_members.Select(x => x.Guid));
     }
 
     public override string ToString() => Guid.Value.ToString();

@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Application",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Domain", "DirectorySync.Domain\DirectorySync.Domain.csproj", "{69F65D84-F2D5-4AED-B9C0-1CFD8D3E9CCA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Domain.Tests", "DirectorySync.Domain.Tests\DirectorySync.Domain.Tests.csproj", "{FB186988-0CA7-4796-B19A-9CC10AC930D7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{69F65D84-F2D5-4AED-B9C0-1CFD8D3E9CCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69F65D84-F2D5-4AED-B9C0-1CFD8D3E9CCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{69F65D84-F2D5-4AED-B9C0-1CFD8D3E9CCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

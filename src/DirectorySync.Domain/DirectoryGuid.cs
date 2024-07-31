@@ -16,7 +16,7 @@ public record DirectoryGuid
     {
         if (guid == Guid.Empty)
         {
-            throw new Exception("Invalid directory guid");
+            throw new InvalidOperationException("Empty directory guid");
         }
         
         Value = guid;

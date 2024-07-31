@@ -29,13 +29,15 @@ public record AttributesHash
     {
         ArgumentNullException.ThrowIfNull(attributes);
 
-        var attrs = attributes.Select(x =>
-        {
-            var values = x.Values.Length == 0
-                ? string.Empty
-                : $":{string.Join(',', x.Values)}";
-            return $"{x.Name}{values}";
-        });
+        var attrs = attributes
+            .OrderByDescending(x => x.Name)
+            .Select(x =>
+            {
+                var values = x.Values.Length == 0
+                    ? string.Empty
+                    : $":{string.Join(',', x.Values)}";
+                return $"{x.Name}{values}";
+            });
 
         var joinedAttrs = string.Join(';', attrs);
         var bytes = Encoding.UTF8.GetBytes(joinedAttrs);

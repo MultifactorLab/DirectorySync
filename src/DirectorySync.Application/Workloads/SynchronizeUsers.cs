@@ -58,7 +58,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
-        var referenceMembersHash = new EntriesHash(referenceGroup.Members.Select(x => x.Guid));
+        var referenceMembersHash = EntriesHash.Create(referenceGroup.Members.Select(x => x.Guid));
         if (referenceMembersHash != cachedGroup.Hash)
         {
             _logger.LogDebug("Reference and cached groups are different");

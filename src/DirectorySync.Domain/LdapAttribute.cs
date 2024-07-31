@@ -22,7 +22,7 @@ public record LdapAttribute
     /// </summary>
     /// <param name="name">Attribute name.</param>
     /// <param name="value">Attribute value.</param>
-    public LdapAttribute(LdapAttributeName name, string? value) : this(name, new[] { value }) { }
+    public LdapAttribute(LdapAttributeName name, string? value) : this(name, [ value ]) { }
     
     /// <summary>
     /// Creates LdapAttribute with the specified values.
@@ -46,7 +46,7 @@ public record LdapAttribute
             return sb.ToString();
         }
 
-        sb.Append($":{string.Join(',', Values.Select(x => $"'{x}'"))}");
+        sb.Append($":{string.Join(',', Values.OrderDescending().Select(x => $"'{x}'"))}");
         return sb.ToString();
     }
 }
