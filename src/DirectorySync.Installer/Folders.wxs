@@ -1,8 +1,14 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <StandardDirectory Id="ProgramFiles6432Folder">
+    <StandardDirectory Id="ProgramFilesFolder">
 		<Directory Id="ROOTDIRECTORY" Name="!(bind.Property.Manufacturer)">
 			<Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)">
+                <Directory Id="LogsFolder" Name="logs">
+                    <Component Id="CreateLogsFolderComponent" Guid="c2fd77bb-8551-493d-ba5e-64ce34801d54">
+                        <CreateFolder Directory="LogsFolder" />
+                        <RemoveFolder Id="RemoveLogsFolder" On="uninstall" Directory="LogsFolder" />
+                    </Component>
+                </Directory>
 			</Directory>
 		</Directory>
     </StandardDirectory>
@@ -10,7 +16,7 @@
         <Directory Id="PRODUCTDIR" Name="!(bind.Property.Manufacturer)">
             <Directory Id="COMMONFILESDIR" Name="!(bind.Property.ProductName)">
                 <Component Id="ProductCommonFiles" Guid="fe622b1c-9b30-4fdb-b219-2afd77f681fb">
-                    <CreateFolder/>
+                    <CreateFolder />
                     <RemoveFolder Id='RemoveCOMMONFILESDIR' Directory="COMMONFILESDIR" On='uninstall' />
                     <RemoveFolder Id='RemovePRODUCTDIR' Directory="PRODUCTDIR" On='uninstall' />
                     <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]'

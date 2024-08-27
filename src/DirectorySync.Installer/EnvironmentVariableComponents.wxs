@@ -1,0 +1,19 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Fragment>
+        <ComponentGroup Id="EnvironmentVariablesComponents">
+            
+            <Component Id="EnvironmentVariables" Guid="28177686-8c09-4295-a5f9-5fc8bf5c8b08">
+                
+                <Environment Id="EnvVarMultifactorKey" Name="DIRECTORYSYNC_Multifactor_Key" Value="[PROP_APIKEY]" Permanent="no" Part="all" Action="set" System="no" />
+                <Environment Id="EnvVarMultifactorSecret" Name="DIRECTORYSYNC_Multifactor_Secret" Value="[PROP_APISECRET]" Permanent="no" Part="all" Action="set" System="no" />
+                
+                <Environment Id="EnvVarLdapName" Name="DIRECTORYSYNC_Ldap_Name" Value="[PROP_LDAP_NAME]" Permanent="no" Part="all" Action="set" System="no" />
+                <Environment Id="EnvVarLdapContainer" Name="DIRECTORYSYNC_Ldap_Container" Value="[PROP_LDAP_CONTAINER]" Permanent="no" Part="all" Action="set" System="no" />
+                <Environment Id="EnvVarLdapUsername" Name="DIRECTORYSYNC_Ldap_Username" Value="[PROP_LDAP_USERNAME]" Permanent="no" Part="all" Action="set" System="no" />
+                <Environment Id="EnvVarLdapPassword" Name="DIRECTORYSYNC_Ldap_Password" Value="[PROP_LDAP_PASSWORD]" Permanent="no" Part="all" Action="set" System="no" />
+                
+            </Component>
+
+        </ComponentGroup>
+    </Fragment>
+</Wix>

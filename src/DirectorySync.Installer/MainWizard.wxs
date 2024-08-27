@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-	 xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 	<Fragment>
 		<UI Id="MainWizard">
 
@@ -9,7 +8,7 @@
 			<TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
 			<Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
 			<Property Id="WixUI_Mode" Value="InstallDir" />
-И
+
 			<!-- Перечень ссылок на вспомогательные диалоговые окна -->
 			<DialogRef Id="BrowseDlg" />
 			<DialogRef Id="DiskCostDlg" />
@@ -29,13 +28,16 @@
 			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="Installed" />
 			
 			<Publish Dialog="CustomLicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
-			<Publish Dialog="CustomLicenseAgreementDlg" Control="Next" Event="NewDialog" Value="ApiScopeKeySecretDialog" Condition="LicenseAccepted = 1" />
+			<Publish Dialog="CustomLicenseAgreementDlg" Control="Next" Event="NewDialog" Value="ApiDialog" Condition="LicenseAccepted = 1" />
 			
-			<Publish Dialog="ApiScopeKeySecretDialog" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />		
-			<Publish Dialog="ApiScopeKeySecretDialog" Control="Back" Event="NewDialog" Value="CustomLicenseAgreementDlg" />
+			<Publish Dialog="ApiDialog" Control="Next" Event="NewDialog" Value="LdapDialog" />		
+			<Publish Dialog="ApiDialog" Control="Back" Event="NewDialog" Value="CustomLicenseAgreementDlg" />
+			
+			<Publish Dialog="LdapDialog" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />		
+			<Publish Dialog="LdapDialog" Control="Back" Event="NewDialog" Value="ApiDialog" />
 			
 			<!-- Order - в какой последовательности вычислять Condition -->
-			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ApiScopeKeySecretDialog" Order="1" Condition="NOT Installed" />
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="LdapDialog" Order="1" Condition="NOT Installed" />
 			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
 			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" Condition="Installed AND PATCH" />
 			

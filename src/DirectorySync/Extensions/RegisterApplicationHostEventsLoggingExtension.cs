@@ -1,4 +1,5 @@
 using DirectorySync.Application;
+using DirectorySync.Infrastructure.Logging;
 
 namespace DirectorySync.Extensions
 {

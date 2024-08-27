@@ -21,10 +21,10 @@ public static class RegisterLoggerExtension
         {
             throw new Exception("Unable to read logging option");
         }
-
+        
         DataAnnotationsValidator.Validate(options);
 
-        SelfLog.Enable(Console.Error);
+        SelfLog.Enable(Console.WriteLine);
         var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
             .Enrich.FromLogContext();
@@ -62,26 +62,8 @@ public static class RegisterLoggerExtension
 
     private static void ConfigureFileLogging(LoggerConfiguration logger, FileLoggingOptions options)
     {
-        string path;
-        if (!string.IsNullOrWhiteSpace(options.Path))
-        {
-            path = options.Path;
-        }
-        else
-        {
-            var baseDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-            path = Path.Combine(baseDir!, "logs", "log-.txt");
-        }
-
-        RollingInterval rollingInterval;
-        if (Enum.TryParse<RollingInterval>(options.RollingInterval, true, out var parsedInterval))
-        {
-            rollingInterval = parsedInterval;
-        }
-        else
-        {
-            rollingInterval = RollingInterval.Day;
-        }
+        var path = GetLogFilePath(options);
+        var rollingInterval = GetInterval(options);
 
         logger
             .WriteTo.Logger(x =>
@@ -94,5 +76,31 @@ public static class RegisterLoggerExtension
                     retainedFileCountLimit: options.RetainedFileCountLimit,
                     levelSwitch: new LoggingLevelSwitch(LogEventLevel.Debug));
             });
+    }
+
+    private static string GetLogFilePath(FileLoggingOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.Path))
+        {
+            return options.Path;
+        }
+        
+        var baseDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+        var dir = Path.Combine(baseDir!, "logs");
+        if (!Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+        return Path.Combine(dir, "log-.txt");
+    }
+    
+    private static RollingInterval GetInterval(FileLoggingOptions options)
+    {
+        if (Enum.TryParse<RollingInterval>(options.RollingInterval, true, out var parsedInterval))
+        {
+            return parsedInterval;
+        } 
+        
+        return RollingInterval.Day;
     }
 }

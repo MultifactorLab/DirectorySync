@@ -1,6 +1,5 @@
 ﻿using DirectorySync.Application.Integrations.Ldap.Windows;
 using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

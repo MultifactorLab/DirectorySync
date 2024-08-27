@@ -48,12 +48,7 @@ internal class LiteDbApplicationStorage : IApplicationStorage
     public void UpdateGroup(CachedDirectoryGroup group)
     {
         ArgumentNullException.ThrowIfNull(group);
-
-        if (!group.Modified)
-        {
-            return;
-        }
-
+        
         var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
         var existed = collection.FindById(group.Guid.Value);
         if (existed is null)

@@ -41,6 +41,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
             path += $"/{_ldapOptions.Container}";
         }
         
+        
         return new DirectoryEntry($"LDAP://{path}", 
             _ldapOptions.Username, 
             _ldapOptions.Password);

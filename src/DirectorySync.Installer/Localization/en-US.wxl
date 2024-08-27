@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-US" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+    
+    
+    <String Id="ApiDialogHeader" Value="ApiDialogHeader" />
+    <String Id="ApiDialogTitle" Value="ApiDialogTitle" />
+    <String Id="ApiDialogInfo" Value="ApiDialogInfo" />
+    <String Id="ApiDialogDescription" Value="ApiDialogDescription" />
+    <String Id="ApiDialogApiKeyLabel" Value="ApiDialogApiKeyLabel" />
+    <String Id="ApiDialogApiSecretLabel" Value="ApiDialogApiSecretLabel" />
+    <String Id="ApiDialogBack" Value="Back" />
+    <String Id="ApiDialogNext" Value="Next" />
+    <String Id="ApiDialogCancel" Value="Cancel" />
+    <String Id="ApiDialogApiKeyDescription" Value="ApiDialogApiKeyDescription" />
+    <String Id="ApiDialogApiSecretDescription" Value="ApiDialogApiSecretDescription" />
+    
+    
+    <String Id="LdapDialogNext" Value="Next" />
+    <String Id="LdapDialogBack" Value="Back" />
+    <String Id="LdapDialogCancel" Value="Cancel" />
+    <String Id="LdapNameDescription" Value="LdapNameDescription" />
+    <String Id="LabelLdapName" Value="LabelLdapName" />
+    <String Id="LdapContainerDescription" Value="LdapContainerDescription" />
+    <String Id="LabelLdapContainer" Value="LabelLdapContainer" />
+    <String Id="LabelLdapUsername" Value="LabelLdapUsername" />
+    <String Id="LabelLdapPassword" Value="LabelLdapPassword" />
+    <String Id="LdapUsernameDescription" Value="LdapUsernameDescription" />
+    <String Id="LdapPasswordDescription" Value="LdapPasswordDescription" />
+    
+    
+</WixLocalization>

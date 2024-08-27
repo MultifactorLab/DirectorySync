@@ -1,9 +1,11 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <ComponentGroup Id="WindowsServiceComponents" Directory="INSTALLFOLDER">
-		<Files Include="..\DirectorySync\bin\Release\net8.0\**">
-            <Exclude Files="..\DirectorySync\bin\Release\net8.0\DirectorySync.exe" />
+		
+		<Files Include="..\DirectorySync\bin\Debug\net8.0\**">
+            <Exclude Files="..\DirectorySync\bin\Debug\net8.0\DirectorySync.exe" />
 		</Files>
+		
       <Component Id="ServiceExecutable">
 		  
 		  <File Id="DirectorySync.exe" Source="DirectorySync.exe" />
@@ -24,6 +26,7 @@
 						  Remove="uninstall"
 						  Name="MultifactorDirectorySync"
 						  Wait="true" />
+		  
       </Component>
     </ComponentGroup>
   </Fragment>

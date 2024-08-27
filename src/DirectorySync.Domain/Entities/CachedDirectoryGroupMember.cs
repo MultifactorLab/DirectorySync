@@ -4,7 +4,6 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
 {
     public MultifactorIdentity Identity { get; }
     public AttributesHash Hash { get; private set; }
-    public bool Modified { get; private set; }
     public bool Propagated { get; private set; }
     
     public CachedDirectoryGroupMember(DirectoryGuid guid, 
@@ -35,18 +34,10 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
         {
             Hash = hash;
         }
-
-        Modified = true;
     }
 
     public void Propagate()
     {
         Propagated = true;
-        Modified = true;
-    }
-
-    public void Commit()
-    {
-        Modified = false;
     }
 }
