@@ -1,16 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync", "DirectorySync\DirectorySync.csproj", "{30B79712-2107-4151-A686-C39959CF4FD3}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorySync", "DirectorySync\DirectorySync.csproj", "{30B79712-2107-4151-A686-C39959CF4FD3}"
 EndProject
 Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "DirectorySync.Installer", "DirectorySync.Installer\DirectorySync.Installer.wixproj", "{E0B91990-6BA1-48AE-B58F-AA3231BEA935}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Infrastructure", "DirectorySync.Infrastructure\DirectorySync.Infrastructure.csproj", "{E665A7F6-7B90-45F2-AC61-6FA6F60B97ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorySync.Infrastructure", "DirectorySync.Infrastructure\DirectorySync.Infrastructure.csproj", "{E665A7F6-7B90-45F2-AC61-6FA6F60B97ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Application", "DirectorySync.Application\DirectorySync.Application.csproj", "{DEAFE8E0-C6C1-44A6-828C-AB40A1D1D897}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorySync.Application", "DirectorySync.Application\DirectorySync.Application.csproj", "{DEAFE8E0-C6C1-44A6-828C-AB40A1D1D897}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Domain", "DirectorySync.Domain\DirectorySync.Domain.csproj", "{69F65D84-F2D5-4AED-B9C0-1CFD8D3E9CCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorySync.Domain", "DirectorySync.Domain\DirectorySync.Domain.csproj", "{69F65D84-F2D5-4AED-B9C0-1CFD8D3E9CCA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorySync.Domain.Tests", "DirectorySync.Domain.Tests\DirectorySync.Domain.Tests.csproj", "{FB186988-0CA7-4796-B19A-9CC10AC930D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorySync.Domain.Tests", "DirectorySync.Domain.Tests\DirectorySync.Domain.Tests.csproj", "{FB186988-0CA7-4796-B19A-9CC10AC930D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,5 +45,8 @@ Global
 		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB186988-0CA7-4796-B19A-9CC10AC930D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

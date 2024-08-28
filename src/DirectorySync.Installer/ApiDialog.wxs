@@ -2,8 +2,8 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 	<Fragment>
 		<UI>
-			<Property Id="PROP_APIKEY" Value="!(loc.ApiDialogApiKeyDescription)" Secure="no"/>
-			<Property Id="PROP_APISECRET" Value="!(loc.ApiDialogApiSecretDescription)" Secure="yes"/>
+			<Property Id="PROP_APIKEY" Secure="no" Hidden="yes"/>
+			<Property Id="PROP_APISECRET" Secure="yes" />
 			
 			<Binary Id="TopBmpApiDialog" SourceFile="Resources\top.bmp" />
 

@@ -2,8 +2,8 @@
   <Fragment>
     <ComponentGroup Id="WindowsServiceComponents" Directory="INSTALLFOLDER">
 		
-		<Files Include="..\DirectorySync\bin\Debug\net8.0\**">
-            <Exclude Files="..\DirectorySync\bin\Debug\net8.0\DirectorySync.exe" />
+		<Files Include="$(var.DirectorySync.TargetDir)\**">
+            <Exclude Files="$(var.DirectorySync.TargetDir)\DirectorySync.exe" />
 		</Files>
 		
       <Component Id="ServiceExecutable">

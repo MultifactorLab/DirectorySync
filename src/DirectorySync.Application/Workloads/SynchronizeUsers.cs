@@ -120,7 +120,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
 
         var bucket = new DeletedUsersBucket();
 
-        var skeep = 0;
+        var skip = 0;
         const int take = 50;
         
         foreach (var id in mfIds)

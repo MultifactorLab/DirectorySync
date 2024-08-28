@@ -30,7 +30,7 @@
 			<Publish Dialog="CustomLicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
 			<Publish Dialog="CustomLicenseAgreementDlg" Control="Next" Event="NewDialog" Value="ApiDialog" Condition="LicenseAccepted = 1" />
 			
-			<Publish Dialog="ApiDialog" Control="Next" Event="NewDialog" Value="LdapDialog" />		
+			<Publish Dialog="ApiDialog" Control="Next" Event="NewDialog" Value="LdapDialog" Condition="PROP_APIKEY" />		
 			<Publish Dialog="ApiDialog" Control="Back" Event="NewDialog" Value="CustomLicenseAgreementDlg" />
 			
 			<Publish Dialog="LdapDialog" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />		

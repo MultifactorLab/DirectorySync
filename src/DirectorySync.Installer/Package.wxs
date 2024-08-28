@@ -6,7 +6,7 @@
 		Manufacturer="Multifactor"
 		Version="1.0.0.0"
 		UpgradeCode="0c9b82db-ff15-472f-9059-f4b018189bdb" Compressed="yes" Scope="perMachine">
-		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" 
+		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)"
 					  AllowDowngrades="no" 
 					  AllowSameVersionUpgrades="no" />
 		
