@@ -4,12 +4,12 @@
     <Product>DirectorySync</Product>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Resources\license.rtf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Resources\top.bmp">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\license.rtf" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="WixToolset.UI.wixext" Version="5.0.0" />

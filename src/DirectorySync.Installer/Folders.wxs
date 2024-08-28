@@ -1,17 +1,18 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <StandardDirectory Id="ProgramFilesFolder">
+	  
+    <StandardDirectory Id="ProgramFiles64Folder">
 		<Directory Id="ROOTDIRECTORY" Name="!(bind.Property.Manufacturer)">
 			<Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)">
                 <Directory Id="LogsFolder" Name="logs">
                     <Component Id="CreateLogsFolderComponent" Guid="c2fd77bb-8551-493d-ba5e-64ce34801d54">
                         <CreateFolder Directory="LogsFolder" />
-                        <RemoveFolder Id="RemoveLogsFolder" On="uninstall" Directory="LogsFolder" />
                     </Component>
                 </Directory>
 			</Directory>
 		</Directory>
     </StandardDirectory>
+	  
     <StandardDirectory Id="LocalAppDataFolder">
         <Directory Id="PRODUCTDIR" Name="!(bind.Property.Manufacturer)">
             <Directory Id="COMMONFILESDIR" Name="!(bind.Property.ProductName)">
@@ -28,5 +29,6 @@
             </Directory>
         </Directory>
     </StandardDirectory>
+	  
   </Fragment>
 </Wix>

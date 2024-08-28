@@ -2,30 +2,41 @@
 <WixLocalization Culture="en-US" xmlns="http://wixtoolset.org/schemas/v4/wxl">
     
     
-    <String Id="ApiDialogHeader" Value="ApiDialogHeader" />
-    <String Id="ApiDialogTitle" Value="ApiDialogTitle" />
-    <String Id="ApiDialogInfo" Value="ApiDialogInfo" />
-    <String Id="ApiDialogDescription" Value="ApiDialogDescription" />
-    <String Id="ApiDialogApiKeyLabel" Value="ApiDialogApiKeyLabel" />
-    <String Id="ApiDialogApiSecretLabel" Value="ApiDialogApiSecretLabel" />
+    <String Id="DialogHeader" Value="Directory Sync Setup" />
+    <String Id="DialogNext" Value="Next" />
+    <String Id="DialogBack" Value="Back" />
+    <String Id="DialogCancel" Value="Cancel" />
+	
+	
+    <String Id="LicenseDialogTitle" Value="Directory Sync Setup" />
+		
+	
+    <String Id="ApiDialogTitle" Value="Multipactor API" />
+	<String Id="ApiDialogInfo" Value="Configure Multifactor API integration" />
+    <String Id="ApiDialogApiKeyLabel" Value="API key*" />
+    <String Id="ApiDialogApiSecretLabel" Value="API secret*" />
     <String Id="ApiDialogBack" Value="Back" />
     <String Id="ApiDialogNext" Value="Next" />
     <String Id="ApiDialogCancel" Value="Cancel" />
-    <String Id="ApiDialogApiKeyDescription" Value="ApiDialogApiKeyDescription" />
-    <String Id="ApiDialogApiSecretDescription" Value="ApiDialogApiSecretDescription" />
+	
+    <String Id="ApiKeyValue" Value="" />
+    <String Id="ApiSecretValue" Value="" />
     
     
+    <String Id="LdapDialogTitle" Value="LDAP connection" />
+    <String Id="LdapDialogInfo" Value="Configure LDAP connection settings" />
     <String Id="LdapDialogNext" Value="Next" />
     <String Id="LdapDialogBack" Value="Back" />
     <String Id="LdapDialogCancel" Value="Cancel" />
-    <String Id="LdapNameDescription" Value="LdapNameDescription" />
-    <String Id="LabelLdapName" Value="LabelLdapName" />
-    <String Id="LdapContainerDescription" Value="LdapContainerDescription" />
-    <String Id="LabelLdapContainer" Value="LabelLdapContainer" />
-    <String Id="LabelLdapUsername" Value="LabelLdapUsername" />
-    <String Id="LabelLdapPassword" Value="LabelLdapPassword" />
-    <String Id="LdapUsernameDescription" Value="LdapUsernameDescription" />
-    <String Id="LdapPasswordDescription" Value="LdapPasswordDescription" />
+    <String Id="LdapDialogLdapPathLabel" Value="LDAP path*" />
+    <String Id="LdapDialogLdapContainerLabel" Value="Container" />
+    <String Id="LdapDialogLdapUsernameLabel" Value="Username*" />
+    <String Id="LdapDialogLdapPasswordLabel" Value="Password*" />
+	
+    <String Id="PropLdapPathValue" Value="" />
+    <String Id="PropLdapContainerValue" Value="" />
+    <String Id="PropLdapUsernameValue" Value="" />
+    <String Id="PropLdapPasswordValue" Value="" />
     
     
 </WixLocalization>

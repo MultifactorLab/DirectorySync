@@ -2,18 +2,16 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 	<Fragment>
 		<UI>
-			<Property Id="PROP_APIKEY" Secure="no" Hidden="yes"/>
-			<Property Id="PROP_APISECRET" Secure="yes" />
 			
-			<Binary Id="TopBmpApiDialog" SourceFile="Resources\top.bmp" />
-
-			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.ApiDialogHeader)">
+			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
+			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
+			
+			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				
-				<Control Id="Title" Type="Text" X="15" Y="6" Width="160" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}!(loc.ApiDialogTitle)" />		
-				<Control Id="Description" Type="Text" X="25" Y="23" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.ApiDialogDescription)" NoWrap="no"/>
+				<Control Id="Title" Type="Text" X="15" Y="15" Width="160" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}!(loc.ApiDialogTitle)" />		
 				
-				<Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="TopBmpApiDialog" />
-				<Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+				<Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="TopBmp" />
+				<Control Id="BannerLine" Type="Line" X="0" Y="44" Width="372" Height="0" />
 
 				<Control Id="DialogInfo" Type="Text" X="20" Y="60" Width="228" Height="45" Text="!(loc.ApiDialogInfo)" TabSkip="yes" Transparent="yes" />
 
@@ -23,16 +21,20 @@
 				<Control Id="LabelApiSecret" Type="Text" X="20" Y="120" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogApiSecretLabel)" />
 				<Control Id="EditApiSecret" Type="Edit" X="140" Y="117" Height="17" Width="150" Password="yes" Property="PROP_APISECRET" Indirect="no"/>
 
-				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />
+
+				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.DialogNext)" 
+						 DisableCondition="(NOT (PROP_APIKEY)) OR (NOT (PROP_APISECRET))" 
+						 EnableCondition="(PROP_APIKEY) AND (PROP_APISECRET)" />
 				
-				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.ApiDialogNext)" />
-				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.ApiDialogBack)" />
+				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.DialogBack)" />
 				
-				<Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.ApiDialogCancel)">
+				<Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.DialogCancel)">
 					<Publish Event="SpawnDialog" Value="CancelDlg" />
 				</Control>
 
 			</Dialog>
+			
 		</UI>
 	</Fragment>
 </Wix>

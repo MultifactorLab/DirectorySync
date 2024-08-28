@@ -9,7 +9,7 @@
       <Component Id="ServiceExecutable">
 		  
 		  <File Id="DirectorySync.exe" Source="DirectorySync.exe" />
-
+		  
 		  <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 
 		  <ServiceInstall Id="ServiceInstaller"

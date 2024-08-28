@@ -24,14 +24,14 @@
 			<Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
 			
 			<!-- Installed и PATCH - это переменные Windows Installer -->
-			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="CustomLicenseAgreementDlg" Condition="NOT Installed" />	
+			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseDialog" Condition="NOT Installed" />	
 			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="Installed" />
 			
-			<Publish Dialog="CustomLicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
-			<Publish Dialog="CustomLicenseAgreementDlg" Control="Next" Event="NewDialog" Value="ApiDialog" Condition="LicenseAccepted = 1" />
+			<Publish Dialog="LicenseDialog" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
+			<Publish Dialog="LicenseDialog" Control="Next" Event="NewDialog" Value="ApiDialog" Condition="LicenseAccepted = 1" />
 			
 			<Publish Dialog="ApiDialog" Control="Next" Event="NewDialog" Value="LdapDialog" Condition="PROP_APIKEY" />		
-			<Publish Dialog="ApiDialog" Control="Back" Event="NewDialog" Value="CustomLicenseAgreementDlg" />
+			<Publish Dialog="ApiDialog" Control="Back" Event="NewDialog" Value="LicenseDialog" />
 			
 			<Publish Dialog="LdapDialog" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />		
 			<Publish Dialog="LdapDialog" Control="Back" Event="NewDialog" Value="ApiDialog" />

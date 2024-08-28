@@ -1,8 +1,10 @@
+using DirectorySync.Application.Integrations.Ldap.Windows;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.GetSettings.Dto;
 using DirectorySync.Application.Integrations.Multifactor.Http;
 using DirectorySync.Exceptions;
 using DirectorySync.Infrastructure.Logging;
+using System.Text.Json;
 
 namespace DirectorySync.ConfigSources
 {
@@ -72,7 +74,10 @@ namespace DirectorySync.ConfigSources
     internal static class ConfigurationManagerExtensions
     {
         public static void AddMultifactorCloudConfiguration(this ConfigurationManager manager)
-        {
+        {            
+            var ldap = manager.GetSection("Ldap").Get<LdapOptions>();
+            FallbackLogger.Information("Ldap: {@ldap}", ldap);
+
             var url = manager.GetValue<string>("Multifactor:Url");
             var key = manager.GetValue<string>("Multifactor:Key");
             var secret = manager.GetValue<string>("Multifactor:Secret");

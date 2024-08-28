@@ -1,6 +1,5 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	 xsi:schemaLocation="http://wixtoolset.org/schemas/v4/wxs https://raw.githubusercontent.com/wixtoolset/web/master/src/xsd4/wix.xsd">
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<Package
 		Name="Directory Sync"
 		Manufacturer="Multifactor"
@@ -13,19 +12,23 @@
 		<MediaTemplate EmbedCab="yes" />
 		<UIRef Id="WixUI_Common" />
 
-		<WixVariable Id="WixUILicenseRtf" Overridable="yes" Value="$(sys.CURRENTDIR)Resources\license.rtf"/>
+		<WixVariable Id="WixUILicenseRtf" Overridable="yes" Value="$(sys.CURRENTDIR)Resources\LICENSE.rtf"/>
+		<WixVariable Id="WixUIBannerBmp" Value="$(sys.CURRENTDIR)Resources\top.bmp" />
 		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER"/>
+
+		<Binary Id="TopBmp" SourceFile="Resources\top.bmp" />
 
 		<UIRef Id="MainWizard" />
 
-		<Property Id="ApplicationFolderName" Value="My Application Folder" />
+		<Property Id="ApplicationFolderName" Value="DirectorySync" />
 		<Property Id="WixAppFolder" Value="WixPerMachineFolder" />
 
 		<Feature Id="Main">
-			<ComponentGroupRef Id="WindowsServiceComponents" />
-			<ComponentGroupRef Id="EnvironmentVariablesComponents" />
 			<ComponentRef Id="ProductCommonFiles" />
 			<ComponentRef Id="CreateLogsFolderComponent" />
+			<ComponentGroupRef Id="EnvironmentVariablesComponents" />
+			<ComponentGroupRef Id="WindowsServiceComponents" />
 		</Feature>
+	
 	</Package>
 </Wix>
