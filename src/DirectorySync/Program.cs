@@ -20,16 +20,16 @@ try
         throw new PlatformNotSupportedException("Only for Windows platform");
     }
 
-    builder.Configuration.AddEnvironmentVariables("DIRECTORYSYNC");
-    if (builder.Environment.EnvironmentName == "localhost")
-    {
-        builder.Configuration.AddUserSecrets<Program>();
-    }
-
     builder.Services.AddWindowsService(options =>
     {
         options.ServiceName = Literals.ServiceName;
     });
+
+    builder.Configuration.AddEnvironmentVariables("DIRECTORYSYNC_");
+    if (builder.Environment.EnvironmentName == "localhost")
+    {
+        builder.Configuration.AddUserSecrets<Program>();
+    }
 
     builder.RegisterLogger();
 

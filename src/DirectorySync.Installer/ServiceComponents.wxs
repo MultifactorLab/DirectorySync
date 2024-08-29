@@ -15,13 +15,12 @@
 		  <ServiceInstall Id="ServiceInstaller"
 						  Type="ownProcess"
 						  Name="MultifactorDirectorySync"
-						  DisplayName="!(bind.Property.ProductName)"
-						  Description="MF API Sync"
+						  DisplayName="Multifactor Directory Sync"
+						  Description="Multifactor Directory Sync" 
 						  Start="auto"
 						  ErrorControl="normal" />
 
 		  <ServiceControl Id="StartService"
-						  Start="install"
 						  Stop="both"
 						  Remove="uninstall"
 						  Name="MultifactorDirectorySync"

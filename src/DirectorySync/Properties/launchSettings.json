@@ -1,12 +1,13 @@
-﻿{
-  "$schema": "http://json.schemastore.org/launchsettings.json",
+{
   "profiles": {
     "DirectorySync": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
+      "commandLineArgs": "--Ldap:Path=888  --ldap:container=container",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "localhost"
-      }
+      },
+      "dotnetRunMessages": true
     }
-  }
+  },
+  "$schema": "http://json.schemastore.org/launchsettings.json"
 }
