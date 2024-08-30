@@ -1,10 +1,8 @@
-using DirectorySync.Application.Integrations.Ldap.Windows;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.GetSettings.Dto;
 using DirectorySync.Application.Integrations.Multifactor.Http;
 using DirectorySync.Exceptions;
 using DirectorySync.Infrastructure.Logging;
-using System.Text.Json;
 
 namespace DirectorySync.ConfigSources
 {
@@ -94,8 +92,10 @@ namespace DirectorySync.ConfigSources
                 throw new Exception("Multifactor API secret key should be specified in the service settings");
             }
 
-            var cli = new HttpClient();
-            cli.BaseAddress = new Uri(url);
+            var cli = new HttpClient()
+            {
+                BaseAddress = new Uri(url)
+            };
 
             var auth = new BasicAuthHeaderValue(key, secret);
             cli.DefaultRequestHeaders.Add("Authorization", $"Basic {auth.GetBase64()}");
