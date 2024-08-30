@@ -2,7 +2,11 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 	<Fragment>
 		<UI>
-			
+
+			<?if $(var.Configuration) = Debug ?>
+				<Property Id="PROP_APIURL" Value="https://..." />
+			<?endif?>
+
 			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
 			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
 			
@@ -15,12 +19,21 @@
 
 				<Control Id="DialogInfo" Type="Text" X="20" Y="60" Width="228" Height="45" Text="!(loc.ApiDialogInfo)" TabSkip="yes" Transparent="yes" />
 
+
 				<Control Id="LabelApiKey" Type="Text" X="20" Y="100" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogApiKeyLabel)" />
 				<Control Id="EditApiKey" Type="Edit" X="140" Y="97" Height="17" Width="150" Property="PROP_APIKEY" Indirect="no"/>
 
+				
 				<Control Id="LabelApiSecret" Type="Text" X="20" Y="120" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogApiSecretLabel)" />
 				<Control Id="EditApiSecret" Type="Edit" X="140" Y="117" Height="17" Width="150" Password="yes" Property="PROP_APISECRET" Indirect="no"/>
 
+
+				<?if $(var.Configuration) = Debug ?>
+					<Control Id="LabelApiUrl" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="API url" />
+					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
+				<?endif?>
+
+				
 				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />
 
 				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.DialogNext)" 

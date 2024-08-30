@@ -6,6 +6,10 @@
                 
                 <Environment Id="EnvVarMultifactorKey" Name="DIRECTORYSYNC_MULTIFACTOR__KEY" Value="[PROP_APIKEY]" Permanent="no" Part="all" Action="set" System="yes" />
                 <Environment Id="EnvVarMultifactorSecret" Name="DIRECTORYSYNC_MULTIFACTOR__SECRET" Value="[PROP_APISECRET]" Permanent="no" Part="all" Action="set" System="yes" />
+
+				<?if $(var.Configuration) = Debug ?>
+				    <Environment Id="EnvVarMultifactorUrl" Name="DIRECTORYSYNC_MULTIFACTOR__URL" Value="[PROP_APIURL]" Permanent="no" Part="all" Action="set" System="yes" />
+				<?endif?>
                 
                 <Environment Id="EnvVarLdapPath" Name="DIRECTORYSYNC_LDAP__PATH" Value="[PROP_LDAP_PATH]" Permanent="no" Part="all" Action="set" System="yes" />
                 <Environment Id="EnvVarLdapContainer" Name="DIRECTORYSYNC_LDAP__CONTAINER" Value="[PROP_LDAP_CONTAINER]" Permanent="no" Part="all" Action="set" System="yes" />

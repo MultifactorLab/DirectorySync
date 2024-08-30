@@ -42,6 +42,12 @@ internal class ScanUsers : IScanUsers
         _logger.LogInformation(ApplicationEvent.StartUserScanning, "Start users scanning for group {group}", groupGuid);
         
         var names = _requiredLdapAttributes.GetNames().ToArray();
+        if (names.Length == 0)
+        {
+            _logger.LogWarning(ApplicationEvent.InvalidServiceConfiguration, "Please check attribute mapping");
+            return;
+        }
+
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", names));
         
         var getGroupTimer = _timer.Start("Get Reference Group");
@@ -93,6 +99,10 @@ internal class ScanUsers : IScanUsers
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
             
             var props = _propertyMapper.Map(member.Attributes);
+            if (props.Count == 0)
+            {
+                continue;
+            }
             var user = bucket.AddNewUser(props[MultifactorPropertyName.IdentityProperty]!);
             
             foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))

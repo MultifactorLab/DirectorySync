@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace DirectorySync.Application.Integrations.Multifactor.Http;
+namespace DirectorySync.Infrastructure.Http;
 
 internal class HttpTracer : DelegatingHandler
 {

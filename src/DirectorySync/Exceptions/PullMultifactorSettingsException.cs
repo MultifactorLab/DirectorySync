@@ -1,4 +1,4 @@
-using DirectorySync.Application.Integrations.Multifactor.Http;
+using DirectorySync.Infrastructure.Http;
 
 namespace DirectorySync.Exceptions;
 

@@ -16,5 +16,5 @@ internal class SyncOptions
 
 internal class MultifactorGroupPolicyPreset
 {
-    public string SignUpGroups { get; set; }
+    public string[] SignUpGroups { get; set; }
 }

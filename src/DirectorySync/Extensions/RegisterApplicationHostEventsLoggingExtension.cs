@@ -1,5 +1,4 @@
 using DirectorySync.Application;
-using DirectorySync.Infrastructure.Logging;
 
 namespace DirectorySync.Extensions
 {
@@ -11,18 +10,16 @@ namespace DirectorySync.Extensions
 
             var prov = host.Services;
             var events = prov.GetRequiredService<IHostApplicationLifetime>();
+            var factory = prov.GetRequiredService<ILoggerFactory>();
+            var logger = factory.CreateLogger("DirectorySync");
 
             events.ApplicationStarted.Register(() =>
             {
-                var factory = prov.GetRequiredService<ILoggerFactory>();
-                var logger = factory.CreateLogger("DirectorySync"); 
                 logger.LogInformation(ApplicationEvent.ApplicationStarted, "Application successfully started");
             });
 
             events.ApplicationStopped.Register(() =>
             {
-                var factory = prov.GetRequiredService<ILoggerFactory>();
-                var logger = factory.CreateLogger("DirectorySync");
                 logger.LogInformation(ApplicationEvent.ApplicationStopped, "Application successfully stopped");
             });
         }

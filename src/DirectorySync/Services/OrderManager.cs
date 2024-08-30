@@ -1,4 +1,5 @@
 ﻿using DirectorySync.Application;
+using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.Options;
@@ -122,6 +123,10 @@ internal class OrderManager : IHostedService, IAsyncDisposable
             {
                 await _synchronizeUsers.ExecuteAsync(guid, _cts.Token);
             }
+            catch (IdentityAttributeNotDefinedException)
+            {
+                _logger.LogError(ApplicationEvent.InvalidServiceConfiguration, "Identity attribute mapping should be specified");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ApplicationEvent.UserSynchronizationServiceError, ex, "Error occured while synchronizing users");
@@ -145,6 +150,10 @@ internal class OrderManager : IHostedService, IAsyncDisposable
             try
             {
                 await _scanUsers.ExecuteAsync(guid, _cts.Token);
+            }
+            catch (IdentityAttributeNotDefinedException)
+            {
+                _logger.LogError(ApplicationEvent.InvalidServiceConfiguration, "Identity attribute mapping should be specified");
             }
             catch (Exception ex)
             {

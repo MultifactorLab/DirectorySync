@@ -1,3 +1,4 @@
+using DirectorySync.Application.Exceptions;
 using DirectorySync.Domain;
 using Microsoft.Extensions.Options;
 
@@ -16,6 +17,11 @@ internal class MultifactorPropertyMapper
     public IReadOnlyDictionary<string, string?> Map(IEnumerable<LdapAttribute> attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);
+
+        if (string.IsNullOrWhiteSpace(_options.IdentityAttribute))
+        {
+            throw new IdentityAttributeNotDefinedException();
+        }
 
         var attrs = attributes.ToArray();
         var dict = new Dictionary<string, string?>();

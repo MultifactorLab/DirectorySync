@@ -7,7 +7,6 @@ using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
 using DirectorySync.Infrastructure.Data.Extensions;
 using DirectorySync.Infrastructure.Logging;
-using Microsoft.Extensions.Configuration.EnvironmentVariables;
 
 IHost? host = null;
 

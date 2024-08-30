@@ -1,7 +1,7 @@
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.GetSettings.Dto;
-using DirectorySync.Application.Integrations.Multifactor.Http;
 using DirectorySync.Exceptions;
+using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Logging;
 
 namespace DirectorySync.ConfigSources
@@ -86,13 +86,15 @@ namespace DirectorySync.ConfigSources
             {
                 throw new Exception("Multifactor API key key should be specified in the service settings");
             }
+
             
             if (string.IsNullOrWhiteSpace(secret))
             {
                 throw new Exception("Multifactor API secret key should be specified in the service settings");
             }
 
-            var cli = new HttpClient()
+            var tracer = new HttpTracerWihFallbackLoging();
+            var cli = new HttpClient(tracer)
             {
                 BaseAddress = new Uri(url)
             };

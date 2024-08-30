@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace DirectorySync.Application.Integrations.Multifactor.Http;
+namespace DirectorySync.Infrastructure.Http;
 
 public class HttpClientAdapter
 {

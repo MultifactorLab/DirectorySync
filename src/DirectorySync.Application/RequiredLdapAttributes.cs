@@ -1,3 +1,4 @@
+using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Integrations.Multifactor;
 using Microsoft.Extensions.Options;
 
@@ -14,11 +15,16 @@ internal class RequiredLdapAttributes
     
     public IEnumerable<string> GetNames()
     {
+        if (string.IsNullOrWhiteSpace(_options.IdentityAttribute))
+        {
+            throw new IdentityAttributeNotDefinedException();
+        }
+
         yield return _options.IdentityAttribute;
 
         if (!string.IsNullOrWhiteSpace(_options.NameAttribute))
         {
-            yield return _options.IdentityAttribute;
+            yield return _options.NameAttribute;
         }
 
         foreach (var emailAttrName in _options.EmailAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))

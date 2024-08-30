@@ -152,6 +152,10 @@ internal class SynchronizeUsers : ISynchronizeUsers
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
             
             var props = _propertyMapper.Map(member.Attributes);
+            if (props.Count == 0)
+            {
+                continue;
+            }
             
             var cachedMember = group.Members.First(x => x.Guid == member.Guid);
             var user = bucket.AddModifiedUser(cachedMember.Identity);

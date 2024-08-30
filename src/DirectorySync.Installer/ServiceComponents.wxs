@@ -11,43 +11,22 @@
 		  <File Id="DirectorySync.exe" Source="DirectorySync.exe" />
 		  
 		  <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
-
-		  <?if $(var.Configuration) = Debug ?>
-
-			  <ServiceInstall Id="ServiceInstaller"
-							  Type="ownProcess"
-							  Name="MultifactorDirectorySync"
-							  DisplayName="Multifactor Directory Sync"
-							  Description="Multifactor Directory Sync"
-							  Start="auto" 
-							  Arguments="--multifactor:url=https://api.multifactor.dev"
-							  ErrorControl="normal" />
-
-			  <ServiceControl Id="StartService"
-							  Stop="both"
-							  Remove="uninstall"
-							  Name="MultifactorDirectorySync"
-							  Wait="true" />
-
-		  <?else?>
 		  
-			  <ServiceInstall Id="ServiceInstaller"
-					  Type="ownProcess"
-					  Name="MultifactorDirectorySync"
-					  DisplayName="Multifactor Directory Sync"
-					  Description="Multifactor Directory Sync"
-					  Start="auto"
-					  ErrorControl="normal" />
+			<ServiceInstall Id="ServiceInstaller"
+					Type="ownProcess"
+					Name="MultifactorDirectorySync"
+					DisplayName="Multifactor Directory Sync"
+					Description="Multifactor Directory Sync"
+					Start="auto"
+					ErrorControl="normal" />
 
-			  <ServiceControl Id="StartService"
-					  Start="install"
-					  Stop="both"
-					  Remove="uninstall"
-					  Name="MultifactorDirectorySync"
-					  Wait="true" />
-		  
-		  <?endif?>
-		  
+			<ServiceControl Id="StartService"
+					Start="install"
+					Stop="both"
+					Remove="uninstall"
+					Name="MultifactorDirectorySync"
+					Wait="true" />
+		   
       </Component>
     </ComponentGroup>
   </Fragment>

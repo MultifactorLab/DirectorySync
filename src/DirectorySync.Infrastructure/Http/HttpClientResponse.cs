@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.Net;
 using System.Text;
 
-namespace DirectorySync.Application.Integrations.Multifactor.Http;
+namespace DirectorySync.Infrastructure.Http;
 
 /// <summary>
 /// Http response wrapper with the deserialized response body.
@@ -15,7 +15,7 @@ public class HttpClientResponse<T> : HttpClientResponse
     /// </summary>
     public T? Model { get; }
 
-    internal HttpClientResponse(HttpStatusCode statusCode, string? content, T? model, IDictionary<string, string[]> headers) 
+    internal HttpClientResponse(HttpStatusCode statusCode, string? content, T? model, IDictionary<string, string[]> headers)
         : base(statusCode, content, headers)
     {
         Model = model;
@@ -67,7 +67,7 @@ public class HttpClientResponse
                 sb.AppendLine($"  {header.Key}: {string.Join(", ", "header.Value")}");
             }
         }
-        
+
         if (Content is not null)
         {
             sb.AppendLine($"Content:");

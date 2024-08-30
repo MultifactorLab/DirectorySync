@@ -26,7 +26,9 @@ public static class FallbackLogger
                 LogEventLevel.Verbose, 
                 "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}",
                 fileSizeLimitBytes: 1024 * 1024 * 5,
-                rollOnFileSizeLimit: true);
+                rollOnFileSizeLimit: true)
+            .WriteTo.Console(LogEventLevel.Verbose, 
+            "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}");
 
         _logger = loggerConfig.CreateLogger();
     }
