@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace DirectorySync.Infrastructure.Data.Extensions;
 
-public static class AddLiteDbStorageExtension
+internal static class AddLiteDbStorageExtension
 {
     public static void AddLiteDbStorage(this HostApplicationBuilder builder)
     {

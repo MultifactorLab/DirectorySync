@@ -1,4 +1,6 @@
+using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Tests;
@@ -6,8 +8,11 @@ namespace DirectorySync.Application.Tests;
 public class RequiredLdapAttributesTests
 {
     [Fact]
-    public void Test1()
+    public void GetNames_WithoutIdentityAttr_ShouldThrow()
     {
-        var attrs = new RequiredLdapAttributes(Options.Create<LdapAttributeMappingOptions>(new LdapAttributeMappingOptions()));
+        var attrs = new RequiredLdapAttributes(Options.Create(new LdapAttributeMappingOptions()));
+
+        Assert.Throws<IdentityAttributeNotDefinedException>(() => attrs.GetNames());
     }
+   
 }

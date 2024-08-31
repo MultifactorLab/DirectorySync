@@ -7,8 +7,10 @@ internal class ModifiedUsersBucket : IModifiedUsersBucket
 {
     private readonly List<IModifiedUser> _modified = [];
     public ReadOnlyCollection<IModifiedUser> ModifiedUsers => new (_modified);
+
+    public int Count => _modified.Count;
     
-    public ModifiedUser AddModifiedUser(MultifactorIdentity identity)
+    public ModifiedUser Add(MultifactorIdentity identity)
     {
         ArgumentNullException.ThrowIfNull(identity);
         

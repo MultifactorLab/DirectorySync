@@ -2,7 +2,7 @@ using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Integrations.Multifactor;
 using Microsoft.Extensions.Options;
 
-namespace DirectorySync.Application;
+namespace DirectorySync.Application.Workloads;
 
 internal class RequiredLdapAttributes
 {
@@ -12,7 +12,7 @@ internal class RequiredLdapAttributes
     {
         _options = options.Value;
     }
-    
+
     public IEnumerable<string> GetNames()
     {
         if (string.IsNullOrWhiteSpace(_options.IdentityAttribute))
@@ -31,7 +31,7 @@ internal class RequiredLdapAttributes
         {
             yield return emailAttrName;
         }
-        
+
         foreach (var phoneAttrName in _options.PhoneAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
         {
             yield return phoneAttrName;

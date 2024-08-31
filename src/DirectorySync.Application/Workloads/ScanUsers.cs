@@ -1,5 +1,5 @@
 ﻿using DirectorySync.Application.Extensions;
-using DirectorySync.Application.Integrations.Ldap.Windows;
+using DirectorySync.Application.Integrations.Ldap;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Measuring;
@@ -98,7 +98,7 @@ internal class ScanUsers : IScanUsers
         {
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
             
-            var props = _propertyMapper.Map(member.Attributes);
+            var props = _propertyMapper.Map(member.Attributes.ToArray());
             if (props.Count == 0)
             {
                 continue;

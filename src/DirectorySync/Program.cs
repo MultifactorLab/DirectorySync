@@ -1,11 +1,10 @@
 using System.Runtime.InteropServices;
-using DirectorySync.Application.Extensions;
+using DirectorySync.Application;
 using DirectorySync.Application.Measuring;
 using DirectorySync.ConfigSources;
 using DirectorySync.Exceptions;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
-using DirectorySync.Infrastructure.Data.Extensions;
 using DirectorySync.Infrastructure.Logging;
 
 IHost? host = null;
@@ -35,10 +34,9 @@ try
     builder.Configuration.AddMultifactorCloudConfiguration();
 
     builder.AddApplicationServices();
-    builder.AddLiteDbStorage();
+    builder.AddInfrastructureServices();
     builder.AddHostedServices();
     builder.AddCodeTimer("Logging");
-    
 
     host = builder.Build();
     host.RegisterApplicationHostEventsLogging();
@@ -47,9 +45,7 @@ try
 }
 catch (PullMultifactorSettingsException ex)
 {
-    FallbackLogger.Error(ex, "Failed to start DirectorySync service: {Message}. Response: {Response}",
-        ex.Message,
-        ex.Response);
+    FallbackLogger.Error(ex, "Failed to start DirectorySync service: {Message}. Response: {Response}", ex.Message, ex.Response);
 }
 catch (Exception ex)
 {

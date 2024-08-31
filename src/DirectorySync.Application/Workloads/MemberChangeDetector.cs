@@ -1,11 +1,11 @@
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 
-namespace DirectorySync.Application;
+namespace DirectorySync.Application.Workloads;
 
 internal static class MemberChangeDetector
 {
-    public static IEnumerable<ReferenceDirectoryGroupMember> GetModifiedMembers(ReferenceDirectoryGroup referenceGroup, 
+    public static IEnumerable<ReferenceDirectoryGroupMember> GetModifiedMembers(ReferenceDirectoryGroup referenceGroup,
         CachedDirectoryGroup cachedGroup)
     {
         ArgumentNullException.ThrowIfNull(referenceGroup);
@@ -18,10 +18,10 @@ internal static class MemberChangeDetector
         {
             var referenceMember = referenceGroup.Members.First(x => x.Guid == guid);
             var cachedMember = cachedGroup.Members.First(x => x.Guid == guid);
-            
+
             var referenceAttributesHash = new AttributesHash(referenceMember.Attributes);
             var cachedAttributesHash = cachedMember.Hash;
-            
+
             if (referenceAttributesHash != cachedAttributesHash)
             {
                 yield return referenceMember;

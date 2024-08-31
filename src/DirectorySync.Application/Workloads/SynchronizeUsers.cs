@@ -1,8 +1,5 @@
 using DirectorySync.Application.Extensions;
-using DirectorySync.Application.Integrations.Ldap.Windows;
-using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Integrations.Multifactor.Deleting;
-using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Application.Integrations.Ldap;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -15,24 +12,24 @@ internal class SynchronizeUsers : ISynchronizeUsers
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
     private readonly IGetReferenceGroup _getReferenceGroup;
     private readonly IApplicationStorage _storage;
-    private readonly MultifactorPropertyMapper _propertyMapper;
-    private readonly IMultifactorApi _api;
+    private readonly Deleter _deleter;
+    private readonly Updater _updater;
     private readonly CodeTimer _codeTimer;
     private readonly ILogger<SynchronizeUsers> _logger;
 
     public SynchronizeUsers(RequiredLdapAttributes requiredLdapAttributes,
         IGetReferenceGroup getReferenceGroup,
         IApplicationStorage storage,
-        MultifactorPropertyMapper propertyMapper,
-        IMultifactorApi api,
+        Deleter deleter,
+        Updater updater,
         CodeTimer codeTimer,
         ILogger<SynchronizeUsers> logger)
     {
         _requiredLdapAttributes = requiredLdapAttributes;
         _getReferenceGroup = getReferenceGroup;
         _storage = storage;
-        _propertyMapper = propertyMapper;
-        _api = api;
+        _deleter = deleter;
+        _updater = updater;
         _codeTimer = codeTimer;
         _logger = logger;
     }
@@ -73,11 +70,8 @@ internal class SynchronizeUsers : ISynchronizeUsers
             {
                 _logger.LogDebug("Found deleted users: {Deleted}", deleted.Length);
 
-                await DeleteInPortionsAsync(cachedGroup, deleted, token);
+                await _deleter.DeleteManyAsync(cachedGroup, deleted, token);
 
-                var updateDeletedTimer = _codeTimer.Start("Update Cached Group: Deleted Users");
-                _storage.UpdateGroup(cachedGroup);
-                updateDeletedTimer.Stop();
                 _logger.LogDebug("Deleted members are synchronized");
             }
         }
@@ -92,7 +86,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         }
 
         _logger.LogDebug("Found modified users: {Modified}", modifiedMembers.Length);
-        await UpdateAsync(cachedGroup, modifiedMembers, token);
+        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers, token);
 
         var updateModifiedTimer = _codeTimer.Start("Update Cached Group: Modified Users");
         _storage.UpdateGroup(cachedGroup);
@@ -108,79 +102,5 @@ internal class SynchronizeUsers : ISynchronizeUsers
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
         var cachedMemberGuids = cachedGroup.Members.Select(x => x.Guid);
         return refMemberGuids.Except(cachedMemberGuids);
-    }
-
-    private async Task DeleteInPortionsAsync(CachedDirectoryGroup group, 
-        DirectoryGuid[] deletedUsers,
-        CancellationToken token)
-    {
-        var mfIds = group.Members
-            .Where(x => deletedUsers.Contains(x.Guid))
-            .Select(x => x.Identity);
-
-        var bucket = new DeletedUsersBucket();
-
-        var skip = 0;
-        const int take = 50;
-        
-        foreach (var id in mfIds)
-        {
-            bucket.AddDeletedUser(id);
-        }
-
-        var deleteApiTimer = _codeTimer.Start("Api Request: Delete Users");
-        var res = await _api.DeleteManyAsync(bucket, token);
-        deleteApiTimer.Stop();
-        
-        foreach (var id in res.DeletedUsers)
-        {
-            var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
-            if (cachedUser is not null)
-            {
-                group.DeleteMembers(cachedUser.Guid);
-            }
-        }
-    }
-
-    private async Task UpdateAsync(CachedDirectoryGroup group, 
-        ReferenceDirectoryGroupMember[] modified,
-        CancellationToken token)
-    {
-        var bucket = new ModifiedUsersBucket();
-        foreach (ReferenceDirectoryGroupMember member in modified)
-        {
-            using var withUser = _logger.EnrichWithLdapUser(member.Guid);
-            
-            var props = _propertyMapper.Map(member.Attributes);
-            if (props.Count == 0)
-            {
-                continue;
-            }
-            
-            var cachedMember = group.Members.First(x => x.Guid == member.Guid);
-            var user = bucket.AddModifiedUser(cachedMember.Identity);
-
-            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
-            {
-                user.AddProperty(prop.Key, prop.Value);
-            }
-        }
-
-        var updateApiTimer = _codeTimer.Start("Api Request: Update Users");
-        var res = await _api.UpdateManyAsync(bucket, token);
-        updateApiTimer.Stop();
-
-        foreach (var id in res.UpdatedUsers)
-        {
-            var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
-            if (cachedUser is null)
-            {
-                continue;
-            }
-            
-            var refMember = modified.First(x => x.Guid == cachedUser.Guid);
-            var hash = new AttributesHash(refMember.Attributes);
-            cachedUser.UpdateHash(hash);
-        }
     }
 }

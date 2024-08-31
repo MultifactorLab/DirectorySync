@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Creating;
 
-internal class CreateUsersOperationResult : ICreateUsersOperationResult
+public class CreateUsersOperationResult : ICreateUsersOperationResult
 {
     private readonly List<CreatedUser> _createdUsers = new();
     public ReadOnlyCollection<CreatedUser> CreatedUsers => new (_createdUsers);

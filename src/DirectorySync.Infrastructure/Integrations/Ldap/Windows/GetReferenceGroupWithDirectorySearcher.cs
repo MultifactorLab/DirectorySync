@@ -1,12 +1,13 @@
 ﻿using System.DirectoryServices;
 using DirectorySync.Application.Exceptions;
-using DirectorySync.Application.Integrations.Ldap.Extensions;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
+using DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Integrations.Ldap.Windows;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]
 internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
 {
     private readonly LdapOptions _ldapOptions;
@@ -16,7 +17,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         _ldapOptions = ldapOptions.Value;
     }
     
-    public ReferenceDirectoryGroup Execute(DirectoryGuid guid, IEnumerable<string> requiredAttributes)
+    public ReferenceDirectoryGroup Execute(DirectoryGuid guid, string[] requiredAttributes)
     {
         ArgumentNullException.ThrowIfNull(guid);
         ArgumentNullException.ThrowIfNull(requiredAttributes);
@@ -60,7 +61,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         return result?.GetDirectoryEntry().GetSingleAttributeValue("distinguishedName");
     }
 
-    private static IEnumerable<ReferenceDirectoryGroupMember> GetMembers(string groupDn, IEnumerable<string> requiredAttributes, DirectoryEntry root)
+    private static IEnumerable<ReferenceDirectoryGroupMember> GetMembers(string groupDn, string[] requiredAttributes, DirectoryEntry root)
     {
         using var searcher = new DirectorySearcher(root);
         searcher.SearchScope = SearchScope.Subtree;
@@ -68,8 +69,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         searcher.PageSize = 500;
         
         searcher.PropertiesToLoad.Clear();
-        var attrs = requiredAttributes.ToArray();
-        var props = attrs
+        var props = requiredAttributes
             .Concat(["ObjectGUID", "sAMAccountName", "distinguishedName"])
             .Distinct()
             .ToArray();
@@ -79,7 +79,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         foreach (SearchResult searchResult in collection)
         {
             var guid = searchResult.GetObjectGuid();
-            var attributes = attrs.Select(x => new LdapAttribute(x, searchResult.GetString(x)));
+            var attributes = requiredAttributes.Select(x => new LdapAttribute(x, searchResult.GetString(x)));
             yield return new ReferenceDirectoryGroupMember(guid, attributes);
         }
     }

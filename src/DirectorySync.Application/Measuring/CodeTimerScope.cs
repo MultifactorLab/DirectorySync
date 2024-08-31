@@ -33,12 +33,10 @@ internal sealed class CodeTimerScope : ICodeTimerScope
 
     public void Dispose()
     {
-        if (_disposed)
+        if (!_disposed)
         {
-            return;
+            StopAndLog();
         }
-
-        StopAndLog();
     }
 
     private void StopAndLog()

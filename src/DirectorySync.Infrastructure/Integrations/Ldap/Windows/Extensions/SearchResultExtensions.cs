@@ -1,8 +1,9 @@
 ﻿using System.DirectoryServices;
 using DirectorySync.Domain;
 
-namespace DirectorySync.Application.Integrations.Ldap.Extensions;
+namespace DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]
 internal static class SearchResultExtensions
 {
     public static DirectoryGuid GetObjectGuid(this SearchResult result)
@@ -17,7 +18,7 @@ internal static class SearchResultExtensions
 
         return new Guid(bytes);
     }
-    
+
     public static string? GetString(this SearchResult result, string property)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -27,8 +28,8 @@ internal static class SearchResultExtensions
         }
 
         var values = result.Properties[property];
-        return values.Count == 0 
-            ? null 
+        return values.Count == 0
+            ? null
             : values[0].ToString();
     }
 }

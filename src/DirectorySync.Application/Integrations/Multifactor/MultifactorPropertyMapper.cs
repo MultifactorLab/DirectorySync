@@ -6,7 +6,6 @@ namespace DirectorySync.Application.Integrations.Multifactor;
 
 internal class MultifactorPropertyMapper
 {
-   
     private readonly LdapAttributeMappingOptions _options;
 
     public MultifactorPropertyMapper(IOptions<LdapAttributeMappingOptions> options)
@@ -14,7 +13,7 @@ internal class MultifactorPropertyMapper
         _options = options.Value;
     }
 
-    public IReadOnlyDictionary<string, string?> Map(IEnumerable<LdapAttribute> attributes)
+    public IReadOnlyDictionary<string, string?> Map(LdapAttribute[] attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);
 
@@ -23,25 +22,24 @@ internal class MultifactorPropertyMapper
             throw new IdentityAttributeNotDefinedException();
         }
 
-        var attrs = attributes.ToArray();
         var dict = new Dictionary<string, string?>();
 
-        var identity = GetSingle(_options.IdentityAttribute, attrs);
+        var identity = GetSingle(_options.IdentityAttribute, attributes);
         dict[MultifactorPropertyName.IdentityProperty] = identity;
         
-        var name = GetFirstOrNull([_options.NameAttribute], attrs);
+        var name = GetFirstOrNull([_options.NameAttribute], attributes);
         if (name is not null)
         {
             dict[MultifactorPropertyName.NameProperty] = name;
         }
         
-        var email = GetFirstOrNull(_options.EmailAttributes, attrs);
+        var email = GetFirstOrNull(_options.EmailAttributes, attributes);
         if (email is not null)
         {
             dict[MultifactorPropertyName.EmailProperty] = email;
         }
         
-        var phone = GetFirstOrNull(_options.PhoneAttributes, attrs);
+        var phone = GetFirstOrNull(_options.PhoneAttributes, attributes);
         if (phone is not null)
         {
             dict[MultifactorPropertyName.PhoneProperty] = phone;
