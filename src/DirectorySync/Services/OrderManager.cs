@@ -2,6 +2,7 @@
 using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Workloads;
+using DirectorySync.Infrastructure;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Services;
@@ -96,10 +97,12 @@ internal class OrderManager : IHostedService, IAsyncDisposable
             switch (order)
             {
                 case Order.Synchronize:
+                    ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncUsers();
                     break;
                 
                 case Order.Scan:
+                    ActivityContext.Create(Guid.NewGuid().ToString());
                     await ScanUsers();
                     break;
                 

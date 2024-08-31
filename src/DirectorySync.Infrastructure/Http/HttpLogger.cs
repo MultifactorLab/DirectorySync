@@ -2,11 +2,11 @@
 
 namespace DirectorySync.Infrastructure.Http;
 
-internal class HttpTracer : DelegatingHandler
+internal class HttpLogger : DelegatingHandler
 {
-    private readonly ILogger<HttpTracer> _logger;
+    private readonly ILogger<HttpLogger> _logger;
 
-    public HttpTracer(ILogger<HttpTracer> logger)
+    public HttpLogger(ILogger<HttpLogger> logger)
     {
         _logger = logger;
     }

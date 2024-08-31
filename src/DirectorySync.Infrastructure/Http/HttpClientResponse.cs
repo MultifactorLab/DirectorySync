@@ -7,7 +7,7 @@ namespace DirectorySync.Infrastructure.Http;
 /// <summary>
 /// Http response wrapper with the deserialized response body.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">Deserialized response object type.</typeparam>
 public class HttpClientResponse<T> : HttpClientResponse
 {
     /// <summary>
@@ -19,6 +19,31 @@ public class HttpClientResponse<T> : HttpClientResponse
         : base(statusCode, content, headers)
     {
         Model = model;
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder($"StatusCode: {(int)StatusCode} {StatusCode}");
+        sb.AppendLine();
+
+        if (ResponseHeaders.Count != 0)
+        {
+            sb.AppendLine("Headers:");
+            foreach (var header in ResponseHeaders)
+            {
+                sb.AppendLine($"  {header.Key}: {string.Join(", ", "header.Value")}");
+            }
+        }
+
+        sb.AppendLine($"Model type: {typeof(T).Name}");
+        
+        if (Content is not null)
+        {
+            sb.AppendLine($"Content:");
+            sb.Append(Content);
+        }
+
+        return sb.ToString();
     }
 }
 

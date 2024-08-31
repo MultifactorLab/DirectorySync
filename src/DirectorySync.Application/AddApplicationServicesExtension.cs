@@ -1,4 +1,5 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,6 +26,8 @@ public static class AddApplicationServicesExtension
         builder.Services.AddOptions<LdapAttributeMappingOptions>()
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();
+
+        builder.AddCodeTimer("Logging");
     }
 }
 

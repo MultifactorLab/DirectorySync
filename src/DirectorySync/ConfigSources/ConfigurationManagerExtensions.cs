@@ -27,7 +27,7 @@ namespace DirectorySync.ConfigSources
                 throw new Exception("Multifactor API secret key should be specified in the service settings");
             }
 
-            var tracer = new HttpTracerWihFallbackLoging();
+            var tracer = new HttpFallbackLogger();
             var cli = new HttpClient(tracer)
             {
                 BaseAddress = new Uri(url)

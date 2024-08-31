@@ -2,11 +2,16 @@
 
 namespace DirectorySync.Infrastructure.Http;
 
-public class HttpTracerWihFallbackLoging : DelegatingHandler
+public class HttpFallbackLogger : DelegatingHandler
 {
-    public HttpTracerWihFallbackLoging()
+    public HttpFallbackLogger()
     {
-        InnerHandler = new HttpClientHandler();
+        var tracer = new MfTraceIdHeaderSetter
+        {
+            InnerHandler = new HttpClientHandler()
+        };
+
+        InnerHandler = tracer;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using DirectorySync.Application;
-using DirectorySync.Application.Measuring;
 using DirectorySync.ConfigSources;
 using DirectorySync.Exceptions;
 using DirectorySync.Extensions;
@@ -36,7 +35,6 @@ try
     builder.AddApplicationServices();
     builder.AddInfrastructureServices();
     builder.AddHostedServices();
-    builder.AddCodeTimer("Logging");
 
     host = builder.Build();
     host.RegisterApplicationHostEventsLogging();

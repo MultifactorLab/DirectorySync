@@ -1,16 +1,20 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace DirectorySync.Application.Measuring
-{
-    public static class AddCodeTimerExtension
-    {
-        public static void AddCodeTimer(this HostApplicationBuilder builder, string? configSectionName = null)
-        {
-            ArgumentNullException.ThrowIfNull(builder);
+namespace DirectorySync.Application.Measuring;
 
-            builder.Services.AddOptions<MeasuringOptions>().BindConfiguration(configSectionName ?? String.Empty);
-            builder.Services.AddSingleton<CodeTimer>();
-        }
+internal static class AddCodeTimerExtension
+{
+    /// <summary>
+    /// Adds some tools for code execution time measuring.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="configSectionName"></param>
+    public static void AddCodeTimer(this HostApplicationBuilder builder, string? configSectionName = null)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.Services.AddOptions<MeasuringOptions>().BindConfiguration(configSectionName ?? string.Empty);
+        builder.Services.AddSingleton<CodeTimer>();
     }
 }

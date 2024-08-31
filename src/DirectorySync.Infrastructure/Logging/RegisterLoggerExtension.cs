@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DirectorySync.Infrastructure.Logging.Enrichers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,7 +28,8 @@ public static class RegisterLoggerExtension
         SelfLog.Enable(Console.WriteLine);
         var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
-            .Enrich.FromLogContext();
+            .Enrich.FromLogContext()
+            .Enrich.With(new MfTraceIdEnricher());
         
         if (!builder.Environment.IsProduction() || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
