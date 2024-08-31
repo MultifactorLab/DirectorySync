@@ -2,6 +2,12 @@
 
 namespace DirectorySync.Application.Integrations.Multifactor.Creating;
 
+public interface INewUser
+{
+    string Identity { get; }
+    ReadOnlyCollection<MultifactorProperty> Properties { get; }
+}
+
 internal class NewUser : INewUser
 {
     private readonly HashSet<MultifactorProperty> _props = [];

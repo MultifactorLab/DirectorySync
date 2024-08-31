@@ -3,6 +3,12 @@ using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
+public interface IModifiedUser
+{
+    MultifactorIdentity Identity { get; }
+    ReadOnlyCollection<MultifactorProperty> Properties { get; }
+}
+
 internal class ModifiedUser : IModifiedUser
 {
     private readonly HashSet<MultifactorProperty> _props = [];

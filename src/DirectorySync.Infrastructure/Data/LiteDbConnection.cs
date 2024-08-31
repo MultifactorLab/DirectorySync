@@ -3,6 +3,11 @@ using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Infrastructure.Data;
 
+public interface ILiteDbConnection
+{
+    LiteDatabase Database { get; }
+}
+
 internal class LiteDbConnection : ILiteDbConnection, IDisposable
 {
     public LiteDatabase Database { get; }

@@ -3,6 +3,11 @@ using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
+public interface IModifiedUsersBucket
+{
+    ReadOnlyCollection<IModifiedUser> ModifiedUsers { get; }
+}
+
 internal class ModifiedUsersBucket : IModifiedUsersBucket
 {
     private readonly List<IModifiedUser> _modified = [];

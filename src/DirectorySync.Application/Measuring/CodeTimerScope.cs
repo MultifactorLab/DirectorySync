@@ -3,6 +3,11 @@ using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Measuring;
 
+public interface ICodeTimerScope : IDisposable
+{
+    void Stop();
+}
+
 internal sealed class CodeTimerScope : ICodeTimerScope
 {
     private bool _disposed;

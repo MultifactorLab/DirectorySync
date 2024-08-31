@@ -3,6 +3,11 @@ using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Deleting;
 
+public interface IDeletedUsersBucket
+{
+    ReadOnlyCollection<MultifactorIdentity> DeletedUsers { get; }
+}
+
 internal class DeletedUsersBucket : IDeletedUsersBucket
 {
     private readonly HashSet<MultifactorIdentity> _deleted = [];

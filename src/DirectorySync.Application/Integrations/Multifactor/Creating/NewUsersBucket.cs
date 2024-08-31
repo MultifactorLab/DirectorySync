@@ -2,6 +2,11 @@
 
 namespace DirectorySync.Application.Integrations.Multifactor.Creating;
 
+public interface INewUsersBucket
+{
+    ReadOnlyCollection<INewUser> NewUsers { get; }
+}
+
 internal class NewUsersBucket : INewUsersBucket
 {
     private readonly List<INewUser> _newUsers = [];
