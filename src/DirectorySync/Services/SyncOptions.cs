@@ -7,8 +7,8 @@ internal class SyncOptions
     public TimeSpan ScanTimer { get; set; } = TimeSpan.FromMinutes(15);
 
     public Guid[] Groups { get; init; } = [];
-    
-    public MultifactorGroupPolicyPreset MultifactorGroupPolicyPreset { get; set; }
+
+    public MultifactorGroupPolicyPreset MultifactorGroupPolicyPreset { get; set; } = new ();
 
     public bool SyncEnabled => Enabled && SyncTimer > TimeSpan.Zero && SyncTimer < TimeSpan.MaxValue;
     public bool ScanEnabled => Enabled && ScanTimer > TimeSpan.Zero && ScanTimer < TimeSpan.MaxValue;
@@ -16,5 +16,5 @@ internal class SyncOptions
 
 internal class MultifactorGroupPolicyPreset
 {
-    public string[] SignUpGroups { get; set; }
+    public string[] SignUpGroups { get; set; } = [];
 }
