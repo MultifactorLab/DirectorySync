@@ -2,8 +2,14 @@
 
 namespace DirectorySync.Infrastructure.Http;
 
+/// <summary>
+/// Http logger with the <see cref="FallbackLogger"/> usage.
+/// </summary>
 public class HttpFallbackLogger : DelegatingHandler
 {
+    /// <summary>
+    /// Creates new instance of a <see cref="HttpFallbackLogger"/> with a <see cref="MfTraceIdHeaderSetter"/>.
+    /// </summary>
     public HttpFallbackLogger()
     {
         var tracer = new MfTraceIdHeaderSetter

@@ -27,17 +27,22 @@ namespace DirectorySync.ConfigSources
                 throw new Exception("Multifactor API secret key should be specified in the service settings");
             }
 
+            IConfigurationBuilder configBuilder = manager;
+            var cli = CreateClient(new Uri(url), new BasicAuthHeaderValue(key, secret));            
+            configBuilder.Add(new MultifactorCloudConfigurationSource(cli));
+        }
+
+        private static HttpClient CreateClient(Uri uri, BasicAuthHeaderValue auth)
+        {
             var tracer = new HttpFallbackLogger();
             var cli = new HttpClient(tracer)
             {
-                BaseAddress = new Uri(url)
+                BaseAddress = uri
             };
 
-            var auth = new BasicAuthHeaderValue(key, secret);
             cli.DefaultRequestHeaders.Add("Authorization", $"Basic {auth.GetBase64()}");
 
-            IConfigurationBuilder configBuilder = manager;
-            configBuilder.Add(new MultifactorCloudConfigurationSource(cli));
+            return cli;
         }
     }
 }

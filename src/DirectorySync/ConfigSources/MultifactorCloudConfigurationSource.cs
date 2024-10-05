@@ -27,13 +27,13 @@ namespace DirectorySync.ConfigSources
             var response = adapter.GetAsync<DirectorySyncSettingsDto>("ds/settings").GetAwaiter().GetResult();
             if (!response.IsSuccessStatusCode)
             {
-                throw new PullMultifactorSettingsException("Failed to pull settings from Multifactor Cloud", response);
+                throw new PullCloudConfigException("Failed to pull settings from Multifactor Cloud", response);
             }
 
             var dto = response.Model;
             if (dto is null)
             {
-                throw new PullMultifactorSettingsException("Empty config was retrieved from Multifactor Cloud", response);
+                throw new PullCloudConfigException("Empty config was retrieved from Multifactor Cloud", response);
             }
 
             Data["Sync:Enabled"] = dto.Enabled.ToString();

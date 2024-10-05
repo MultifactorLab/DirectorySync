@@ -14,7 +14,7 @@ try
 
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
     {
-        throw new PlatformNotSupportedException("Only for Windows platform");
+        throw new PlatformNotSupportedException("For Windows platform only");
     }
 
     builder.Services.AddWindowsService(options =>
@@ -41,7 +41,7 @@ try
 
     host.Run();
 }
-catch (PullMultifactorSettingsException ex)
+catch (PullCloudConfigException ex)
 {
     FallbackLogger.Error(ex, "Failed to start DirectorySync service: {Message}. Response: {Response}", ex.Message, ex.Response);
 }
