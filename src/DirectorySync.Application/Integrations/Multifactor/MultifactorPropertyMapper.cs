@@ -76,6 +76,7 @@ internal class MultifactorPropertyMapper
         var n = names
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => new LdapAttributeName(x!));
+
         var attr = attrs
             .Where(x => n.Contains(x.Name))
             .FirstOrDefault(x => x.Values.Length != 0);

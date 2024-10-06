@@ -61,7 +61,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         return result?.GetDirectoryEntry().GetSingleAttributeValue("distinguishedName");
     }
 
-    private static IEnumerable<ReferenceDirectoryGroupMember> GetMembers(string groupDn, string[] requiredAttributes, DirectoryEntry root)
+    private static IEnumerable<ReferenceDirectoryUser> GetMembers(string groupDn, string[] requiredAttributes, DirectoryEntry root)
     {
         using var searcher = new DirectorySearcher(root);
         searcher.SearchScope = SearchScope.Subtree;
@@ -80,7 +80,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         {
             var guid = searchResult.GetObjectGuid();
             var attributes = requiredAttributes.Select(x => new LdapAttribute(x, searchResult.GetString(x)));
-            yield return new ReferenceDirectoryGroupMember(guid, attributes);
+            yield return new ReferenceDirectoryUser(guid, attributes);
         }
     }
 }

@@ -9,13 +9,13 @@ namespace DirectorySync.Domain.Entities;
 public record ReferenceDirectoryGroup
 {
     public DirectoryGuid Guid { get; }
-    public ReadOnlyCollection<ReferenceDirectoryGroupMember> Members { get; }
+    public ReadOnlyCollection<ReferenceDirectoryUser> Members { get; }
 
-    public ReferenceDirectoryGroup(DirectoryGuid guid, IEnumerable<ReferenceDirectoryGroupMember> members)
+    public ReferenceDirectoryGroup(DirectoryGuid guid, IEnumerable<ReferenceDirectoryUser> members)
     {
         Guid = guid ?? throw new ArgumentNullException(nameof(guid));
         ArgumentNullException.ThrowIfNull(members);
-        Members = new ReadOnlyCollection<ReferenceDirectoryGroupMember>(members.ToArray());
+        Members = new ReadOnlyCollection<ReferenceDirectoryUser>(members.ToArray());
     }
 
     public override string ToString()

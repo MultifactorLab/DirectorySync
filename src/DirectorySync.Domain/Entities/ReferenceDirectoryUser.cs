@@ -3,12 +3,12 @@ using System.Text;
 
 namespace DirectorySync.Domain.Entities;
 
-public record ReferenceDirectoryGroupMember
+public record ReferenceDirectoryUser
 {
     public DirectoryGuid Guid { get; }
     public ReadOnlyCollection<LdapAttribute> Attributes { get; }
 
-    public ReferenceDirectoryGroupMember(DirectoryGuid guid, IEnumerable<LdapAttribute> attributes)
+    public ReferenceDirectoryUser(DirectoryGuid guid, IEnumerable<LdapAttribute> attributes)
     {
         Guid = guid ?? throw new ArgumentNullException(nameof(guid));
         ArgumentNullException.ThrowIfNull(attributes);
