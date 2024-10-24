@@ -3,6 +3,7 @@ using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Domain;
+using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

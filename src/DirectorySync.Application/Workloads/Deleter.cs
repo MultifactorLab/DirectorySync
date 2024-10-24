@@ -2,6 +2,7 @@
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Domain;
+using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

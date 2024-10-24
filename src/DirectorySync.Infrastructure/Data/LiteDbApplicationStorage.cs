@@ -1,5 +1,5 @@
-using DirectorySync.Application;
 using DirectorySync.Domain;
+using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using DirectorySync.Infrastructure.Data.Extensions;
 using DirectorySync.Infrastructure.Data.Models;

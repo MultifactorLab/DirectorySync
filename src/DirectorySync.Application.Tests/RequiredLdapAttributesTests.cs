@@ -12,7 +12,7 @@ public class RequiredLdapAttributesTests
     {
         var attrs = new RequiredLdapAttributes(Options.Create(new LdapAttributeMappingOptions()));
 
-        Assert.Throws<IdentityAttributeNotDefinedException>(() => attrs.GetNames());
+        Assert.Throws<IdentityAttributeNotDefinedException>(() => attrs.GetNames().ToArray());
     }
    
 }

@@ -1,8 +1,9 @@
+using CSharpFunctionalExtensions;
 using System.Text;
 
 namespace DirectorySync.Domain;
 
-public record DirectoryGuid
+public class DirectoryGuid : ComparableValueObject
 {
     public Guid Value { get; }
     public string OctetString { get; }
@@ -65,4 +66,9 @@ public record DirectoryGuid
     }
 
     public override string ToString() => Value.ToString();
+
+    protected override IEnumerable<IComparable> GetComparableEqualityComponents()
+    {
+        yield return Value;
+    }
 }

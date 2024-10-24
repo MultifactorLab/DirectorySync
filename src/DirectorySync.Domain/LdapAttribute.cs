@@ -1,3 +1,4 @@
+using CSharpFunctionalExtensions;
 using System.Text;
 
 namespace DirectorySync.Domain;
@@ -5,7 +6,7 @@ namespace DirectorySync.Domain;
 /// <summary>
 /// LDAP attribute object.
 /// </summary>
-public record LdapAttribute
+public class LdapAttribute : ComparableValueObject
 {
     /// <summary>
     /// Attribute name.
@@ -35,7 +36,7 @@ public record LdapAttribute
         ArgumentNullException.ThrowIfNull(values);
 
         Name = name;
-        Values = values.ToArray();
+        Values = values.OrderByDescending(x => x).ToArray();
     }
 
     public override string ToString()
@@ -49,4 +50,18 @@ public record LdapAttribute
         sb.Append($":{string.Join(',', Values.OrderDescending().Select(x => $"'{x}'"))}");
         return sb.ToString();
     }
+
+    protected override IEnumerable<IComparable> GetComparableEqualityComponents()
+    {
+        const string nullValue = "_null_";
+
+        yield return Name;
+
+        foreach (var component in Values)
+        {
+            // Needed to distinguish an empty string from null value.
+            yield return component ?? nullValue;
+        }
+    }
 }
+

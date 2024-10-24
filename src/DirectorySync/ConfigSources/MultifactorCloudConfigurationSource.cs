@@ -37,8 +37,6 @@ namespace DirectorySync.ConfigSources
             }
 
             Data["Sync:Enabled"] = dto.Enabled.ToString();
-            Data["Sync:SyncTimer"] = dto.SyncTimer.ToString();
-            Data["Sync:ScanTimer"] = dto.ScanTimer.ToString();
 
             for (int index = 0; index < dto.DirectoryGroups.Length; index++)
             {

@@ -1,7 +1,7 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Domain;
 using Moq;
 using Moq.Contrib.HttpClient;
+using System.Net;
 
 namespace DirectorySync.Tests
 {
@@ -21,7 +21,7 @@ namespace DirectorySync.Tests
             {
                 return GetHttpClientMock(handler =>
                 {
-                    handler.SetupRequest(HttpMethod.Get, Uri, x =>
+                    handler.SetupRequest(HttpMethod.Get, $"{Uri}/ds/settings", x =>
                     {
                         var auth = new BasicAuthHeaderValue(Key, Secret);
                         var actualAuth = x.Headers.Authorization;
@@ -39,6 +39,8 @@ namespace DirectorySync.Tests
         private static HttpClient GetHttpClientMock(Action<Mock<HttpMessageHandler>> setup)
         {
             var handler = new Mock<HttpMessageHandler>();
+            handler.SetupAnyRequest().ReturnsResponse(HttpStatusCode.NotFound);
+
             setup(handler);
 
             var cli = handler.CreateClient();

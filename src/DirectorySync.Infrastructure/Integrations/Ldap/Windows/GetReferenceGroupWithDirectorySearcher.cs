@@ -1,6 +1,7 @@
 ﻿using System.DirectoryServices;
 using DirectorySync.Application.Exceptions;
 using DirectorySync.Domain;
+using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions;
 using Microsoft.Extensions.Options;
@@ -42,10 +43,7 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
             path += $"/{_ldapOptions.Container}";
         }
         
-        
-        return new DirectoryEntry($"LDAP://{path}", 
-            _ldapOptions.Username, 
-            _ldapOptions.Password);
+        return new DirectoryEntry($"LDAP://{path}", _ldapOptions.Username, _ldapOptions.Password);
     }
 
     private static string? GetGroupDn(DirectoryGuid guid, DirectoryEntry root)
@@ -61,17 +59,17 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         return result?.GetDirectoryEntry().GetSingleAttributeValue("distinguishedName");
     }
 
-    private static IEnumerable<ReferenceDirectoryGroupMember> GetMembers(string groupDn, string[] requiredAttributes, DirectoryEntry root)
+    private IEnumerable<ReferenceDirectoryGroupMember> GetMembers(string groupDn, string[] requiredAttributes, DirectoryEntry root)
     {
         using var searcher = new DirectorySearcher(root);
         searcher.SearchScope = SearchScope.Subtree;
         searcher.Filter = $"(&(objectClass=user)(memberof={groupDn}))";
-        searcher.PageSize = 500;
+        searcher.PageSize = _ldapOptions.PageSize;
         
         searcher.PropertiesToLoad.Clear();
         var props = requiredAttributes
             .Concat(["ObjectGUID", "sAMAccountName", "distinguishedName"])
-            .Distinct()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         searcher.PropertiesToLoad.AddRange(props);
         

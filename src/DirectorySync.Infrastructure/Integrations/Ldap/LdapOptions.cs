@@ -14,4 +14,7 @@ public class LdapOptions
     
     [Required]
     public required string Password { get; set; }
+
+    [Range(1, 5000)]
+    public int PageSize { get; set; } = 500;
 }
