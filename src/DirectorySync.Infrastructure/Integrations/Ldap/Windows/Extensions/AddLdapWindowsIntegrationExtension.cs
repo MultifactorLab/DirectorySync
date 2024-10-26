@@ -1,7 +1,7 @@
 ﻿using DirectorySync.Application.Integrations.Ldap.Windows;
-using DirectorySync.Application.Integrations.Ldap;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using DirectorySync.Domain.Abstractions;
 
 namespace DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions
 {

@@ -1,7 +1,9 @@
+using CSharpFunctionalExtensions;
+
 namespace DirectorySync.Domain;
 
 // TODO переделать на MultifactorIdentity
-public record MultifactorIdentity
+public class MultifactorIdentity : ValueObject
 {
     public string Value { get; }
     
@@ -25,4 +27,9 @@ public record MultifactorIdentity
     }
 
     public override string ToString() => Value;
+
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return Value;
+    }
 }

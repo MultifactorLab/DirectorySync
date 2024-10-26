@@ -1,9 +1,9 @@
 ﻿using DirectorySync.Application.Extensions;
-using DirectorySync.Application.Integrations.Ldap;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Domain;
+using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 

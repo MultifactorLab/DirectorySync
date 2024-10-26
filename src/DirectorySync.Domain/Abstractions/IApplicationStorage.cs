@@ -1,7 +1,7 @@
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 
-namespace DirectorySync.Application;
+namespace DirectorySync.Domain.Abstractions;
 
 public interface IApplicationStorage
 {

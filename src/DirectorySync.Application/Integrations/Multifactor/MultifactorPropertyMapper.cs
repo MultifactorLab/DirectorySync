@@ -22,7 +22,7 @@ internal class MultifactorPropertyMapper
             throw new IdentityAttributeNotDefinedException();
         }
 
-        var dict = new Dictionary<string, string?>();
+        var dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
         var identity = GetSingle(_options.IdentityAttribute, attributes);
         dict[MultifactorPropertyName.IdentityProperty] = identity;
@@ -81,6 +81,6 @@ internal class MultifactorPropertyMapper
             .Where(x => n.Contains(x.Name))
             .FirstOrDefault(x => x.Values.Length != 0);
 
-        return attr?.Values[0];
+        return attr?.Values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
     }
 }

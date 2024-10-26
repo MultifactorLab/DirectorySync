@@ -1,9 +1,11 @@
+using CSharpFunctionalExtensions;
+
 namespace DirectorySync.Domain;
 
 /// <summary>
 /// Ldap attribute name.
 /// </summary>
-public class LdapAttributeName : IComparable<LdapAttributeName>
+public class LdapAttributeName : ComparableValueObject
 {
     public string Value { get; }
     
@@ -39,55 +41,10 @@ public class LdapAttributeName : IComparable<LdapAttributeName>
         }
     }
 
-    public int CompareTo(LdapAttributeName? other)
+    protected override IEnumerable<IComparable> GetComparableEqualityComponents()
     {
-        throw new NotImplementedException();
+        yield return Value.ToLowerInvariant();
     }
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is null)
-        {
-            return false;
-        }
-        
-        var compareTo = obj as LdapAttributeName;
-
-        if (ReferenceEquals(this, compareTo))
-        {
-            return true;
-        }
-
-        if (ReferenceEquals(null, compareTo))
-        {
-            return false;
-        }
-
-        return Value.Equals(compareTo.Value, StringComparison.OrdinalIgnoreCase);
-    }
-
-    public static bool operator ==(LdapAttributeName a, LdapAttributeName b)
-    {
-        if (ReferenceEquals(a, null) && ReferenceEquals(b, null))
-        {
-            return true;
-        }
-
-        if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
-        {
-            return false;
-        }
-
-        return a.Equals(b);
-    }
-
-    public static bool operator !=(LdapAttributeName a, LdapAttributeName b)
-    {
-        return !(a == b);
-    }
-
-    public override int GetHashCode()
-    {
-        return Value.GetHashCode();
-    }
+    public override string ToString() => Value;
 }

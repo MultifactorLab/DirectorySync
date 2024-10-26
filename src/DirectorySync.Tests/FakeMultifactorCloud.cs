@@ -1,5 +1,4 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Domain;
 using Moq;
 using Moq.Contrib.HttpClient;
 using System.Net;
@@ -25,7 +24,7 @@ namespace DirectorySync.Tests
                 cli.BaseAddress = new Uri(Uri);
 
                 handler.SetupAnyRequest().ReturnsResponse(HttpStatusCode.NotFound);
-
+                
                 handler.SetupRequest(HttpMethod.Get, $"{Uri}/ds/settings", x =>
                 {
                     var auth = new BasicAuthHeaderValue(Key, Secret);
@@ -40,6 +39,18 @@ namespace DirectorySync.Tests
         public static string GetBasicAuthHeaderValue()
         {
             return $"Basic {new BasicAuthHeaderValue(Key, Secret).GetBase64()}";
+        }
+
+        private static HttpClient GetHttpClientMock(Action<Mock<HttpMessageHandler>> setup)
+        {
+            var handler = new Mock<HttpMessageHandler>();
+            handler.SetupAnyRequest().ReturnsResponse(HttpStatusCode.NotFound);
+
+            setup(handler);
+
+            var cli = handler.CreateClient();
+            cli.BaseAddress = new Uri(Uri);
+            return cli;
         }
     }
 }

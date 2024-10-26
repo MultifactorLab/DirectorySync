@@ -1,7 +1,7 @@
 using DirectorySync.Application.Extensions;
-using DirectorySync.Application.Integrations.Ldap;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Domain;
+using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 

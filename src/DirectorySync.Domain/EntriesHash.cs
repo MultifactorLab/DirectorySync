@@ -1,9 +1,10 @@
+using CSharpFunctionalExtensions;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace DirectorySync.Domain;
 
-public record EntriesHash
+public class EntriesHash : ValueObject
 {
     private readonly string _value;
 
@@ -30,7 +31,7 @@ public record EntriesHash
     {
         ArgumentNullException.ThrowIfNull(guids);
 
-        var ordered = guids.Select(x => (string)x).OrderDescending();
+        var ordered = guids.OrderDescending();
         var joinedGuids = string.Join(';', ordered);
         var bytes = Encoding.UTF8.GetBytes(joinedGuids);
         var hash = SHA256.HashData(bytes);
@@ -50,4 +51,9 @@ public record EntriesHash
     }
 
     public override string ToString() => $"{nameof(EntriesHash)} '{_value}'";
+
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return _value;
+    }
 }

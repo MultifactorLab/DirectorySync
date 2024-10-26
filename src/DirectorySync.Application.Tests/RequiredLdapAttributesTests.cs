@@ -11,6 +11,7 @@ public class RequiredLdapAttributesTests
     public void GetNames_WithoutIdentityAttr_ShouldThrow()
     {
         var attrs = new RequiredLdapAttributes(Options.Create(new LdapAttributeMappingOptions()));
-        Assert.Throws<IdentityAttributeNotDefinedException>(() => attrs.GetNames());
+
+        Assert.Throws<IdentityAttributeNotDefinedException>(() => attrs.GetNames().ToArray());
     }
 }

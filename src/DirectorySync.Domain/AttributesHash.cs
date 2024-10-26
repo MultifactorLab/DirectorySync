@@ -1,3 +1,4 @@
+using CSharpFunctionalExtensions;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,7 +7,7 @@ namespace DirectorySync.Domain;
 /// <summary>
 /// Hash of the LDAP attribute names and its values.
 /// </summary>
-public record AttributesHash
+public class AttributesHash : ValueObject
 {
     private readonly string _value;
 
@@ -57,4 +58,9 @@ public record AttributesHash
     }
     
     public override string ToString() => $"{nameof(AttributesHash)} '{_value}'";
+
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return _value;
+    }
 }

@@ -24,15 +24,15 @@ public class MultifactorPropertyMapperTests
         }));
 
         LdapAttribute[] attrs = [
+            new LdapAttribute(new LdapAttributeName("samaccountname"), "user"),
             new LdapAttribute(new LdapAttributeName("email"), string.Empty),
             new LdapAttribute(new LdapAttributeName("mail"), "mail@mail.com")
             ];
 
-        var dict = mapper.Map([]);
+        var dict = mapper.Map(attrs);
 
-        var single = Assert.Single(dict);
-        Assert.Equal("mail", single.Key);
-        Assert.Equal("mail@mail.com", single.Value);
+        var mail = dict["mail"];
+        Assert.Equal("mail@mail.com", mail);
     }
     
     [Fact]
@@ -45,14 +45,14 @@ public class MultifactorPropertyMapperTests
         }));
 
         LdapAttribute[] attrs = [
+            new LdapAttribute(new LdapAttributeName("samaccountname"), "user"),
             new LdapAttribute(new LdapAttributeName("phone"), null as string),
             new LdapAttribute(new LdapAttributeName("MOBILEPHONE"), "+12345678900")
             ];
 
-        var dict = mapper.Map([]);
+        var dict = mapper.Map(attrs);
 
-        var single = Assert.Single(dict);
-        Assert.Equal("mobilephone", single.Key);
-        Assert.Equal("+12345678900", single.Value);
+        var mobilephone = dict["mobilephone"];
+        Assert.Equal("+12345678900", mobilephone);
     }
 }
