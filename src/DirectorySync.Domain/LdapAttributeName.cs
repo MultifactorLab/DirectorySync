@@ -28,7 +28,7 @@ public class LdapAttributeName : ComparableValueObject
 
         return name.Value;
     }
-    
+
     public static implicit operator LdapAttributeName(string name)
     {
         try

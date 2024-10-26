@@ -126,7 +126,7 @@ internal class ScanUsers : IScanUsers
         {
             using var withUser = _logger.EnrichWithLdapUser(member.Guid);
 
-            var props = _propertyMapper.Map(member.Attributes.ToArray());
+            var props = _propertyMapper.Map(member.Attributes);
             if (props.Count == 0)
             {
                 continue;

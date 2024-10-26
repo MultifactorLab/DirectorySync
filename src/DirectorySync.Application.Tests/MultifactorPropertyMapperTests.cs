@@ -11,7 +11,7 @@ public class MultifactorPropertyMapperTests
     public void Map_WithoutIdentityAttr_ShouldThrow()
     {
         var mapper = new MultifactorPropertyMapper(Options.Create(new LdapAttributeMappingOptions()));
-        Assert.Throws<IdentityAttributeNotDefinedException>(() => mapper.Map([]));
+        Assert.Throws<IdentityAttributeNotDefinedException>(() => mapper.Map(new LdapAttributeCollection([])));
     }
     
     [Fact]
@@ -28,10 +28,11 @@ public class MultifactorPropertyMapperTests
             new LdapAttribute(new LdapAttributeName("email"), string.Empty),
             new LdapAttribute(new LdapAttributeName("mail"), "mail@mail.com")
             ];
+        var coll = new LdapAttributeCollection(attrs);
 
-        var dict = mapper.Map(attrs);
+        var dict = mapper.Map(coll);
 
-        var mail = dict["mail"];
+        var mail = dict[MultifactorPropertyName.EmailProperty];
         Assert.Equal("mail@mail.com", mail);
     }
     
@@ -41,7 +42,7 @@ public class MultifactorPropertyMapperTests
         var mapper = new MultifactorPropertyMapper(Options.Create(new LdapAttributeMappingOptions
         {
             IdentityAttribute = "samaccountname",
-            EmailAttributes = ["phone", "mobilephone"]
+            PhoneAttributes = ["phone", "mobilephone"]
         }));
 
         LdapAttribute[] attrs = [
@@ -49,10 +50,11 @@ public class MultifactorPropertyMapperTests
             new LdapAttribute(new LdapAttributeName("phone"), null as string),
             new LdapAttribute(new LdapAttributeName("MOBILEPHONE"), "+12345678900")
             ];
+        var coll = new LdapAttributeCollection(attrs);
 
-        var dict = mapper.Map(attrs);
+        var dict = mapper.Map(coll);
 
-        var mobilephone = dict["mobilephone"];
+        var mobilephone = dict[MultifactorPropertyName.PhoneProperty];
         Assert.Equal("+12345678900", mobilephone);
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.DirectoryServices;
+﻿using System.DirectoryServices;
 using DirectorySync.Application.Exceptions;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Abstractions;
@@ -79,7 +78,8 @@ internal class GetReferenceGroupWithDirectorySearcher : IGetReferenceGroup
         {
             var guid = searchResult.GetObjectGuid();
             var attributes = requiredAttributes.Select(x => new LdapAttribute(x, searchResult.GetString(x)));
-            yield return new ReferenceDirectoryUser(guid, attributes);
+            var attrCollection = new LdapAttributeCollection(attributes);
+            yield return new ReferenceDirectoryUser(guid, attrCollection);
         }
     }
 }

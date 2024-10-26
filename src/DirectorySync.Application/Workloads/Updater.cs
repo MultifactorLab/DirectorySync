@@ -54,7 +54,7 @@ internal class Updater
             {
                 using var logWithUser = _logger.EnrichWithLdapUser(member.Guid);
 
-                var props = _propertyMapper.Map(member.Attributes.ToArray());
+                var props = _propertyMapper.Map(member.Attributes);
 
                 var cachedMember = group.Members.First(x => x.Guid == member.Guid);
                 var user = bucket.Add(cachedMember.Identity);
