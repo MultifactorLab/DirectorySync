@@ -125,9 +125,9 @@ internal class ScanUsers : IScanUsers
         var res = await _api.CreateManyAsync(bucket, token);
         createApiTimer.Stop();
         
-        foreach (var user in res.CreatedUsers)
+        foreach (var identity in res.CreatedUserIdentities)
         {
-            if (!identityWithGuids.TryGetValue(user.Identity, out var guid))
+            if (!identityWithGuids.TryGetValue(identity, out var guid))
             {
                 continue;
             }

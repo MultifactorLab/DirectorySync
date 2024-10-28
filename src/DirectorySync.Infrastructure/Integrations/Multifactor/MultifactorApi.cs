@@ -8,13 +8,19 @@ using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.Integrations.Multifactor;
 
-internal class MultifactorApi(IHttpClientFactory clientFactory, ILogger<MultifactorApi> logger) : IMultifactorApi
+internal class MultifactorApi : IMultifactorApi
 {
     private const string _clientName = "MultifactorApi";
 
-    private readonly IHttpClientFactory _clientFactory = clientFactory;
-    private readonly ILogger<MultifactorApi> _logger = logger;
+    private readonly IHttpClientFactory _clientFactory;
+    private readonly ILogger<MultifactorApi> _logger;
 
+    public MultifactorApi(IHttpClientFactory clientFactory, 
+        ILogger<MultifactorApi> logger)
+    {
+        _clientFactory = clientFactory;
+        _logger = logger;
+    }
     public async Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(bucket);
@@ -24,26 +30,47 @@ internal class MultifactorApi(IHttpClientFactory clientFactory, ILogger<Multifac
             return new CreateUsersOperationResult();
         }
 
-        var dtos = bucket.NewUsers.Select(x => new NewUserDto(x.Identity, x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value))));
+        var dtos = bucket.NewUsers
+            .Select(x => new NewUserDto(x.Identity, x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value))));
         var dto = new CreateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
 
-        var response = await adapter.PostAsync<object>("ds/users", dto);
+        var response = await adapter.PostAsync<CreateUsersResponseDto>("ds/users", dto);
+        var result = new CreateUsersOperationResult();
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Got unsuccessfull response from Multifactor API");
+            _logger.LogWarning("Recieved unsuccessfull response from Multifactor API");
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                _logger.LogWarning("Got 401 status from Multifactor API. Maybe invalid API integration");
+                _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
             }
 
-            return new CreateUsersOperationResult();
+            return result;
         }
 
-        throw new NotImplementedException();
+        if (response.Model is null)
+        {
+            _logger.LogWarning("Response model is null");
+            return result;
+        }
+
+        if (response.Model.Failures.Length == 0)
+        {
+            result.Add(bucket.NewUsers.Select(x => x.Identity));
+        }
+        else
+        {
+            var failures = response.Model.Failures
+                .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
+                .Select(x => x.Identity!);
+
+            result.Add(bucket.NewUsers.Select(x => x.Identity).Except(failures));
+        }
+
+        return result;
     }
 
     public async Task<IDeleteUsersOperationResult> DeleteManyAsync(IDeletedUsersBucket bucket, CancellationToken ct = default)

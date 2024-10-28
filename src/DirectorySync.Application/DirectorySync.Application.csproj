@@ -27,8 +27,4 @@
       <ProjectReference Include="..\DirectorySync.Domain\DirectorySync.Domain.csproj" />
     </ItemGroup>
 
-	<ItemGroup>
-		<InternalsVisibleTo Include="DirectorySync.Application.Tests" />
-	</ItemGroup>
-
 </Project>

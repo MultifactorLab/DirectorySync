@@ -2,7 +2,6 @@ using CSharpFunctionalExtensions;
 
 namespace DirectorySync.Domain;
 
-// TODO переделать на MultifactorIdentity
 public class MultifactorIdentity : ValueObject
 {
     public string Value { get; }
