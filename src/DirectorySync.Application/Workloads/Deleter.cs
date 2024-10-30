@@ -51,7 +51,7 @@ internal class Deleter
         while (true)
         {
             var bucket = new DeletedUsersBucket();
-            foreach (var id in identities.Skip(skip).Take(_options.DeletingPortionSize))
+            foreach (var id in identities.Skip(skip).Take(_options.DeletingBatchSize))
             {
                 bucket.Add(id);
             }

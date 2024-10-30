@@ -7,26 +7,26 @@ using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Services;
 
-internal class OrderManager : IHostedService, IAsyncDisposable
+internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
 {
     private readonly OrderBoard _board;
     private readonly ISynchronizeUsers _synchronizeUsers;
     private readonly IScanUsers _scanUsers;
     private readonly CodeTimer _timer;
     private readonly SyncOptions _syncOptions;
-    private readonly ILogger<OrderManager> _logger;
+    private readonly ILogger<WorkloadDispatcher> _logger;
     
     private readonly CancellationTokenSource _cts = new();
     private Timer? _syncTimer;
     private Timer? _scanTimer;
     private Task? _task;
 
-    public OrderManager(OrderBoard board,
+    public WorkloadDispatcher(OrderBoard board,
         IOptions<SyncOptions> syncOptions,
         ISynchronizeUsers synchronizeUsers,
         IScanUsers scanUsers,
         CodeTimer timer,
-        ILogger<OrderManager> logger)
+        ILogger<WorkloadDispatcher> logger)
     {
         _board = board;
         _synchronizeUsers = synchronizeUsers;
@@ -45,7 +45,7 @@ internal class OrderManager : IHostedService, IAsyncDisposable
         
         if (_syncOptions.ScanEnabled)
         {
-            _scanTimer = new Timer(_ => _board.Place(Order.Scan), null, TimeSpan.Zero, _syncOptions.ScanTimer);
+            _scanTimer = new Timer(_ => _board.Place(WorkloadKind.Scan), null, TimeSpan.Zero, _syncOptions.ScanTimer);
             _logger.LogInformation(ApplicationEvent.UserScanningServiceStarted, "SCAN is started");
         }
         else
@@ -55,7 +55,7 @@ internal class OrderManager : IHostedService, IAsyncDisposable
         
         if (_syncOptions.SyncEnabled)
         {
-            _syncTimer = new Timer(_ => _board.Place(Order.Synchronize), null, TimeSpan.Zero, _syncOptions.SyncTimer);
+            _syncTimer = new Timer(_ => _board.Place(WorkloadKind.Synchronize), null, TimeSpan.Zero, _syncOptions.SyncTimer);
             _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStarted, "SYNC is started");
         }
         else
@@ -65,7 +65,7 @@ internal class OrderManager : IHostedService, IAsyncDisposable
 
         if (_syncOptions.SyncEnabled || _syncOptions.ScanEnabled)
         {
-            _task = Task.Run(ProcessOrders, _cts.Token);
+            _task = Task.Run(ProcessWorkloads, _cts.Token);
         }
         else
         {
@@ -82,32 +82,32 @@ internal class OrderManager : IHostedService, IAsyncDisposable
             Task.Run(() => { }, cancellationToken));
     }
     
-    private async Task ProcessOrders()
+    private async Task ProcessWorkloads()
     {
         await Task.Delay(TimeSpan.FromSeconds(3), _cts.Token);
         while (!_cts.IsCancellationRequested)
         {
-            var order = _board.Take();
-            if (order == Order.Empty)
+            var workload = _board.Take();
+            if (workload == WorkloadKind.Empty)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 continue;
             }
 
-            switch (order)
+            switch (workload)
             {
-                case Order.Synchronize:
+                case WorkloadKind.Synchronize:
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncUsers();
                     break;
                 
-                case Order.Scan:
+                case WorkloadKind.Scan:
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await ScanUsers();
                     break;
                 
                 default:
-                    _logger.LogDebug("Unknown order kind, skipping...");
+                    _logger.LogDebug("Unknown workload kind, skipping...");
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     break;
             }
@@ -138,7 +138,7 @@ internal class OrderManager : IHostedService, IAsyncDisposable
             timer.Stop();
         }
                     
-        _board.Done(Order.Synchronize);
+        _board.Done(WorkloadKind.Synchronize);
         _logger.LogDebug("End of user synchronization");
     }
     
@@ -166,7 +166,7 @@ internal class OrderManager : IHostedService, IAsyncDisposable
             timer.Stop();
         }
                     
-        _board.Done(Order.Scan);
+        _board.Done(WorkloadKind.Scan);
         _logger.LogDebug("End of user scanning");
     }
 

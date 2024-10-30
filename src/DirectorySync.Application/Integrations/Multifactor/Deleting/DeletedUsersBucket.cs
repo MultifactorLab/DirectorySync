@@ -1,24 +1,22 @@
 ﻿using System.Collections.ObjectModel;
-using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Deleting;
 
 public interface IDeletedUsersBucket
 {
-    ReadOnlyCollection<MultifactorIdentity> DeletedUsers { get; }
+    ReadOnlyCollection<string> DeletedUsers { get; }
 }
 
 internal class DeletedUsersBucket : IDeletedUsersBucket
 {
-    private readonly HashSet<MultifactorIdentity> _deleted = [];
-    public ReadOnlyCollection<MultifactorIdentity> DeletedUsers => new (_deleted.ToArray());
+    private readonly HashSet<string> _deleted = [];
+    public ReadOnlyCollection<string> DeletedUsers => new (_deleted.ToArray());
 
     public int Count => _deleted.Count;
 
-    public void Add(MultifactorIdentity identity)
+    public void Add(string identity)
     {
         ArgumentNullException.ThrowIfNull(identity);
-
         _deleted.Add(identity);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
+﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
 
 internal class CreateUsersResponseDto
 {

@@ -1,6 +1,6 @@
 ﻿namespace DirectorySync.Services;
 
-internal enum Order
+internal enum WorkloadKind
 {
     Empty,
     Synchronize,

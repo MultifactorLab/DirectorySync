@@ -1,21 +1,30 @@
 using System.Collections.ObjectModel;
-using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
 public interface IUpdateUsersOperationResult
 {
-    ReadOnlyCollection<MultifactorIdentity> UpdatedUsers { get; }
+    ReadOnlyCollection<string> UpdatedUserIdentities { get; }
 }
 
 public class UpdateUsersOperationResult : IUpdateUsersOperationResult
 {
-    private readonly HashSet<MultifactorIdentity> _updatedUsers = new();
-    public ReadOnlyCollection<MultifactorIdentity> UpdatedUsers => new (_updatedUsers.ToArray());
+    private readonly HashSet<string> _identities = new();
+    public ReadOnlyCollection<string> UpdatedUserIdentities => new (_identities.ToArray());
 
-    public UpdateUsersOperationResult AddUserId(MultifactorIdentity userId)
+    public UpdateUsersOperationResult Add(string identity)
     {
-        _updatedUsers.Add(userId);
+        _identities.Add(identity);
+        return this;
+    }
+
+    public UpdateUsersOperationResult Add(IEnumerable<string> identities)
+    {
+        foreach (var identity in identities)
+        {
+            _identities.Add(identity);
+        }
+
         return this;
     }
 }

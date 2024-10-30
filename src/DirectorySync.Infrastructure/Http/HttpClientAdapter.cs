@@ -101,7 +101,9 @@ public class HttpClientAdapter
         return await HandleResponseAsync<T>(response);
     }
 
-    public async Task<HttpClientResponse> DeleteAsync(string endpoint, Action<HttpRequestMessage>? configureRequest = null)
+    public async Task<HttpClientResponse> DeleteAsync(string endpoint,
+        object? body = null, 
+        Action<HttpRequestMessage>? configureRequest = null)
     {
         if (endpoint is null)
         {
@@ -109,13 +111,16 @@ public class HttpClientAdapter
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+        request.Content = body == null ? null : CreateJsonStringContent(body);
         configureRequest?.Invoke(request);
 
         using var response = await _client.SendAsync(request);
         return await HandleResponseAsync(response);
     }
 
-    public async Task<HttpClientResponse<T>> DeleteAsync<T>(string endpoint, Action<HttpRequestMessage>? configureRequest = null)
+    public async Task<HttpClientResponse<T>> DeleteAsync<T>(string endpoint, 
+        object? body = null, 
+        Action<HttpRequestMessage>? configureRequest = null)
     {
         if (endpoint is null)
         {
@@ -123,6 +128,7 @@ public class HttpClientAdapter
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+        request.Content = body == null ? null : CreateJsonStringContent(body);
         configureRequest?.Invoke(request);
 
         using var response = await _client.SendAsync(request);

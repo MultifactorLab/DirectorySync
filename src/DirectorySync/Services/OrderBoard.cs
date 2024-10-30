@@ -11,59 +11,59 @@ internal class OrderBoard
         _logger = logger;
     }
 
-    public void Place(Order order)
+    public void Place(WorkloadKind workload)
     {
-        if (order == Order.Empty)
+        if (workload == WorkloadKind.Empty)
         {
             return;
         }
         
         lock (_locker)
         {
-            if (_orders.Add(new OrderDescription(DateTime.Now, order)))
+            if (_orders.Add(new OrderDescription(DateTime.Now, workload)))
             {
-                _logger.LogDebug("Order '{Order}' was placed. All orders: {Orders:l}", 
-                    order,
-                    string.Join(", ", _orders.Select(x => $"{{{x.Order}, {x.Placed:hh:mm:ss}}}")));
+                _logger.LogDebug("Workload '{Workload}' was placed. All workloads: {Workloads:l}", 
+                    workload,
+                    string.Join(", ", _orders.Select(x => $"{{{x.Workload}, {x.Placed:hh:mm:ss}}}")));
             }
             else
             {
-                _logger.LogDebug("Order '{Order}' already exists", order);
+                _logger.LogDebug("Workload '{Workload}' already exists", workload);
             }
         }
     }
 
-    public Order Take()
+    public WorkloadKind Take()
     {
         lock (_locker)
         {
             if (_orders.Count == 0)
             {
-                return Order.Empty;
+                return WorkloadKind.Empty;
             }
 
             var firstPlaced = _orders.OrderBy(x => x.Placed).First();
-            return firstPlaced.Order;
+            return firstPlaced.Workload;
         }
     }
 
-    public void Done(Order order)
+    public void Done(WorkloadKind workload)
     {
-        if (order == Order.Empty)
+        if (workload == WorkloadKind.Empty)
         {
             return;
         }
         
         lock (_locker)
         {
-            _orders.RemoveWhere(x => x.Order == order);
-            _logger.LogDebug("Order '{Order}' is completed and was removed. All orders: {Orders:l}", 
-                order,
-                string.Join(", ", _orders.Select(x => $"{{{x.Order}, {x.Placed:hh:mm:ss}}}")));
+            _orders.RemoveWhere(x => x.Workload == workload);
+            _logger.LogDebug("Workload '{Workload}' is completed and was removed. All workloads: {Workloads:l}", 
+                workload,
+                string.Join(", ", _orders.Select(x => $"{{{x.Workload}, {x.Placed:hh:mm:ss}}}")));
         }
     }
 
-    private record OrderDescription(DateTime Placed, Order Order);
+    private record OrderDescription(DateTime Placed, WorkloadKind Workload);
 
     private class OrderDescriptionEqualityComparer : IEqualityComparer<OrderDescription>
     {
@@ -74,12 +74,12 @@ internal class OrderBoard
                 return false;
             }
 
-            return x.Order == y.Order;
+            return x.Workload == y.Workload;
         }
 
         public int GetHashCode(OrderDescription obj)
         {
-            return obj.Order.GetHashCode();
+            return obj.Workload.GetHashCode();
         }
     }
 }

@@ -5,7 +5,7 @@ namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 
 public interface IModifiedUser
 {
-    MultifactorIdentity Identity { get; }
+    string Identity { get; }
     ReadOnlyCollection<MultifactorProperty> Properties { get; }
 }
 
@@ -13,11 +13,16 @@ internal class ModifiedUser : IModifiedUser
 {
     private readonly HashSet<MultifactorProperty> _props = [];
     public ReadOnlyCollection<MultifactorProperty> Properties => new (_props.ToArray());
-    public MultifactorIdentity Identity { get; }
+
+    public string Identity { get; }
     
-    public ModifiedUser(MultifactorIdentity identity)
+    public ModifiedUser(string identity)
     {
-        ArgumentNullException.ThrowIfNull(identity);
+        if (string.IsNullOrWhiteSpace(identity))
+        {
+            throw new ArgumentException($"'{nameof(identity)}' cannot be null or whitespace.", nameof(identity));
+        }
+
         Identity = identity;
     }
 

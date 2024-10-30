@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace DirectorySync.Application.Workloads;
 
 /// <summary>
-/// Creates users in Multifactor Cloud.
+/// Scans for a new users and pushes its to a Multifactor Cloud.
 /// </summary>
 public interface IScanUsers
 {
@@ -52,7 +52,7 @@ internal class ScanUsers : IScanUsers
         var names = _requiredLdapAttributes.GetNames().ToArray();
         if (names.Length == 0)
         {
-            _logger.LogWarning(ApplicationEvent.InvalidServiceConfiguration, "Please check attribute mapping");
+            _logger.LogWarning(ApplicationEvent.InvalidServiceConfiguration, "Required LDAP attributes not defined. Please check attribute mapping");
             return;
         }
 
@@ -75,56 +75,38 @@ internal class ScanUsers : IScanUsers
             .Where(x => !x.Propagated)
             .Select(x => x.Guid);
         
-        _logger.LogDebug("Searching for new users...");
-        var created = referenceGroup.Members.Where(x => nonPropagated.Contains(x.Guid)).ToArray();
-        if (created.Length == 0)
+        _logger.LogDebug("Searching for a new users...");
+        var newDirectoryUsers = referenceGroup.Members.Where(x => nonPropagated.Contains(x.Guid)).ToArray();
+        if (newDirectoryUsers.Length == 0)
         {
             _logger.LogDebug("New users was not found");
             _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
             return;
         }
 
-        _logger.LogDebug("Found new users: {New}", created.Length);
+        _logger.LogDebug("Found new users: {New}", newDirectoryUsers.Length);
         
-        await CreateAsync(cachedGroup, created, token);
+        await CreateAsync(cachedGroup, newDirectoryUsers, token);
         
         var cacheGroupTimer = _timer.Start("Cache Group");
         _storage.UpdateGroup(cachedGroup);
         cacheGroupTimer.Stop();
-        _logger.LogDebug("New users was created on the MF server side and group was cached");
 
+        _logger.LogDebug("New users was created on the MF server side and group was cached");
         _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
     }
 
     private async Task CreateAsync(CachedDirectoryGroup group, 
-        ReferenceDirectoryGroupMember[] created,
+        ReferenceDirectoryUser[] created,
         CancellationToken token)
     {
-        var bucket = new NewUsersBucket();
         var identityWithGuids = new Dictionary<string, DirectoryGuid>();
-        foreach (var member in created)
-        {
-            using var withUser = _logger.EnrichWithLdapUser(member.Guid);
-            
-            var props = _propertyMapper.Map(member.Attributes.ToArray());
-            if (props.Count == 0)
-            {
-                continue;
-            }
-            var user = bucket.AddNewUser(props[MultifactorPropertyName.IdentityProperty]!);
-            
-            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
-            {
-                user.AddProperty(prop.Key, prop.Value);
-            }
-            
-            identityWithGuids[user.Identity] = member.Guid;
-        }
-        
+        var bucket = BuildBucket(created, identityWithGuids);
+
         var createApiTimer = _timer.Start("Api Request: Create Users");
         var res = await _api.CreateManyAsync(bucket, token);
         createApiTimer.Stop();
-        
+
         foreach (var identity in res.CreatedUserIdentities)
         {
             if (!identityWithGuids.TryGetValue(identity, out var guid))
@@ -135,5 +117,31 @@ internal class ScanUsers : IScanUsers
             var cached = group.Members.First(x => x.Guid == guid);
             cached.Propagate();
         }
+    }
+
+    private NewUsersBucket BuildBucket(ReferenceDirectoryUser[] created, Dictionary<string, DirectoryGuid> identityWithGuids)
+    {
+        var bucket = new NewUsersBucket();
+        foreach (var member in created)
+        {
+            using var withUser = _logger.EnrichWithLdapUser(member.Guid);
+
+            var props = _propertyMapper.Map(member.Attributes);
+            if (props.Count == 0)
+            {
+                continue;
+            }
+
+            var identity = props[MultifactorPropertyName.IdentityProperty]!;
+            var user = bucket.AddNewUser(identity);
+            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
+            {
+                user.AddProperty(prop.Key, prop.Value);
+            }
+            
+            identityWithGuids[user.Identity] = member.Guid;
+        }
+
+        return bucket;
     }
 }

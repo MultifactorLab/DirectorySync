@@ -17,7 +17,7 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
 
     public static CachedDirectoryGroupMember Create(DirectoryGuid guid,
         MultifactorIdentity identity,
-        IEnumerable<LdapAttribute> attributes)
+        LdapAttributeCollection attributes)
     {
         ArgumentNullException.ThrowIfNull(guid);
         ArgumentNullException.ThrowIfNull(identity);

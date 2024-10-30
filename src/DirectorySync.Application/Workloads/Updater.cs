@@ -35,7 +35,7 @@ internal class Updater
     }
 
     public async Task UpdateManyAsync(CachedDirectoryGroup group,
-        ReferenceDirectoryGroupMember[] modified,
+        ReferenceDirectoryUser[] modified,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -50,11 +50,11 @@ internal class Updater
         while (true)
         {
             var bucket = new ModifiedUsersBucket();
-            foreach (var member in modified.Skip(skip).Take(_options.UpdatingPortionSize))
+            foreach (var member in modified.Skip(skip).Take(_options.UpdatingBatchSize))
             {
                 using var logWithUser = _logger.EnrichWithLdapUser(member.Guid);
 
-                var props = _propertyMapper.Map(member.Attributes.ToArray());
+                var props = _propertyMapper.Map(member.Attributes);
 
                 var cachedMember = group.Members.First(x => x.Guid == member.Guid);
                 var user = bucket.Add(cachedMember.Identity);
@@ -81,9 +81,9 @@ internal class Updater
 
     }
 
-    private void UpdateCachedGroup(CachedDirectoryGroup group, ReferenceDirectoryGroupMember[] modified, IUpdateUsersOperationResult res)
+    private void UpdateCachedGroup(CachedDirectoryGroup group, ReferenceDirectoryUser[] modified, IUpdateUsersOperationResult res)
     {
-        foreach (var id in res.UpdatedUsers)
+        foreach (var id in res.UpdatedUserIdentities)
         {
             var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
             if (cachedUser is null)

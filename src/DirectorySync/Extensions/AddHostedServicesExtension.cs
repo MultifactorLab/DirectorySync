@@ -9,7 +9,7 @@ internal static class AddHostedServicesExtension
         ArgumentNullException.ThrowIfNull(builder);
         
         builder.Services.AddSingleton<OrderBoard>();
-        builder.Services.AddHostedService<OrderManager>();
+        builder.Services.AddHostedService<WorkloadDispatcher>();
         builder.Services.AddOptions<SyncOptions>()
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();

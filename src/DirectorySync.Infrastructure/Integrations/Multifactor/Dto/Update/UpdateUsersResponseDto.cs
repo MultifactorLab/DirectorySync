@@ -1,4 +1,4 @@
-﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
+﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Update;
 
 internal class UpdateUsersResponseDto
 {

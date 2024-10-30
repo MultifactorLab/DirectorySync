@@ -1,22 +1,31 @@
+using DirectorySync.Application.Integrations.Multifactor.Updating;
 using System.Collections.ObjectModel;
-using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Deleting;
 
 public interface IDeleteUsersOperationResult
 {
-    ReadOnlyCollection<MultifactorIdentity> DeletedUsers { get; }
+    ReadOnlyCollection<string> DeletedUsers { get; }
 }
-
 
 public class DeleteUsersOperationResult : IDeleteUsersOperationResult
 {
-    private readonly HashSet<MultifactorIdentity> _deletedUsers = new();
-    public ReadOnlyCollection<MultifactorIdentity> DeletedUsers => new (_deletedUsers.ToArray());
+    private readonly HashSet<string> _deletedUsers = new();
+    public ReadOnlyCollection<string> DeletedUsers => new (_deletedUsers.ToArray());
 
-    public DeleteUsersOperationResult AddUserId(MultifactorIdentity userId)
+    public DeleteUsersOperationResult Add(string identity)
     {
-        _deletedUsers.Add(userId);
+        _deletedUsers.Add(identity);
+        return this;
+    }
+
+    public DeleteUsersOperationResult Add(IEnumerable<string> identities)
+    {
+        foreach (var identity in identities)
+        {
+            _deletedUsers.Add(identity);
+        }
+
         return this;
     }
 }

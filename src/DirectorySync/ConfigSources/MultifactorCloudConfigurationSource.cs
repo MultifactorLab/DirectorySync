@@ -24,7 +24,7 @@ namespace DirectorySync.ConfigSources
             FallbackLogger.Information("Pulling settings from Multifactor Cloud");
             
             var adapter = new HttpClientAdapter(_client);
-            var response = adapter.GetAsync<DirectorySyncSettingsDto>("ds/settings").GetAwaiter().GetResult();
+            var response = adapter.GetAsync<CloudConfigDto>("ds/settings").GetAwaiter().GetResult();
             if (!response.IsSuccessStatusCode)
             {
                 throw new PullCloudConfigException("Failed to pull settings from Multifactor Cloud", response);
@@ -37,6 +37,8 @@ namespace DirectorySync.ConfigSources
             }
 
             Data["Sync:Enabled"] = dto.Enabled.ToString();
+            Data["Sync:SyncTimer"] = dto.SyncTimer.ToString();
+            Data["Sync:ScanTimer"] = dto.ScanTimer.ToString();
 
             for (int index = 0; index < dto.DirectoryGroups.Length; index++)
             {
@@ -54,12 +56,6 @@ namespace DirectorySync.ConfigSources
             for (int index = 0; index < dto.PropertyMapping.PhoneAttributes.Length; index++)
             {
                 Data[$"Sync:PhoneAttributes:{index}"] = dto.PropertyMapping.PhoneAttributes[index];
-            }
-            
-            for (int index = 0; index < dto.MultifactorGroupPolicyPreset.SignUpGroups.Length; index++)
-            {
-                Data[$"Sync:MultifactorGroupPolicyPreset:SignUpGroups:{index}"] = 
-                    dto.MultifactorGroupPolicyPreset.SignUpGroups[index];
             }
             
             FallbackLogger.Information("Settings pulled from Multifactor Cloud");

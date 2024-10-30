@@ -39,6 +39,9 @@ public class LdapAttribute : ComparableValueObject
         Values = values.OrderByDescending(x => x).ToArray();
     }
 
+    public string[] GetNotEmptyValues() => Values.Where(x => !string.IsNullOrEmpty(x)).ToArray()!;
+
+
     public override string ToString()
     {
         var sb = new StringBuilder(Name);

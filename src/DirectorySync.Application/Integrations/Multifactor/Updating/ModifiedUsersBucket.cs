@@ -15,7 +15,7 @@ internal class ModifiedUsersBucket : IModifiedUsersBucket
 
     public int Count => _modified.Count;
     
-    public ModifiedUser Add(MultifactorIdentity identity)
+    public ModifiedUser Add(string identity)
     {
         ArgumentNullException.ThrowIfNull(identity);
         

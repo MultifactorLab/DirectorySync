@@ -9,12 +9,12 @@ public interface ICreateUsersOperationResult
 
 public class CreateUsersOperationResult : ICreateUsersOperationResult
 {
-    private readonly HashSet<string> _createdUsers = new(StringComparer.OrdinalIgnoreCase);
-    public ReadOnlyCollection<string> CreatedUserIdentities => new (_createdUsers.ToArray());
+    private readonly HashSet<string> _identities = new();
+    public ReadOnlyCollection<string> CreatedUserIdentities => new (_identities.ToArray());
 
     public CreateUsersOperationResult Add(string identity)
     {
-        _createdUsers.Add(identity);
+        _identities.Add(identity);
         return this;
     }    
     
@@ -22,7 +22,7 @@ public class CreateUsersOperationResult : ICreateUsersOperationResult
     {
         foreach (var identity in identities)
         {
-            _createdUsers.Add(identity);
+            _identities.Add(identity);
         }
 
         return this;

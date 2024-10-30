@@ -26,7 +26,7 @@ public class AttributesHash : ValueObject
         _value = hash;
     }
 
-    public AttributesHash(IEnumerable<LdapAttribute> attributes)
+    public AttributesHash(LdapAttributeCollection attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);
 

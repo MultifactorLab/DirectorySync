@@ -1,4 +1,3 @@
-using DirectorySync.ConfigSources;
 using DirectorySync.Domain;
 
 namespace DirectorySync.Tests
@@ -36,6 +35,8 @@ namespace DirectorySync.Tests
             src.Load();
 
             Assert.Equal("True", src.ConfigurationData["Sync:Enabled"]);
+            Assert.Equal("00:00:30", src.ConfigurationData["Sync:SyncTimer"]);
+            Assert.Equal("00:00:30", src.ConfigurationData["Sync:ScanTimer"]);
             Assert.Equal("87fa4f55-16f2-4043-aa85-15936db5f1db", src.ConfigurationData["Sync:Groups:0"]);
 
             Assert.Equal("sAmaccountname", src.ConfigurationData["Sync:IdentityAttribute"]);
@@ -46,8 +47,6 @@ namespace DirectorySync.Tests
 
             Assert.Equal("phone", src.ConfigurationData["Sync:PhoneAttributes:0"]);
             Assert.Equal("mobilephone", src.ConfigurationData["Sync:PhoneAttributes:1"]);
-
-            Assert.Equal("mygroup", src.ConfigurationData["Sync:MultifactorGroupPolicyPreset:SignUpGroups:0"]);
         }
     }
 }

@@ -13,7 +13,7 @@ internal class MultifactorPropertyMapper
         _options = options.Value;
     }
 
-    public IReadOnlyDictionary<string, string?> Map(LdapAttribute[] attributes)
+    public IReadOnlyDictionary<string, string?> Map(LdapAttributeCollection attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);
 
@@ -22,15 +22,18 @@ internal class MultifactorPropertyMapper
             throw new IdentityAttributeNotDefinedException();
         }
 
-        var dict = new Dictionary<string, string?>();
+        var dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
         var identity = GetSingle(_options.IdentityAttribute, attributes);
         dict[MultifactorPropertyName.IdentityProperty] = identity;
         
-        var name = GetFirstOrNull([_options.NameAttribute], attributes);
-        if (name is not null)
+        if (!string.IsNullOrWhiteSpace(_options.NameAttribute)) 
         {
-            dict[MultifactorPropertyName.NameProperty] = name;
+            var name = GetFirstOrNull([_options.NameAttribute], attributes);
+            if (name is not null)
+            {
+                dict[MultifactorPropertyName.NameProperty] = name;
+            }
         }
         
         var email = GetFirstOrNull(_options.EmailAttributes, attributes);
@@ -48,38 +51,52 @@ internal class MultifactorPropertyMapper
         return dict;
     }
     
-    private static string GetSingle(string name, LdapAttribute[] attrs)
-    {
-        var n = new LdapAttributeName(name);
-        
-        var attr = attrs.FirstOrDefault(x => x.Name == n);
-        if (attr is null || attr.Values.Length == 0)
+    private static string GetSingle(string name, LdapAttributeCollection attrs)
+    {        
+        var attr = attrs[name];
+        if (attr is null)
         {
-            throw new InvalidOperationException($"'{n}' attribute is required");
+            throw new InvalidOperationException($"'{name}' attribute is required");
         }
 
-        if (attr.Values.Length != 1)
+        var values = attr.GetNotEmptyValues();
+        if (values.Length == 0)
         {
-            throw new InvalidOperationException($"Single '{n}' attribute is required, but more than one was found");
+            throw new InvalidOperationException($"'{name}' attribute is required");
         }
 
-        return attr.Values[0] ?? throw new InvalidOperationException($"'{n}' attribute value is required");
+        if (values.Length != 1)
+        {
+            throw new InvalidOperationException($"Single '{name}' attribute is required, but more than one was found");
+        }
+
+        return values[0];
     }
 
-    private static string? GetFirstOrNull(string?[] names, LdapAttribute[] attrs)
+    private static string? GetFirstOrNull(string[] names, LdapAttributeCollection attrs)
     {
         if (names.Length == 0)
         {
             return default;
         }
         
-        var n = names
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => new LdapAttributeName(x!));
-        var attr = attrs
-            .Where(x => n.Contains(x.Name))
-            .FirstOrDefault(x => x.Values.Length != 0);
+        foreach (var name in names)
+        {
+            var attr = attrs[name];
+            if (attr is null)
+            {
+                continue;
+            }
 
-        return attr?.Values[0];
+            var values = attr.GetNotEmptyValues();
+            if (values.Length == 0)
+            {
+                continue;
+            }
+
+            return values[0];
+        }
+
+        return default;
     }
 }

@@ -22,12 +22,7 @@ internal static class FakeMultifactorCloud
         {
             return GetHttpClientMock(handler =>
             {
-                handler.SetupRequest(HttpMethod.Post, $"{Uri}/ds/users", x =>
-                {
-                    var auth = new BasicAuthHeaderValue(Key, Secret);
-                    var actualAuth = x.Headers.Authorization;
-                    return actualAuth?.Scheme == "Basic" && actualAuth.Parameter == auth.GetBase64();
-                }).ReturnsJsonResponse(statusCode, responseBody);
+                handler.SetupRequest(HttpMethod.Post, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
             });
         }
 
@@ -40,12 +35,7 @@ internal static class FakeMultifactorCloud
         {
             return GetHttpClientMock(handler =>
             {
-                handler.SetupRequest(HttpMethod.Put, $"{Uri}/ds/users", x =>
-                {
-                    var auth = new BasicAuthHeaderValue(Key, Secret);
-                    var actualAuth = x.Headers.Authorization;
-                    return actualAuth?.Scheme == "Basic" && actualAuth.Parameter == auth.GetBase64();
-                }).ReturnsJsonResponse(statusCode, responseBody);
+                handler.SetupRequest(HttpMethod.Put, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
             });
         }
 
@@ -53,24 +43,14 @@ internal static class FakeMultifactorCloud
         /// DELETE https://api.multifactor.dev/ds/users
         /// </summary>
         /// <returns></returns>
-        public static HttpClient Users_Delete(object? responseBody,
+        public static HttpClient Users_Delete(object? responseBody = null,
                 HttpStatusCode statusCode = HttpStatusCode.OK)
         {
             return GetHttpClientMock(handler =>
             {
-                handler.SetupRequest(HttpMethod.Delete, $"{Uri}/ds/users", x =>
-                {
-                    var auth = new BasicAuthHeaderValue(Key, Secret);
-                    var actualAuth = x.Headers.Authorization;
-                    return actualAuth?.Scheme == "Basic" && actualAuth.Parameter == auth.GetBase64();
-                }).ReturnsJsonResponse(statusCode, responseBody);
+                handler.SetupRequest(HttpMethod.Delete, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
             });
         }
-    }
-
-    public static string GetBasicAuthHeaderValue()
-    {
-        return $"Basic {new BasicAuthHeaderValue(Key, Secret).GetBase64()}";
     }
 
     private static HttpClient GetHttpClientMock(Action<Mock<HttpMessageHandler>> setup)

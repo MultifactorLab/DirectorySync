@@ -4,6 +4,9 @@ using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
+using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
+using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Delete;
+using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Update;
 using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.Integrations.Multifactor;
@@ -21,6 +24,7 @@ internal class MultifactorApi : IMultifactorApi
         _clientFactory = clientFactory;
         _logger = logger;
     }
+
     public async Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(bucket);
@@ -73,17 +77,6 @@ internal class MultifactorApi : IMultifactorApi
         return result;
     }
 
-    public async Task<IDeleteUsersOperationResult> DeleteManyAsync(IDeletedUsersBucket bucket, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(bucket);
-
-        if (bucket.DeletedUsers.Count == 0)
-        {
-            return new DeleteUsersOperationResult();
-        }
-
-        throw new NotImplementedException();
-    }
 
     public async Task<IUpdateUsersOperationResult> UpdateManyAsync(IModifiedUsersBucket bucket, CancellationToken ct = default)
     {
@@ -94,6 +87,96 @@ internal class MultifactorApi : IMultifactorApi
             return new UpdateUsersOperationResult();
         }
 
-        throw new NotImplementedException();
+        var dtos = bucket.ModifiedUsers
+            .Select(x => new ModifiedUserDto(x.Identity, x.Properties.Select(s => new UserPropertyDto(s.Name, s.Value))));
+        var dto = new UpdateUsersDto(dtos);
+
+        var cli = _clientFactory.CreateClient(_clientName);
+        var adapter = new HttpClientAdapter(cli);
+
+        var response = await adapter.PutAsync<UpdateUsersResponseDto>("ds/users", dto);
+        var result = new UpdateUsersOperationResult();
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Recieved unsuccessfull response from Multifactor API");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
+            }
+
+            return result;
+        }
+
+        if (response.Model is null)
+        {
+            _logger.LogWarning("Response model is null");
+            return result;
+        }
+
+        if (response.Model.Failures.Length == 0)
+        {
+            result.Add(bucket.ModifiedUsers.Select(x => x.Identity));
+        }
+        else
+        {
+            var failures = response.Model.Failures
+                .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
+                .Select(x => x.Identity!);
+
+            result.Add(bucket.ModifiedUsers.Select(x => x.Identity).Except(failures));
+        }
+
+        return result;
+    }
+
+    public async Task<IDeleteUsersOperationResult> DeleteManyAsync(IDeletedUsersBucket bucket, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(bucket);
+
+        if (bucket.DeletedUsers.Count == 0)
+        {
+            return new DeleteUsersOperationResult();
+        }
+
+        var dto = new DeleteUsersDto(bucket.DeletedUsers);
+
+        var cli = _clientFactory.CreateClient(_clientName);
+        var adapter = new HttpClientAdapter(cli);
+
+        var response = await adapter.DeleteAsync<DeleteUsersResponseDto>("ds/users", dto);
+        var result = new DeleteUsersOperationResult();
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Recieved unsuccessfull response from Multifactor API");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
+            }
+
+            return result;
+        }
+
+        if (response.Model is null)
+        {
+            _logger.LogWarning("Response model is null");
+            return result;
+        }
+
+        if (response.Model.Failures.Length == 0)
+        {
+            result.Add(bucket.DeletedUsers);
+        }
+        else
+        {
+            var failures = response.Model.Failures
+                .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
+                .Select(x => x.Identity!);
+
+            result.Add(bucket.DeletedUsers.Except(failures));
+        }
+
+        return result;
     }
 }

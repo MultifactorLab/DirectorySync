@@ -14,5 +14,4 @@ public class RequiredLdapAttributesTests
 
         Assert.Throws<IdentityAttributeNotDefinedException>(() => attrs.GetNames().ToArray());
     }
-   
 }

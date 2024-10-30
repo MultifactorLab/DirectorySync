@@ -1,23 +1,23 @@
-﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
+﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Update;
 
-internal class CreateUsersDto
+internal class UpdateUsersDto
 {
-    public NewUserDto[] NewUsers { get; }
+    public ModifiedUserDto[] ModifiedUsers { get; }
 
-    public CreateUsersDto(IEnumerable<NewUserDto> users)
+    public UpdateUsersDto(IEnumerable<ModifiedUserDto> users)
     {
         ArgumentNullException.ThrowIfNull(users);
-        NewUsers = users.ToArray();
+        ModifiedUsers = users.ToArray();
     }
 }
 
-internal class NewUserDto
+internal class ModifiedUserDto
 {
     public string Identity { get; }
 
     public UserPropertyDto[] Properties { get; }
 
-    public NewUserDto(string identity, IEnumerable<UserPropertyDto> properties)
+    public ModifiedUserDto(string identity, IEnumerable<UserPropertyDto> properties)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {

@@ -2,7 +2,6 @@
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
-using DirectorySync.Domain;
 using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.Integrations.Multifactor;
@@ -38,7 +37,7 @@ internal class FakeMultifactorApi : IMultifactorApi
         var users = new UpdateUsersOperationResult();
         foreach (var user in bucket.ModifiedUsers)
         {
-            users.AddUserId(user.Identity);
+            users.Add(user.Identity);
         }
         _logger.LogDebug("Got successful response from API");
         return Task.FromResult<IUpdateUsersOperationResult>(users);
@@ -52,7 +51,7 @@ internal class FakeMultifactorApi : IMultifactorApi
         var users = new DeleteUsersOperationResult();
         foreach (var user in bucket.DeletedUsers)
         {
-            users.AddUserId(user);
+            users.Add(user);
         }
         _logger.LogDebug("Got successful response from API");
         return Task.FromResult<IDeleteUsersOperationResult>(users);

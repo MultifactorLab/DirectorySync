@@ -5,7 +5,7 @@ namespace DirectorySync.Application.Workloads;
 
 internal static class MemberChangeDetector
 {
-    public static IEnumerable<ReferenceDirectoryGroupMember> GetModifiedMembers(ReferenceDirectoryGroup referenceGroup,
+    public static IEnumerable<ReferenceDirectoryUser> GetModifiedMembers(ReferenceDirectoryGroup referenceGroup,
         CachedDirectoryGroup cachedGroup)
     {
         ArgumentNullException.ThrowIfNull(referenceGroup);
