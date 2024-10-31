@@ -13,7 +13,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private readonly ISynchronizeUsers _synchronizeUsers;
     private readonly IScanUsers _scanUsers;
     private readonly CodeTimer _timer;
-    private readonly SyncOptions _syncOptions;
+    private readonly IOptionsMonitor<SyncOptions> _syncOptions;
     private readonly ILogger<WorkloadDispatcher> _logger;
     
     private readonly CancellationTokenSource _cts = new();
@@ -22,7 +22,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private Task? _task;
 
     public WorkloadDispatcher(OrderBoard board,
-        IOptions<SyncOptions> syncOptions,
+        IOptionsMonitor<SyncOptions> syncOptions,
         ISynchronizeUsers synchronizeUsers,
         IScanUsers scanUsers,
         CodeTimer timer,
@@ -33,7 +33,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         _scanUsers = scanUsers;
         _timer = timer;
         _logger = logger;
-        _syncOptions = syncOptions.Value;
+        _syncOptions = syncOptions;
     }
     
     public Task StartAsync(CancellationToken cancellationToken)
@@ -42,36 +42,15 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         {
             return Task.FromCanceled(cancellationToken);
         }
-        
-        if (_syncOptions.ScanEnabled)
-        {
-            _scanTimer = new Timer(_ => _board.Place(WorkloadKind.Scan), null, TimeSpan.Zero, _syncOptions.ScanTimer);
-            _logger.LogInformation(ApplicationEvent.UserScanningServiceStarted, "SCAN is started");
-        }
-        else
-        {
-            _logger.LogInformation(ApplicationEvent.UserScanningServiceStartedDisabled, "SCAN is started but disabled");
-        }
-        
-        if (_syncOptions.SyncEnabled)
-        {
-            _syncTimer = new Timer(_ => _board.Place(WorkloadKind.Synchronize), null, TimeSpan.Zero, _syncOptions.SyncTimer);
-            _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStarted, "SYNC is started");
-        }
-        else
-        {
-            _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStartedDisabled, "SYNC is started but disabled");
-        }
 
-        if (_syncOptions.SyncEnabled || _syncOptions.ScanEnabled)
-        {
-            _task = Task.Run(ProcessWorkloads, _cts.Token);
-        }
-        else
-        {
-            _task = Task.CompletedTask;
-        }
-        
+        SetTimers(_syncOptions.CurrentValue);
+        _task = Task.Run(ProcessWorkloads, _cts.Token);
+        _syncOptions.OnChange(SetTimers);
+
+        _logger.LogInformation(ApplicationEvent.UserScanningServiceStarted, "SCAN is started");
+        _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStarted, "SYNC is started");
+
+
         return Task.CompletedTask;
     }
 
@@ -81,16 +60,28 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             _task ?? Task.CompletedTask,
             Task.Run(() => { }, cancellationToken));
     }
+
+    private void SetTimers(SyncOptions options)
+    {
+        _scanTimer = new Timer(_ => _board.Place(WorkloadKind.Scan), null, TimeSpan.Zero, options.ScanTimer);
+        _syncTimer = new Timer(_ => _board.Place(WorkloadKind.Synchronize), null, TimeSpan.Zero, options.SyncTimer);
+    }
     
     private async Task ProcessWorkloads()
     {
         await Task.Delay(TimeSpan.FromSeconds(3), _cts.Token);
         while (!_cts.IsCancellationRequested)
         {
+            if (!_syncOptions.CurrentValue.ScanEnabled && !_syncOptions.CurrentValue.SyncEnabled)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                continue;
+            }
+
             var workload = _board.Take();
             if (workload == WorkloadKind.Empty)
             {
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(2));
                 continue;
             }
 
@@ -118,7 +109,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     {
         _logger.LogDebug("Start of user synchronization");
                     
-        foreach (var guid in _syncOptions.Groups)
+        foreach (var guid in _syncOptions.CurrentValue.Groups)
         {
             var timer = _timer.Start($"Group {guid} Sync: Total");
 
@@ -146,7 +137,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     {
         _logger.LogDebug("Start of user scanning");
                     
-        foreach (var guid in _syncOptions.Groups)
+        foreach (var guid in _syncOptions.CurrentValue.Groups)
         {
             var timer = _timer.Start($"Group {guid} Scan: Total");
 

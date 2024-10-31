@@ -8,13 +8,6 @@ internal class SyncOptions
 
     public Guid[] Groups { get; init; } = [];
 
-    public MultifactorGroupPolicyPreset MultifactorGroupPolicyPreset { get; set; } = new ();
-
     public bool SyncEnabled => Enabled && SyncTimer > TimeSpan.Zero && SyncTimer < TimeSpan.MaxValue;
     public bool ScanEnabled => Enabled && ScanTimer > TimeSpan.Zero && ScanTimer < TimeSpan.MaxValue;
-}
-
-internal class MultifactorGroupPolicyPreset
-{
-    public string[] SignUpGroups { get; set; } = [];
 }

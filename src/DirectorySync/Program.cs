@@ -43,11 +43,11 @@ try
 }
 catch (PullCloudConfigException ex)
 {
-    FallbackLogger.Error(ex, "Failed to start DirectorySync service: {Message}. Response: {Response}", ex.Message, ex.Response);
+    StartupLogger.Error(ex, "Failed to start DirectorySync service: {Message}. Response: {Response}", ex.Message, ex.Response);
 }
 catch (Exception ex)
 {
-    FallbackLogger.Error(ex, "Failed to start DirectorySync service");
+    StartupLogger.Error(ex, "Failed to start DirectorySync service");
 }
 finally
 {

@@ -3,7 +3,7 @@
 namespace DirectorySync.Infrastructure.Http;
 
 /// <summary>
-/// Http logger with the <see cref="FallbackLogger"/> usage.
+/// Http logger with the <see cref="StartupLogger"/> usage.
 /// </summary>
 public class HttpFallbackLogger : DelegatingHandler
 {
@@ -28,7 +28,7 @@ public class HttpFallbackLogger : DelegatingHandler
             reqBody = await request.Content.ReadAsStringAsync(cancellationToken);
         }
 
-        FallbackLogger.Information("Sending {Method} request to {Url} with {Body}", 
+        StartupLogger.Information("Sending {Method} request to {Url} with {Body}", 
             request.Method, 
             request.RequestUri, 
             reqBody);
@@ -41,7 +41,7 @@ public class HttpFallbackLogger : DelegatingHandler
             respBody = await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
-        FallbackLogger.Information("Got {HttpCode} response from {Url} with {Body}", 
+        StartupLogger.Information("Got {HttpCode} response from {Url} with {Body}", 
             response?.StatusCode, 
             request.RequestUri, 
             respBody);

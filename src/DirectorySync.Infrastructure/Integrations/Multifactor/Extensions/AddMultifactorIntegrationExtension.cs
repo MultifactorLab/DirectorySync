@@ -29,6 +29,6 @@ internal static class AddMultifactorIntegrationExtension
 
         }).AddHttpMessageHandler<HttpLogger>().AddHttpMessageHandler<MfTraceIdHeaderSetter>();
 
-        builder.Services.AddSingleton<IMultifactorApi, FakeMultifactorApi>();
+        builder.Services.AddSingleton<IMultifactorApi, MultifactorApi>();
     }
 }
