@@ -1,22 +1,31 @@
-﻿using System.Collections.ObjectModel;
+﻿using DirectorySync.Domain;
+using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Deleting;
 
 public interface IDeletedUsersBucket
 {
-    ReadOnlyCollection<string> DeletedUsers { get; }
+    ReadOnlyCollection<IDeletedUser> DeletedUsers { get; }
 }
 
 internal class DeletedUsersBucket : IDeletedUsersBucket
 {
-    private readonly HashSet<string> _deleted = [];
-    public ReadOnlyCollection<string> DeletedUsers => new (_deleted.ToArray());
+    private readonly List<IDeletedUser> _deleted = [];
+    public ReadOnlyCollection<IDeletedUser> DeletedUsers => new (_deleted);
 
     public int Count => _deleted.Count;
 
-    public void Add(string identity)
+    public DeletedUser Add(DirectoryGuid id, string identity)
     {
         ArgumentNullException.ThrowIfNull(identity);
-        _deleted.Add(identity);
+        if (_deleted.Any(x => x.Id == id))
+        {
+            throw new InvalidOperationException($"User {{{id}, {identity}}} already exists in this bucket");
+        }
+
+        var user = new DeletedUser(id, identity);
+        _deleted.Add(user);
+
+        return user;
     }
 }

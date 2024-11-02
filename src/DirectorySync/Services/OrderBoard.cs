@@ -26,10 +26,6 @@ internal class OrderBoard
                     workload,
                     string.Join(", ", _orders.Select(x => $"{{{x.Workload}, {x.Placed:hh:mm:ss}}}")));
             }
-            else
-            {
-                _logger.LogDebug("Workload '{Workload}' already exists", workload);
-            }
         }
     }
 

@@ -26,8 +26,7 @@ namespace DirectorySync.ConfigSources
 
         public override void Load()
         {
-            var config = Pull();
-            SetData(config);
+            LoadCloudConfigData();
 
             if (_refreshTimer == TimeSpan.Zero)
             {
@@ -45,18 +44,7 @@ namespace DirectorySync.ConfigSources
         {
             try
             {
-                var config = Pull();
-                if (!HasChanges(config))
-                {
-                    return;
-                }
-
-                SetData(config);
-                Remember(config);
-
-                CloudInteractionLogger.Information("Cloud settings was changed");
-
-                OnReload();
+                LoadCloudConfigData();
             }
             catch (Exception ex)
             {
@@ -66,7 +54,7 @@ namespace DirectorySync.ConfigSources
 
         private CloudConfigDto Pull()
         {
-            CloudInteractionLogger.Information("Pulling settings from Multifactor Cloud");
+            CloudInteractionLogger.Verbose("Pulling settings from Multifactor Cloud");
 
             var adapter = new HttpClientAdapter(_client);
             var response = adapter.GetAsync<CloudConfigDto>("ds/settings").GetAwaiter().GetResult();
@@ -81,9 +69,24 @@ namespace DirectorySync.ConfigSources
                 throw new PullCloudConfigException("Empty config was retrieved from Multifactor Cloud", response);
             }
 
-            CloudInteractionLogger.Information("Settings pulled from Multifactor Cloud");
+            CloudInteractionLogger.Verbose("Settings pulled from Multifactor Cloud");
 
             return dto;
+        }
+
+        private void LoadCloudConfigData()
+        {
+            var config = Pull();
+            if (!HasChanges(config))
+            {
+                return;
+            }
+
+            SetData(config);
+            Remember(config);
+
+            OnReload();
+            CloudInteractionLogger.Information("Cloud settings was changed");
         }
 
         private void SetData(CloudConfigDto config)

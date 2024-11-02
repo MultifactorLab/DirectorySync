@@ -3,12 +3,9 @@
 	<Fragment>
 		<UI>
 
-			<?if $(var.Configuration) = Debug ?>
-				<Property Id="PROP_APIURL" Value="https://..." />
-			<?endif?>
-
 			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
 			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
+			<Property Id="PROP_APIURL" Value="https://api.multifactro.dev" />
 			
 			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				
@@ -28,17 +25,15 @@
 				<Control Id="EditApiSecret" Type="Edit" X="140" Y="117" Height="17" Width="150" Password="yes" Property="PROP_APISECRET" Indirect="no"/>
 
 
-				<?if $(var.Configuration) = Debug ?>
-					<Control Id="LabelApiUrl" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="API url" />
-					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
-				<?endif?>
+				<Control Id="LabelApiUrl" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="API url" />
+				<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
 
-				
+
 				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />
 
 				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.DialogNext)" 
-						 DisableCondition="(NOT (PROP_APIKEY)) OR (NOT (PROP_APISECRET))" 
-						 EnableCondition="(PROP_APIKEY) AND (PROP_APISECRET)" />
+						 DisableCondition="(NOT (PROP_APIKEY)) OR (NOT (PROP_APISECRET)) OR (NOT (PROP_APIURL))" 
+						 EnableCondition="(PROP_APIKEY) AND (PROP_APISECRET) AND (PROP_APIURL)" />
 				
 				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.DialogBack)" />
 				

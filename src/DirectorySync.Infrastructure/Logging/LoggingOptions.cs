@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Serilog.Events;
+using System.ComponentModel.DataAnnotations;
 
 namespace DirectorySync.Infrastructure.Logging;
 
@@ -20,4 +21,6 @@ public class FileLoggingOptions
 
     [Range(1, 100)]
     public int RetainedFileCountLimit { get; set; } = 20;
+
+    public string MinimalLevel { get; set; } = LogEventLevel.Debug.ToString();
 }

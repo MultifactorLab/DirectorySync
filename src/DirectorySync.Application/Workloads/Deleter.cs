@@ -1,8 +1,8 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
-using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -37,12 +37,11 @@ internal class Deleter
         ArgumentNullException.ThrowIfNull(group);
         ArgumentNullException.ThrowIfNull(deletedUsers);
 
-        var identities = group.Members
-            .Where(x => deletedUsers.Contains(x.Guid))
-            .Select(x => x.Identity)
+        var batch = group.Members
+            .IntersectBy(deletedUsers, x => x.Id)
             .ToArray();
 
-        if (identities.Length == 0)
+        if (batch.Length == 0)
         {
             return;
         }
@@ -51,9 +50,9 @@ internal class Deleter
         while (true)
         {
             var bucket = new DeletedUsersBucket();
-            foreach (var id in identities.Skip(skip).Take(_options.DeletingBatchSize))
+            foreach (var userToDelete in batch.Skip(skip).Take(_options.DeletingBatchSize))
             {
-                bucket.Add(id);
+                bucket.Add(userToDelete.Id, userToDelete.Identity);
             }
 
             if (bucket.Count == 0)
@@ -74,12 +73,12 @@ internal class Deleter
 
     private void UpdateCachedGroup(CachedDirectoryGroup group, IDeleteUsersOperationResult res)
     {
-        foreach (var id in res.DeletedUsers)
+        foreach (var user in res.DeletedUsers)
         {
-            var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
+            var cachedUser = group.Members.FirstOrDefault(x => x.Id == user.Id);
             if (cachedUser is not null)
             {
-                group.DeleteMembers(cachedUser.Guid);
+                group.DeleteMembers(cachedUser.Id);
             }
         }
 

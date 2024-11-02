@@ -12,12 +12,12 @@ internal static class MemberChangeDetector
         ArgumentNullException.ThrowIfNull(cachedGroup);
 
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
-        var cachedMemberGuids = cachedGroup.Members.Select(x => x.Guid);
+        var cachedMemberGuids = cachedGroup.Members.Select(x => x.Id);
 
         foreach (DirectoryGuid guid in refMemberGuids.Intersect(cachedMemberGuids))
         {
             var referenceMember = referenceGroup.Members.First(x => x.Guid == guid);
-            var cachedMember = cachedGroup.Members.First(x => x.Guid == guid);
+            var cachedMember = cachedGroup.Members.First(x => x.Id == guid);
 
             var referenceAttributesHash = new AttributesHash(referenceMember.Attributes);
             var cachedAttributesHash = cachedMember.Hash;

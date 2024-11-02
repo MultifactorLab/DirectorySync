@@ -49,6 +49,9 @@ public static class StartupLogger
     /// <inheritdoc cref="Logger.Verbose"/>
     public static void Verbose(string message, params object?[] values) => _logger.Value.Verbose(message, values);
 
+    /// <inheritdoc cref="Logger.Debug"/>
+    public static void Debug(string message, params object?[] values) => _logger.Value.Debug(message, values);
+
     /// <inheritdoc cref="Logger.Information"/>
     public static void Information(string message, params object?[] values) => _logger.Value.Information(message, values);
 

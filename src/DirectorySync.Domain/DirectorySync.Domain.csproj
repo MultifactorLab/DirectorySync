@@ -10,10 +10,4 @@
       <PackageReference Include="CSharpFunctionalExtensions" Version="3.1.0" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Reference Include="System.DirectoryServices.AccountManagement">
-        <HintPath>..\DirectorySync.Console\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.DirectoryServices.AccountManagement.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
 </Project>

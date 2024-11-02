@@ -9,6 +9,6 @@ internal static class DirectoryGroupMemberExtensions
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        return new DirectoryGroupMemberPersistenceModel(entity.Guid, entity.Hash, entity.Identity);
+        return new DirectoryGroupMemberPersistenceModel(entity.Id, entity.Hash, entity.Identity);
     }
 }

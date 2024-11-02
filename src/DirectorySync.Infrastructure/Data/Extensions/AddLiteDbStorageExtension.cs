@@ -1,4 +1,4 @@
-﻿using DirectorySync.Domain.Abstractions;
+﻿using DirectorySync.Application.Ports;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

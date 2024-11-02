@@ -1,11 +1,11 @@
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 
-namespace DirectorySync.Domain.Abstractions;
+namespace DirectorySync.Application.Ports;
 
 public interface IApplicationStorage
 {
     CachedDirectoryGroup? FindGroup(DirectoryGuid id);
-    void CreateGroup(CachedDirectoryGroup group);
+    void InsertGroup(CachedDirectoryGroup group);
     void UpdateGroup(CachedDirectoryGroup group);
 }

@@ -26,7 +26,7 @@ public class CachedDirectoryGroup : CachedDirectoryObject
         ArgumentNullException.ThrowIfNull(members);
 
         var membersArr = members.ToArray();
-        var hash = EntriesHash.Create(membersArr.Select(x => x.Guid));
+        var hash = EntriesHash.Create(membersArr.Select(x => x.Id));
         return new CachedDirectoryGroup(guid, membersArr, hash);
     }
     
@@ -42,7 +42,7 @@ public class CachedDirectoryGroup : CachedDirectoryObject
         var intersection = _members.Intersect(members).ToArray();
         if (intersection.Length != 0)
         {
-            var joined = $"Specified users already exist: {string.Join(", ", intersection.Select(x => x.Guid))}";
+            var joined = $"Specified users already exist: {string.Join(", ", intersection.Select(x => x.Id))}";
             throw new InvalidOperationException(joined);
         }
 
@@ -59,13 +59,13 @@ public class CachedDirectoryGroup : CachedDirectoryObject
             return;
         }
 
-        _members.RemoveAll(x => memberGuids.Contains(x.Guid));
+        _members.RemoveAll(x => memberGuids.Contains(x.Id));
         UpdateHash();
     }
 
     private void UpdateHash()
     {
-        Hash = EntriesHash.Create(_members.Select(x => x.Guid));
+        Hash = EntriesHash.Create(_members.Select(x => x.Id));
     }
 
     public override string ToString() => Guid.Value.ToString();

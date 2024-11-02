@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using DirectorySync.Domain;
+using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Creating;
 
@@ -12,19 +13,24 @@ internal class NewUsersBucket : INewUsersBucket
     private readonly List<INewUser> _newUsers = [];
     public ReadOnlyCollection<INewUser> NewUsers => new (_newUsers);
     
-    public NewUser AddNewUser(string identity)
+    public NewUser AddNewUser(DirectoryGuid id, string identity)
     {
+        if (id is null)
+        {
+            throw new ArgumentNullException(nameof(id));
+        }
+
         if (string.IsNullOrWhiteSpace(identity))
         {
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(identity));
         }
         
-        if (_newUsers.Any(x => x.Identity.Equals(identity, StringComparison.OrdinalIgnoreCase)))
+        if (_newUsers.Any(x => x.Id == id))
         {
-            throw new InvalidOperationException($"User '{identity}' already exists in this bucket");
+            throw new InvalidOperationException($"User {{{id}, {identity}}} already exists in this bucket");
         }
         
-        var user = new NewUser(identity);
+        var user = new NewUser(id, identity);
         _newUsers.Add(user);
 
         return user;

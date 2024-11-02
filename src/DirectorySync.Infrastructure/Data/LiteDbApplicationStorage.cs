@@ -1,5 +1,5 @@
+using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
-using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using DirectorySync.Infrastructure.Data.Extensions;
 using DirectorySync.Infrastructure.Data.Models;
@@ -31,7 +31,7 @@ internal class LiteDbApplicationStorage : IApplicationStorage
         return directoryGroup;
     }
 
-    public void CreateGroup(CachedDirectoryGroup group)
+    public void InsertGroup(CachedDirectoryGroup group)
     {
         ArgumentNullException.ThrowIfNull(group);
 

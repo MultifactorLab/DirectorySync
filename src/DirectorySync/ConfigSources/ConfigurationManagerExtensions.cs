@@ -58,7 +58,7 @@ namespace DirectorySync.ConfigSources
 
         private static HttpClient CreateClient(Uri uri, BasicAuthHeaderValue auth)
         {
-            var tracer = new HttpFallbackLogger();
+            var tracer = new HttpCloudInteractionLogger();
             var cli = new HttpClient(tracer)
             {
                 BaseAddress = uri

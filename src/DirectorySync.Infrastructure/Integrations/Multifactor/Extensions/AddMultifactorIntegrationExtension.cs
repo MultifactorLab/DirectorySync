@@ -18,6 +18,7 @@ internal static class AddMultifactorIntegrationExtension
             .ValidateDataAnnotations();
 
         builder.Services.TryAddTransient<HttpLogger>();
+        builder.Services.TryAddTransient<MfTraceIdHeaderSetter>();
         builder.Services.AddHttpClient("MultifactorApi", (prov, cli) =>
         {
             var options = prov.GetRequiredService<IOptions<MultifactorApiOptions>>().Value;

@@ -1,7 +1,7 @@
 using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
-using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -63,8 +63,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
-        var referenceMembersHash = EntriesHash.Create(referenceGroup.Members.Select(x => x.Guid));
-        if (referenceMembersHash != cachedGroup.Hash)
+        if (ReferenceGroupHasDifferentCountOfMembers(referenceGroup, cachedGroup))
         {
             _logger.LogDebug("Reference and cached groups are different");
             _logger.LogDebug("Searching for deleted members...");
@@ -104,11 +103,17 @@ internal class SynchronizeUsers : ISynchronizeUsers
         _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization for group {group}", groupGuid);
     }
 
+    private static bool ReferenceGroupHasDifferentCountOfMembers(ReferenceDirectoryGroup refGroup, CachedDirectoryGroup cachedGroup)
+    {
+        var referenceMembersHash = EntriesHash.Create(refGroup.Members.Select(x => x.Guid));
+        return referenceMembersHash != cachedGroup.Hash;
+    }
+
     private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup, 
         CachedDirectoryGroup cachedGroup)
     {
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
-        var cachedMemberGuids = cachedGroup.Members.Select(x => x.Guid);
-        return refMemberGuids.Except(cachedMemberGuids);
+        var cachedMemberGuids = cachedGroup.Members.Select(x => x.Id);
+        return cachedMemberGuids.Except(refMemberGuids);
     }
 }

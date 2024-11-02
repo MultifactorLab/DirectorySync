@@ -21,9 +21,9 @@ internal class FakeMultifactorApi : IMultifactorApi
 
         _logger.LogDebug("Sending request to API: CREATE");
         var users = new CreateUsersOperationResult();
-        foreach (var user in bucket.NewUsers)
+        foreach (var user in bucket.NewUsers.Select(x => new HandledUser(x.Id, x.Identity)))
         {
-            users.Add(user.Identity);
+            users.Add(user);
         }
         _logger.LogDebug("Got successful response from API");
         return Task.FromResult<ICreateUsersOperationResult>(users);
@@ -35,9 +35,9 @@ internal class FakeMultifactorApi : IMultifactorApi
 
         _logger.LogDebug("Sending request to API: UPDATE");
         var users = new UpdateUsersOperationResult();
-        foreach (var user in bucket.ModifiedUsers)
+        foreach (var user in bucket.ModifiedUsers.Select(x => new HandledUser(x.Id, x.Identity)))
         {
-            users.Add(user.Identity);
+            users.Add(user);
         }
         _logger.LogDebug("Got successful response from API");
         return Task.FromResult<IUpdateUsersOperationResult>(users);
@@ -49,7 +49,7 @@ internal class FakeMultifactorApi : IMultifactorApi
 
         _logger.LogDebug("Sending request to API: DELETE");
         var users = new DeleteUsersOperationResult();
-        foreach (var user in bucket.DeletedUsers)
+        foreach (var user in bucket.DeletedUsers.Select(x => new HandledUser(x.Id, x.Identity)))
         {
             users.Add(user);
         }

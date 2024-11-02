@@ -1,7 +1,7 @@
 ﻿using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 
-namespace DirectorySync.Domain.Abstractions;
+namespace DirectorySync.Application.Ports;
 
 public interface IGetReferenceGroup
 {

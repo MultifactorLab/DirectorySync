@@ -5,12 +5,12 @@ namespace DirectorySync.Infrastructure.Http;
 /// <summary>
 /// Http logger with the <see cref="StartupLogger"/> usage.
 /// </summary>
-public class HttpFallbackLogger : DelegatingHandler
+public class HttpCloudInteractionLogger : DelegatingHandler
 {
     /// <summary>
-    /// Creates new instance of a <see cref="HttpFallbackLogger"/> with a <see cref="MfTraceIdHeaderSetter"/>.
+    /// Creates new instance of a <see cref="HttpCloudInteractionLogger"/> with a <see cref="MfTraceIdHeaderSetter"/>.
     /// </summary>
-    public HttpFallbackLogger()
+    public HttpCloudInteractionLogger()
     {
         var tracer = new MfTraceIdHeaderSetter
         {
@@ -28,7 +28,7 @@ public class HttpFallbackLogger : DelegatingHandler
             reqBody = await request.Content.ReadAsStringAsync(cancellationToken);
         }
 
-        StartupLogger.Information("Sending {Method} request to {Url} with {Body}", 
+        CloudInteractionLogger.Debug("Sending {Method} request to {Url} with {Body}", 
             request.Method, 
             request.RequestUri, 
             reqBody);
@@ -41,7 +41,7 @@ public class HttpFallbackLogger : DelegatingHandler
             respBody = await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
-        StartupLogger.Information("Got {HttpCode} response from {Url} with {Body}", 
+        CloudInteractionLogger.Debug("Got {HttpCode} response from {Url} with {Body}", 
             response?.StatusCode, 
             request.RequestUri, 
             respBody);

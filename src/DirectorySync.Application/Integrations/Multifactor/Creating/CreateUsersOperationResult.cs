@@ -4,25 +4,26 @@ namespace DirectorySync.Application.Integrations.Multifactor.Creating;
 
 public interface ICreateUsersOperationResult
 {
-    ReadOnlyCollection<string> CreatedUserIdentities { get; }
+    ReadOnlyCollection<HandledUser> CreatedUsers { get; }
 }
 
 public class CreateUsersOperationResult : ICreateUsersOperationResult
 {
-    private readonly HashSet<string> _identities = new();
-    public ReadOnlyCollection<string> CreatedUserIdentities => new (_identities.ToArray());
+    private readonly HashSet<HandledUser> _users = new();
+    public ReadOnlyCollection<HandledUser> CreatedUsers => new (_users.ToArray());
 
-    public CreateUsersOperationResult Add(string identity)
+    public CreateUsersOperationResult Add(HandledUser user)
     {
-        _identities.Add(identity);
+        
+        _users.Add(user);
         return this;
     }    
     
-    public CreateUsersOperationResult Add(IEnumerable<string> identities)
+    public CreateUsersOperationResult Add(IEnumerable<HandledUser> users)
     {
-        foreach (var identity in identities)
+        foreach (var user in users)
         {
-            _identities.Add(identity);
+            _users.Add(user);
         }
 
         return this;

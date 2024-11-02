@@ -88,17 +88,26 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             switch (workload)
             {
                 case WorkloadKind.Synchronize:
+                    if (!_syncOptions.CurrentValue.SyncEnabled) 
+                    {
+                        _board.Done(WorkloadKind.Synchronize);
+                        break;
+                    }
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncUsers();
                     break;
                 
-                case WorkloadKind.Scan:
+                case WorkloadKind.Scan when _syncOptions.CurrentValue.ScanEnabled:
+                    if (!_syncOptions.CurrentValue.ScanEnabled)
+                    {
+                        _board.Done(WorkloadKind.Scan);
+                        break;
+                    }
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await ScanUsers();
                     break;
                 
                 default:
-                    _logger.LogDebug("Unknown workload kind, skipping...");
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     break;
             }

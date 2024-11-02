@@ -24,7 +24,7 @@ public class MultifactorApiTests
             var response = await api.CreateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.CreatedUserIdentities);
+            Assert.Empty(response.CreatedUsers);
         }
 
         [Theory]
@@ -45,12 +45,12 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create(statusCode: (HttpStatusCode)statusCode));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser("identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1");
 
             var response = await api.CreateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.CreatedUserIdentities);
+            Assert.Empty(response.CreatedUsers);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create(statusCode: HttpStatusCode.Unauthorized));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser("identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1");
 
             _ = await api.CreateManyAsync(bucket);
 
@@ -79,12 +79,12 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create());
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser("identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1");
 
             var response = await api.CreateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.CreatedUserIdentities);
+            Assert.Empty(response.CreatedUsers);
 
             const string log = "Response model is null";
             mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
@@ -104,13 +104,13 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser("identity1");
-            bucket.AddNewUser("identity2");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity2");
 
             var response = await api.CreateManyAsync(bucket);
 
-            Assert.Contains("identity1", response.CreatedUserIdentities);
-            Assert.Contains("identity2", response.CreatedUserIdentities);
+            Assert.Contains("identity1", response.CreatedUsers.Select(x => x.Identity));
+            Assert.Contains("identity2", response.CreatedUsers.Select(x => x.Identity));
         }
 
         [Fact]
@@ -133,13 +133,13 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser("identity1");
-            bucket.AddNewUser("identity2");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity2");
 
             var response = await api.CreateManyAsync(bucket);
 
-            Assert.DoesNotContain("identity1", response.CreatedUserIdentities);
-            Assert.Contains("identity2", response.CreatedUserIdentities);
+            Assert.DoesNotContain("identity1", response.CreatedUsers.Select(x => x.Identity));
+            Assert.Contains("identity2", response.CreatedUsers.Select(x => x.Identity));
         }
     }
 
@@ -155,7 +155,7 @@ public class MultifactorApiTests
             var response = await api.UpdateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.UpdatedUserIdentities);
+            Assert.Empty(response.UpdatedUsers);
         }
 
         [Theory]
@@ -176,12 +176,12 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update(statusCode: (HttpStatusCode)statusCode));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add("identity1");
+            bucket.Add(Guid.NewGuid(), "identity1");
 
             var response = await api.UpdateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.UpdatedUserIdentities);
+            Assert.Empty(response.UpdatedUsers.Select(x => x.Identity));
         }
 
         [Fact]
@@ -193,7 +193,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update(statusCode: HttpStatusCode.Unauthorized));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add("identity1");
+            bucket.Add(Guid.NewGuid(), "identity1");
 
             _ = await api.UpdateManyAsync(bucket);
 
@@ -210,12 +210,12 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update());
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add("identity1");
+            bucket.Add(Guid.NewGuid(), "identity1");
 
             var response = await api.UpdateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.UpdatedUserIdentities);
+            Assert.Empty(response.UpdatedUsers.Select(x => x.Identity));
 
             const string log = "Response model is null";
             mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
@@ -235,13 +235,13 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add("identity1");
-            bucket.Add("identity2");
+            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity2");
 
             var response = await api.UpdateManyAsync(bucket);
 
-            Assert.Contains("identity1", response.UpdatedUserIdentities);
-            Assert.Contains("identity2", response.UpdatedUserIdentities);
+            Assert.Contains("identity1", response.UpdatedUsers.Select(x => x.Identity));
+            Assert.Contains("identity2", response.UpdatedUsers.Select(x => x.Identity));
         }
 
         [Fact]
@@ -264,13 +264,13 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add("identity1");
-            bucket.Add("identity2");
+            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity2");
 
             var response = await api.UpdateManyAsync(bucket);
 
-            Assert.DoesNotContain("identity1", response.UpdatedUserIdentities);
-            Assert.Contains("identity2", response.UpdatedUserIdentities);
+            Assert.DoesNotContain("identity1", response.UpdatedUsers.Select(x => x.Identity));
+            Assert.Contains("identity2", response.UpdatedUsers.Select(x => x.Identity));
         }
     }
 
@@ -307,7 +307,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Delete(statusCode: (HttpStatusCode)statusCode));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new DeletedUsersBucket();
-            bucket.Add("identity1");
+            bucket.Add(Guid.NewGuid(), "identity1");
 
             var response = await api.DeleteManyAsync(bucket);
 
@@ -324,7 +324,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Delete(statusCode: HttpStatusCode.Unauthorized));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new DeletedUsersBucket();
-            bucket.Add("identity1");
+            bucket.Add(Guid.NewGuid(), "identity1");
 
             _ = await api.DeleteManyAsync(bucket);
 
@@ -341,7 +341,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Delete());
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new DeletedUsersBucket();
-            bucket.Add("identity1");
+            bucket.Add(Guid.NewGuid(), "identity1");
 
             var response = await api.DeleteManyAsync(bucket);
 
@@ -366,13 +366,13 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new DeletedUsersBucket();
-            bucket.Add("identity1");
-            bucket.Add("identity2");
+            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity2");
 
             var response = await api.DeleteManyAsync(bucket);
 
-            Assert.Contains("identity1", response.DeletedUsers);
-            Assert.Contains("identity2", response.DeletedUsers);
+            Assert.Contains("identity1", response.DeletedUsers.Select(x => x.Identity));
+            Assert.Contains("identity2", response.DeletedUsers.Select(x => x.Identity));
         }
 
         [Fact]
@@ -395,13 +395,13 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new DeletedUsersBucket();
-            bucket.Add("identity1");
-            bucket.Add("identity2");
+            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity2");
 
             var response = await api.DeleteManyAsync(bucket);
 
-            Assert.DoesNotContain("identity1", response.DeletedUsers);
-            Assert.Contains("identity2", response.DeletedUsers);
+            Assert.DoesNotContain("identity1", response.DeletedUsers.Select(x => x.Identity));
+            Assert.Contains("identity2", response.DeletedUsers.Select(x => x.Identity));
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.DirectoryServices;
 using DirectorySync.Application.Exceptions;
+using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
-using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions;
 using Microsoft.Extensions.Options;

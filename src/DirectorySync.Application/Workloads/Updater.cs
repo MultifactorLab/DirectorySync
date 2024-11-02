@@ -2,8 +2,8 @@
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
-using DirectorySync.Domain.Abstractions;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -56,8 +56,8 @@ internal class Updater
 
                 var props = _propertyMapper.Map(member.Attributes);
 
-                var cachedMember = group.Members.First(x => x.Guid == member.Guid);
-                var user = bucket.Add(cachedMember.Identity);
+                var cachedMember = group.Members.First(x => x.Id == member.Guid);
+                var user = bucket.Add(cachedMember.Id, cachedMember.Identity);
 
                 foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
                 {
@@ -83,15 +83,15 @@ internal class Updater
 
     private void UpdateCachedGroup(CachedDirectoryGroup group, ReferenceDirectoryUser[] modified, IUpdateUsersOperationResult res)
     {
-        foreach (var id in res.UpdatedUserIdentities)
+        foreach (var user in res.UpdatedUsers)
         {
-            var cachedUser = group.Members.FirstOrDefault(x => x.Identity == id);
+            var cachedUser = group.Members.FirstOrDefault(x => x.Id == user.Id);
             if (cachedUser is null)
             {
                 continue;
             }
 
-            var refMember = modified.First(x => x.Guid == cachedUser.Guid);
+            var refMember = modified.First(x => x.Guid == cachedUser.Id);
             var hash = new AttributesHash(refMember.Attributes);
             cachedUser.UpdateHash(hash);
         }

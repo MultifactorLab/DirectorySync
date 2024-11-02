@@ -1,13 +1,14 @@
+using CSharpFunctionalExtensions;
+
 namespace DirectorySync.Domain.Entities;
 
-public class CachedDirectoryGroupMember : CachedDirectoryObject
+public class CachedDirectoryGroupMember : Entity<DirectoryGuid>
 {
-    public MultifactorIdentity Identity { get; }
+    public string Identity { get; }
     public AttributesHash Hash { get; private set; }
-    public bool Propagated { get; private set; }
     
-    public CachedDirectoryGroupMember(DirectoryGuid guid, 
-        MultifactorIdentity identity,
+    public CachedDirectoryGroupMember(DirectoryGuid guid,
+        string identity,
         AttributesHash hash) 
         : base(guid)
     {
@@ -16,7 +17,7 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
     }
 
     public static CachedDirectoryGroupMember Create(DirectoryGuid guid,
-        MultifactorIdentity identity,
+        string identity,
         LdapAttributeCollection attributes)
     {
         ArgumentNullException.ThrowIfNull(guid);
@@ -34,10 +35,5 @@ public class CachedDirectoryGroupMember : CachedDirectoryObject
         {
             Hash = hash;
         }
-    }
-
-    public void Propagate()
-    {
-        Propagated = true;
     }
 }

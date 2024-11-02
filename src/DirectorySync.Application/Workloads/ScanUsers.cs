@@ -2,8 +2,7 @@
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Measuring;
-using DirectorySync.Domain;
-using DirectorySync.Domain.Abstractions;
+using DirectorySync.Application.Ports;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -55,7 +54,6 @@ internal class ScanUsers : IScanUsers
             _logger.LogWarning(ApplicationEvent.InvalidServiceConfiguration, "Required LDAP attributes not defined. Please check attribute mapping");
             return;
         }
-
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", names));
         
         var getGroupTimer = _timer.Start("Get Reference Group");
@@ -68,15 +66,11 @@ internal class ScanUsers : IScanUsers
         {
             _logger.LogDebug("Reference group is not cached and now it will");
             cachedGroup = CachedDirectoryGroup.Create(referenceGroup.Guid, []);
-            _storage.CreateGroup(cachedGroup);
+            _storage.InsertGroup(cachedGroup);
         }
-
-        var nonPropagated = cachedGroup.Members
-            .Where(x => !x.Propagated)
-            .Select(x => x.Guid);
         
         _logger.LogDebug("Searching for a new users...");
-        var newDirectoryUsers = referenceGroup.Members.Where(x => nonPropagated.Contains(x.Guid)).ToArray();
+        var newDirectoryUsers = FindNewUsers(referenceGroup, cachedGroup).ToArray();
         if (newDirectoryUsers.Length == 0)
         {
             _logger.LogDebug("New users was not found");
@@ -97,49 +91,52 @@ internal class ScanUsers : IScanUsers
     }
 
     private async Task CreateAsync(CachedDirectoryGroup group, 
-        ReferenceDirectoryUser[] created,
+        ReferenceDirectoryUser[] referenceUsers,
         CancellationToken token)
     {
-        var identityWithGuids = new Dictionary<string, DirectoryGuid>();
-        var bucket = BuildBucket(created, identityWithGuids);
+        var bucket = BuildBucket(referenceUsers);
 
         var createApiTimer = _timer.Start("Api Request: Create Users");
         var res = await _api.CreateManyAsync(bucket, token);
         createApiTimer.Stop();
 
-        foreach (var identity in res.CreatedUserIdentities)
+        foreach (var created in res.CreatedUsers)
         {
-            if (!identityWithGuids.TryGetValue(identity, out var guid))
+            var refUser = referenceUsers.FirstOrDefault(x => x.Guid == created.Id);
+            if (refUser is null)
             {
                 continue;
             }
 
-            var cached = group.Members.First(x => x.Guid == guid);
-            cached.Propagate();
+            var cachedMember = CachedDirectoryGroupMember.Create(created.Id, created.Identity, refUser.Attributes);
+            group.AddMembers(cachedMember);
         }
     }
 
-    private NewUsersBucket BuildBucket(ReferenceDirectoryUser[] created, Dictionary<string, DirectoryGuid> identityWithGuids)
+    private static IEnumerable<ReferenceDirectoryUser> FindNewUsers(ReferenceDirectoryGroup refGroup, CachedDirectoryGroup cachedGroup)
+    {
+        return refGroup.Members.Where(x => !cachedGroup.Members.Select(s => s.Id).Contains(x.Guid));
+    }
+
+    private NewUsersBucket BuildBucket(ReferenceDirectoryUser[] referenceUsers)
     {
         var bucket = new NewUsersBucket();
-        foreach (var member in created)
+        foreach (var refUser in referenceUsers)
         {
-            using var withUser = _logger.EnrichWithLdapUser(member.Guid);
+            using var withUser = _logger.EnrichWithLdapUser(refUser.Guid);
 
-            var props = _propertyMapper.Map(member.Attributes);
+            var props = _propertyMapper.Map(refUser.Attributes);
             if (props.Count == 0)
             {
                 continue;
             }
 
             var identity = props[MultifactorPropertyName.IdentityProperty]!;
-            var user = bucket.AddNewUser(identity);
+            var user = bucket.AddNewUser(refUser.Guid, identity);
             foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
             {
                 user.AddProperty(prop.Key, prop.Value);
             }
-            
-            identityWithGuids[user.Identity] = member.Guid;
         }
 
         return bucket;

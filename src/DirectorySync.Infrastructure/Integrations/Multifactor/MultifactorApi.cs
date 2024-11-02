@@ -63,7 +63,7 @@ internal class MultifactorApi : IMultifactorApi
 
         if (response.Model.Failures.Length == 0)
         {
-            result.Add(bucket.NewUsers.Select(x => x.Identity));
+            result.Add(bucket.NewUsers.Select(x => new HandledUser(x.Id, x.Identity)));
         }
         else
         {
@@ -71,7 +71,10 @@ internal class MultifactorApi : IMultifactorApi
                 .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
                 .Select(x => x.Identity!);
 
-            result.Add(bucket.NewUsers.Select(x => x.Identity).Except(failures));
+            var success = bucket.NewUsers
+                .ExceptBy(failures, newUser => newUser.Identity);
+
+            result.Add(success.Select(x => new HandledUser(x.Id, x.Identity)));
         }
 
         return result;
@@ -116,7 +119,7 @@ internal class MultifactorApi : IMultifactorApi
 
         if (response.Model.Failures.Length == 0)
         {
-            result.Add(bucket.ModifiedUsers.Select(x => x.Identity));
+            result.Add(bucket.ModifiedUsers.Select(x => new HandledUser(x.Id, x.Identity)));
         }
         else
         {
@@ -124,7 +127,10 @@ internal class MultifactorApi : IMultifactorApi
                 .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
                 .Select(x => x.Identity!);
 
-            result.Add(bucket.ModifiedUsers.Select(x => x.Identity).Except(failures));
+            var success = bucket.ModifiedUsers
+                .ExceptBy(failures, newUser => newUser.Identity);
+
+            result.Add(success.Select(x => new HandledUser(x.Id, x.Identity)));
         }
 
         return result;
@@ -139,7 +145,7 @@ internal class MultifactorApi : IMultifactorApi
             return new DeleteUsersOperationResult();
         }
 
-        var dto = new DeleteUsersDto(bucket.DeletedUsers);
+        var dto = new DeleteUsersDto(bucket.DeletedUsers.Select(x => x.Identity));
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
@@ -166,7 +172,7 @@ internal class MultifactorApi : IMultifactorApi
 
         if (response.Model.Failures.Length == 0)
         {
-            result.Add(bucket.DeletedUsers);
+            result.Add(bucket.DeletedUsers.Select(x => new HandledUser(x.Id, x.Identity)));
         }
         else
         {
@@ -174,7 +180,10 @@ internal class MultifactorApi : IMultifactorApi
                 .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
                 .Select(x => x.Identity!);
 
-            result.Add(bucket.DeletedUsers.Except(failures));
+            var success = bucket.DeletedUsers
+                .ExceptBy(failures, newUser => newUser.Identity);
+
+            result.Add(success.Select(x => new HandledUser(x.Id, x.Identity)));
         }
 
         return result;

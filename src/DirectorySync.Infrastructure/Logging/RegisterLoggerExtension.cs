@@ -66,6 +66,7 @@ public static class RegisterLoggerExtension
     {
         var path = GetLogFilePath(options);
         var rollingInterval = GetInterval(options);
+        var minimalLevel = GetMinimalLevel(options);
 
         logger
             .WriteTo.Logger(x =>
@@ -76,7 +77,7 @@ public static class RegisterLoggerExtension
                     fileSizeLimitBytes: options.FileSizeLimitBytes,
                     rollOnFileSizeLimit: true,
                     retainedFileCountLimit: options.RetainedFileCountLimit,
-                    levelSwitch: new LoggingLevelSwitch(LogEventLevel.Debug));
+                    levelSwitch: new LoggingLevelSwitch(minimalLevel));
             });
     }
 
@@ -104,5 +105,15 @@ public static class RegisterLoggerExtension
         } 
         
         return RollingInterval.Day;
+    }    
+    
+    private static LogEventLevel GetMinimalLevel(FileLoggingOptions options)
+    {
+        if (Enum.TryParse<LogEventLevel>(options.MinimalLevel, true, out var parsedMinimalLevel))
+        {
+            return parsedMinimalLevel;
+        }
+
+        return LogEventLevel.Debug;
     }
 }
