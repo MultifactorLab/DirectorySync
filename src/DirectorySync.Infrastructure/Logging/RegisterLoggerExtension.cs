@@ -33,25 +33,12 @@ public static class RegisterLoggerExtension
         
         if (!builder.Environment.IsProduction() || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            loggerConfig.WriteTo.Logger(x =>
-            {
-                x.WriteTo.Console(levelSwitch: new LoggingLevelSwitch(LogEventLevel.Debug),
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}");
-            });
+            ConfigureConsoleLogging(loggerConfig, options.Console);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            loggerConfig
-                .WriteTo.Logger(x =>
-                {
-                    x.Filter.ByIncludingOnly("SourceContext like 'DirectorySync%' or CustomSourceContext like 'DirectorySync%'");
-                    x.WriteTo.EventLog(source: Literals.ServiceName, 
-                        logName: "Application", 
-                        manageEventSource: false, 
-                        restrictedToMinimumLevel: LogEventLevel.Information,
-                        eventIdProvider: new DirectorySyncEventIdProvider());
-                });
+            ConfigureEventLogger(loggerConfig);
         }
 
         ConfigureFileLogging(loggerConfig, options.File);
@@ -62,17 +49,48 @@ public static class RegisterLoggerExtension
         builder.Logging.AddSerilog(Log.Logger);
     }
 
+    private static void ConfigureConsoleLogging(LoggerConfiguration logger, ConsoleLoggingOptions options)
+    {
+        var minimalLevel = GetMinimalLevel(options.MinimalLevel);
+        var consoleTemplate = !string.IsNullOrWhiteSpace(options.Template)
+            ? options.Template
+            : "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}";
+
+        logger.WriteTo.Logger(x =>
+        {
+            x.WriteTo.Console(levelSwitch: new LoggingLevelSwitch(minimalLevel),
+                outputTemplate: consoleTemplate);
+        });
+    }
+
+    private static void ConfigureEventLogger(LoggerConfiguration logger)
+    {
+        logger
+            .WriteTo.Logger(x =>
+            {
+                x.Filter.ByIncludingOnly("SourceContext like 'DirectorySync%' or CustomSourceContext like 'DirectorySync%'");
+                x.WriteTo.EventLog(source: Literals.ServiceName,
+                    logName: "Application",
+                    manageEventSource: false,
+                    restrictedToMinimumLevel: LogEventLevel.Information,
+                    eventIdProvider: new DirectorySyncEventIdProvider());
+            });
+    }
+
     private static void ConfigureFileLogging(LoggerConfiguration logger, FileLoggingOptions options)
     {
         var path = GetLogFilePath(options);
         var rollingInterval = GetInterval(options);
-        var minimalLevel = GetMinimalLevel(options);
+        var minimalLevel = GetMinimalLevel(options.MinimalLevel);
+        var fileTemplate = !string.IsNullOrWhiteSpace(options.Template)
+            ? options.Template
+            : "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}";
 
         logger
             .WriteTo.Logger(x =>
             {
                 x.WriteTo.File(path: path,
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}",
+                    outputTemplate: fileTemplate,
                     rollingInterval: rollingInterval,
                     fileSizeLimitBytes: options.FileSizeLimitBytes,
                     rollOnFileSizeLimit: true,
@@ -107,9 +125,9 @@ public static class RegisterLoggerExtension
         return RollingInterval.Day;
     }    
     
-    private static LogEventLevel GetMinimalLevel(FileLoggingOptions options)
+    private static LogEventLevel GetMinimalLevel(string minimalLevel)
     {
-        if (Enum.TryParse<LogEventLevel>(options.MinimalLevel, true, out var parsedMinimalLevel))
+        if (Enum.TryParse<LogEventLevel>(minimalLevel, true, out var parsedMinimalLevel))
         {
             return parsedMinimalLevel;
         }

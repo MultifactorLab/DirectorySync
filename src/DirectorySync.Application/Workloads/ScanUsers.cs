@@ -86,7 +86,6 @@ internal class ScanUsers : IScanUsers
         _storage.UpdateGroup(cachedGroup);
         cacheGroupTimer.Stop();
 
-        _logger.LogDebug("New users was created on the MF server side and group was cached");
         _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
     }
 

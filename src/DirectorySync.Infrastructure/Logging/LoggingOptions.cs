@@ -6,6 +6,7 @@ namespace DirectorySync.Infrastructure.Logging;
 public class LoggingOptions
 {
     public FileLoggingOptions File { get; set; } = new();
+    public ConsoleLoggingOptions Console { get; set; } = new();
 }
 
 public class FileLoggingOptions
@@ -23,4 +24,13 @@ public class FileLoggingOptions
     public int RetainedFileCountLimit { get; set; } = 20;
 
     public string MinimalLevel { get; set; } = LogEventLevel.Debug.ToString();
+
+    public string Template { get; set; }
+}
+
+public class ConsoleLoggingOptions
+{
+    public string MinimalLevel { get; set; } = LogEventLevel.Debug.ToString();
+
+    public string Template { get; set; }
 }
