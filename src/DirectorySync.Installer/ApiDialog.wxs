@@ -5,7 +5,7 @@
 
 			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
 			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
-			<Property Id="PROP_APIURL" Value="https://api.multifactro.dev" />
+			<Property Id="PROP_APIURL" Value="https://api.multifactor.ru" />
 			
 			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				

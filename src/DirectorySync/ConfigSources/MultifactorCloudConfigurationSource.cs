@@ -9,7 +9,7 @@ namespace DirectorySync.ConfigSources
     internal class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
     {
         private readonly HttpClient _client;
-        private readonly TimeSpan _refreshTimer;
+        private TimeSpan _refreshTimer;
         private Timer? _timer;
         private string? _currentConfig;
 
@@ -112,6 +112,9 @@ namespace DirectorySync.ConfigSources
             {
                 Data[$"Sync:PhoneAttributes:{index}"] = config.PropertyMapping.PhoneAttributes[index];
             }
+
+            _refreshTimer = config.CloudConfigRefreshTimer;
+            _timer?.Change(TimeSpan.Zero, _refreshTimer);
         }
 
         private bool HasChanges(CloudConfigDto newConfig)
