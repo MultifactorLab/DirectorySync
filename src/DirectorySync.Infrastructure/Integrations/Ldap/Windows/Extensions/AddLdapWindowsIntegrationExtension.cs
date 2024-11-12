@@ -11,7 +11,7 @@ namespace DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions
         {
             ArgumentNullException.ThrowIfNull(builder);
 
-            builder.Services.AddSingleton<IGetReferenceGroup, GetReferenceGroupWithDirectorySearcher>();
+            builder.Services.AddSingleton<IGetReferenceGroup, GetReferenceGroupWithLdapConnection>();
             builder.Services.AddOptions<LdapOptions>()
                 .BindConfiguration("Ldap")
                 .ValidateDataAnnotations();

@@ -54,6 +54,8 @@ namespace DirectorySync.ConfigSources
             {
                 return TimeSpan.FromMinutes(1);
             }
+
+            return parsed;
         }
 
         private static HttpClient CreateClient(Uri uri, BasicAuthHeaderValue auth)
