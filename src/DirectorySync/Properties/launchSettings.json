@@ -2,7 +2,6 @@
   "profiles": {
     "DirectorySync": {
       "commandName": "Project",
-      "commandLineArgs": "--Ldap:Path=888  --ldap:container=container",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "localhost"
       },

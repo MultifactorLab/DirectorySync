@@ -4,8 +4,8 @@ using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
-using DirectorySync.Infrastructure.Integrations.Ldap;
 using Microsoft.Extensions.Options;
+using Multifactor.Core.Ldap;
 using SearchOption = System.DirectoryServices.Protocols.SearchOption;
 
 namespace DirectorySync.Application.Integrations.Ldap.Windows;

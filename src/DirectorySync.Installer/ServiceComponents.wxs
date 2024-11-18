@@ -4,6 +4,7 @@
 		
 		<Files Include="$(var.DirectorySync.TargetDir)\**">
             <Exclude Files="$(var.DirectorySync.TargetDir)\DirectorySync.exe" />
+            <Exclude Files="$(var.DirectorySync.TargetDir)\logs\**" />
 		</Files>
 		
       <Component Id="ServiceExecutable">

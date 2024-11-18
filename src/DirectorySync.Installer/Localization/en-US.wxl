@@ -29,7 +29,6 @@
     <String Id="LdapDialogBack" Value="Back" />
     <String Id="LdapDialogCancel" Value="Cancel" />
     <String Id="LdapDialogLdapPathLabel" Value="LDAP path*" />
-    <String Id="LdapDialogLdapContainerLabel" Value="Container" />
     <String Id="LdapDialogLdapUsernameLabel" Value="Username*" />
     <String Id="LdapDialogLdapPasswordLabel" Value="Password*" />
 	

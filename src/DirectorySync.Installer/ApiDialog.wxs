@@ -5,7 +5,12 @@
 
 			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
 			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
+
+			<?if $(var.Configuration) = Debug ?>
+				<Property Id="PROP_APIURL" Value="https://api.multifactor.dev" />
+			<?else?>
 			<Property Id="PROP_APIURL" Value="https://api.multifactor.ru" />
+			<?endif?>
 			
 			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				
@@ -26,7 +31,11 @@
 
 
 				<Control Id="LabelApiUrl" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="API url" />
-				<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
+				<?if $(var.Configuration) = Debug ?>
+					<Control Id="EditApiUrl" Disabled="yes" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
+				<?else?>
+					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
+				<?endif?>
 
 
 				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />

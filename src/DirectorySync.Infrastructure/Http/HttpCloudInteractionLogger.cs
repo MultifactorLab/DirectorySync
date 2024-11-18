@@ -22,16 +22,9 @@ public class HttpCloudInteractionLogger : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var reqBody = string.Empty;
-        if (request.Content != null)
-        {
-            reqBody = await request.Content.ReadAsStringAsync(cancellationToken);
-        }
-
         CloudInteractionLogger.Debug("Sending {Method} request to {Url} with {Body}", 
             request.Method, 
-            request.RequestUri, 
-            reqBody);
+            request.RequestUri);
 
         var response = await base.SendAsync(request, cancellationToken);
 

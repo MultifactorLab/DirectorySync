@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using DirectorySync.Application;
-using DirectorySync.ConfigSources;
+using DirectorySync.ConfigSources.MultifactorCloud;
+using DirectorySync.ConfigSources.SystemEnvironmentVariables;
 using DirectorySync.Exceptions;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
@@ -22,10 +23,11 @@ try
         options.ServiceName = Literals.ServiceName;
     });
 
+    builder.Configuration.AddSystemEnvironmentVariables("DIRECTORYSYNC_");
     builder.Configuration.AddEnvironmentVariables("DIRECTORYSYNC_");
     if (builder.Environment.EnvironmentName == "localhost")
     {
-        builder.Configuration.AddUserSecrets<Program>();
+        //builder.Configuration.AddUserSecrets<Program>();
     }
 
     builder.RegisterLogger();

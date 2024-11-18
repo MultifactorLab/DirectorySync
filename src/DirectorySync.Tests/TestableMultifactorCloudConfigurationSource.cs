@@ -1,4 +1,4 @@
-﻿using DirectorySync.ConfigSources;
+﻿using DirectorySync.ConfigSources.MultifactorCloud;
 
 namespace DirectorySync.Tests
 {

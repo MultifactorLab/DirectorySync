@@ -4,7 +4,6 @@
 		<UI>
 			
 			<Property Id="PROP_LDAP_PATH" Value="!(loc.PropLdapPathValue)" />
-			<Property Id="PROP_LDAP_CONTAINER" Value="!(loc.PropLdapContainerValue)" />
 			<Property Id="PROP_LDAP_USERNAME" Value="!(loc.PropLdapUsernameValue)" />
 			<Property Id="PROP_LDAP_PASSWORD" Value="!(loc.PropLdapPasswordValue)" Secure="yes"/>
 			
@@ -22,16 +21,12 @@
 				<Control Id="EditLdapPath" Type="Edit" X="140" Y="97" Height="17" Width="150" Property="PROP_LDAP_PATH" Indirect="no"/>
 
 				
-				<Control Id="LabelLdapContainer" Type="Text" X="20" Y="120" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapContainerLabel)" />
-				<Control Id="EditLdapContainer" Type="Edit" X="140" Y="117" Height="17" Width="150" Property="PROP_LDAP_CONTAINER" Indirect="no"/>
-				
-
-				<Control Id="LabelLdapUsername" Type="Text" X="20" Y="150" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapUsernameLabel)" />
-				<Control Id="EditLdapUsername" Type="Edit" X="140" Y="147" Height="17" Width="150" Property="PROP_LDAP_USERNAME" Indirect="no"/>
+				<Control Id="LabelLdapUsername" Type="Text" X="20" Y="120" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapUsernameLabel)" />
+				<Control Id="EditLdapUsername" Type="Edit" X="140" Y="117" Height="17" Width="150" Property="PROP_LDAP_USERNAME" Indirect="no"/>
 
 
-				<Control Id="LabelLdapPassword" Type="Text" X="20" Y="170" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapPasswordLabel)" />
-				<Control Id="EditLdapPassword" Type="Edit" X="140" Y="167" Height="17" Width="150" Password="yes" Property="PROP_LDAP_PASSWORD" Indirect="no"/>
+				<Control Id="LabelLdapPassword" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapPasswordLabel)" />
+				<Control Id="EditLdapPassword" Type="Edit" X="140" Y="137" Height="17" Width="150" Password="yes" Property="PROP_LDAP_PASSWORD" Indirect="no"/>
 
 				
 				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />

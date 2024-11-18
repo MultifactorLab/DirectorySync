@@ -29,7 +29,7 @@ public static class CloudInteractionLogger
         var loggerConfig = new LoggerConfiguration()
 
             .WriteTo.File(path: path,
-                LogEventLevel.Warning,
+                LogEventLevel.Verbose,
                 _fileLogTemplate,
                 fileSizeLimitBytes: _fileSizeLimitBytes,
                 rollOnFileSizeLimit: true)
