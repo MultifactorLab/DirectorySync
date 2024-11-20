@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 
@@ -27,9 +26,10 @@ public static class RegisterLoggerExtension
 
         SelfLog.Enable(Console.WriteLine);
         var loggerConfig = new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Configuration)
             .Enrich.FromLogContext()
-            .Enrich.With(new MfTraceIdEnricher());
+            .Enrich.With(new MfTraceIdEnricher())
+            .MinimumLevel.Verbose()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
         
         if (!builder.Environment.IsProduction() || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -58,7 +58,7 @@ public static class RegisterLoggerExtension
 
         logger.WriteTo.Logger(x =>
         {
-            x.WriteTo.Console(levelSwitch: new LoggingLevelSwitch(minimalLevel),
+            x.WriteTo.Console(restrictedToMinimumLevel: minimalLevel,
                 outputTemplate: consoleTemplate);
         });
     }
@@ -95,7 +95,7 @@ public static class RegisterLoggerExtension
                     fileSizeLimitBytes: options.FileSizeLimitBytes,
                     rollOnFileSizeLimit: true,
                     retainedFileCountLimit: options.RetainedFileCountLimit,
-                    levelSwitch: new LoggingLevelSwitch(minimalLevel));
+                    restrictedToMinimumLevel: minimalLevel);                
             });
     }
 
