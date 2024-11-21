@@ -27,6 +27,8 @@ public sealed class LdapConnectionString
     /// </summary>
     public string Container { get; }
 
+    public bool HasBaseDn => !string.IsNullOrWhiteSpace(Container);
+
     /// <summary>
     /// Well-formed LDAP url.
     /// For more information see <a href="http://www.rfc-editor.org/rfc/rfc2255">RFC2255</a>.

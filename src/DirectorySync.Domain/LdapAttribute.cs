@@ -18,6 +18,8 @@ public class LdapAttribute : ComparableValueObject
     /// </summary>
     public string?[] Values { get; }
 
+    public bool HasValues => Values.Length != 0;
+
     /// <summary>
     /// Creates LdapAttribute with the sinle value.
     /// </summary>

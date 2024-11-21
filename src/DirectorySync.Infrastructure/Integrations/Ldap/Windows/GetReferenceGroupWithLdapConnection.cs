@@ -1,9 +1,11 @@
 ﻿using System.DirectoryServices.Protocols;
-using System.Net;
+using CSharpFunctionalExtensions;
 using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
+using LiteDB;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Multifactor.Core.Ldap;
 using SearchOption = System.DirectoryServices.Protocols.SearchOption;
@@ -13,12 +15,22 @@ namespace DirectorySync.Application.Integrations.Ldap.Windows;
 internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
 {
     private readonly LdapOptions _ldapOptions;
+    private readonly LdapConnectionFactory _connectionFactory;
     private readonly LdapConnectionString _connectionString;
+    private readonly BaseDnResolver _baseDnResolver;
+    private readonly ILogger<GetReferenceGroupWithLdapConnection> _logger;
 
-    public GetReferenceGroupWithLdapConnection(IOptions<LdapOptions> ldapOptions)
+    public GetReferenceGroupWithLdapConnection(LdapConnectionFactory connectionFactory,
+        IOptions<LdapOptions> ldapOptions,
+        LdapConnectionString connectionString,
+        BaseDnResolver baseDnResolver,
+        ILogger<GetReferenceGroupWithLdapConnection> logger)
     {
         _ldapOptions = ldapOptions.Value;
-        _connectionString = new LdapConnectionString(ldapOptions.Value.Path);
+        _connectionFactory = connectionFactory;
+        _connectionString = connectionString;
+        _baseDnResolver = baseDnResolver;
+        _logger = logger;
     }
 
     public ReferenceDirectoryGroup Execute(DirectoryGuid guid, string[] requiredAttributes)
@@ -26,36 +38,22 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
         ArgumentNullException.ThrowIfNull(guid);
         ArgumentNullException.ThrowIfNull(requiredAttributes);
 
-        using var connection = GetConnection();
+        using var connection = _connectionFactory.CreateConnection();
 
         var groupDn = FindGroupDn(guid, connection);
         if (groupDn is null)
         {
             throw new GroupNotFoundException($"Group with GUID '{guid}' was not found");
         }
+
         var members = GetMembers(groupDn, requiredAttributes, connection);
         return new ReferenceDirectoryGroup(guid, members);
-
-    }
-
-    private LdapConnection GetConnection()
-    {
-        var id = new LdapDirectoryIdentifier(_connectionString.Host, _connectionString.Port);
-
-        var connenction = new LdapConnection(id, 
-            new NetworkCredential(_ldapOptions.Username, _ldapOptions.Password), 
-            AuthType.Basic);
-
-        connenction.SessionOptions.ProtocolVersion = 3;
-        connenction.SessionOptions.VerifyServerCertificate = (connection, certificate) => true;
-
-        connenction.Bind();
-        return connenction;
     }
 
     private string? FindGroupDn(DirectoryGuid guid, LdapConnection conn)
     {
         var filter = $"(&(objectCategory=group)(objectGUID={guid.OctetString}))";
+        _logger.LogDebug("Searching by group with filter '{Filter:s}'...", filter);
 
         var result = Find(filter, ["distinguishedName"], conn);
         var first = result.FirstOrDefault();
@@ -72,13 +70,14 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
         LdapConnection conn)
     {
         var filter = $"(&(objectClass=user)(memberof={groupDn}))";
+        _logger.LogDebug("Searching by group members with filter '{Filter:s}'...", filter);
         var attrs = requiredAttributes.Concat(["ObjectGUID"]).ToArray();
 
         var result = Find(filter, attrs, conn);
         foreach (var entry in result)
         {
             var guid = GetObjectGuid(entry);
-            var map = requiredAttributes.Select(x => GetAttr(entry, x));
+            var map = requiredAttributes.Select(x => entry.GetSingleValuedAttribute(x));
             var attributes = new LdapAttributeCollection(map);
             yield return new ReferenceDirectoryUser(guid, attributes);
         }
@@ -95,23 +94,17 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
         return new Guid(bytes);
     }
 
-    private static LdapAttribute GetAttr(SearchResultEntry entry, string attr)
-    {
-        var value = entry.Attributes[attr]?[0]?.ToString();
-        return new LdapAttribute(attr, value);
-    }
-
     private IEnumerable<SearchResultEntry> Find(string filter, 
         string[] requiredAttributes, 
         LdapConnection conn)
     {
-        var searchRequest = new SearchRequest(_connectionString.Container,
+        var baseDn = _baseDnResolver.GetBaseDn();
+        var searchRequest = new SearchRequest(baseDn,
             filter,
             SearchScope.Subtree,
             requiredAttributes);
 
-        const int pageSize = 500;
-        var pageRequestControl = new PageResultRequestControl(pageSize);
+        var pageRequestControl = new PageResultRequestControl(_ldapOptions.PageSize);
         var searchOptControl = new SearchOptionsControl(SearchOption.DomainScope);
 
         searchRequest.Controls.Add(pageRequestControl);

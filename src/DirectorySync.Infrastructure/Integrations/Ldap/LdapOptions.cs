@@ -7,9 +7,7 @@ public class LdapOptions
 {
     [Required]
     public required string Path { get; set; }
-    
-    public string? SearchBase { get; set; }
-    
+        
     [Required]
     public required string Username { get; set; }
     

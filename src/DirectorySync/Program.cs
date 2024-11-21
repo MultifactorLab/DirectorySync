@@ -25,10 +25,13 @@ try
 
     builder.Configuration.AddSystemEnvironmentVariables("DIRECTORYSYNC_");
     builder.Configuration.AddEnvironmentVariables("DIRECTORYSYNC_");
+
+#if DEBUG
     if (builder.Environment.EnvironmentName == "localhost")
     {
-        //builder.Configuration.AddUserSecrets<Program>();
+        builder.Configuration.AddUserSecrets<Program>();
     }
+#endif
 
     builder.RegisterLogger();
 
