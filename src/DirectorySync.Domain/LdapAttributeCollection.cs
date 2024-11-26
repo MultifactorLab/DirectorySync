@@ -44,7 +44,7 @@ public class LdapAttributeCollection : IEnumerable<LdapAttribute>
     public LdapAttributeCollection(IEnumerable<LdapAttribute> attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);
-        _attributes = attributes.ToDictionary(k => k.Name, v => v);
+        _attributes = attributes.DistinctBy(x => x.Name).ToDictionary(k => k.Name, v => v);
     }
 
     public override string ToString()

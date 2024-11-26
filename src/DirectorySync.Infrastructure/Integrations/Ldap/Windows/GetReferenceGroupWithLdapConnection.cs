@@ -7,7 +7,6 @@ using DirectorySync.Domain.Entities;
 using LiteDB;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Multifactor.Core.Ldap;
 using SearchOption = System.DirectoryServices.Protocols.SearchOption;
 
 namespace DirectorySync.Application.Integrations.Ldap.Windows;
@@ -16,19 +15,16 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
 {
     private readonly LdapOptions _ldapOptions;
     private readonly LdapConnectionFactory _connectionFactory;
-    private readonly LdapConnectionString _connectionString;
     private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<GetReferenceGroupWithLdapConnection> _logger;
 
     public GetReferenceGroupWithLdapConnection(LdapConnectionFactory connectionFactory,
         IOptions<LdapOptions> ldapOptions,
-        LdapConnectionString connectionString,
         BaseDnResolver baseDnResolver,
         ILogger<GetReferenceGroupWithLdapConnection> logger)
     {
         _ldapOptions = ldapOptions.Value;
         _connectionFactory = connectionFactory;
-        _connectionString = connectionString;
         _baseDnResolver = baseDnResolver;
         _logger = logger;
     }

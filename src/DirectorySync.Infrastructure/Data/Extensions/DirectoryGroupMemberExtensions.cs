@@ -8,7 +8,6 @@ internal static class DirectoryGroupMemberExtensions
     public static DirectoryGroupMemberPersistenceModel ToPersistenceModel(this CachedDirectoryGroupMember entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-
-        return new DirectoryGroupMemberPersistenceModel(entity.Id, entity.Hash, entity.Identity);
+        return new DirectoryGroupMemberPersistenceModel(entity.Id, entity.Identity, entity.Hash);
     }
 }

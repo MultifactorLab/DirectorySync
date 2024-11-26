@@ -6,7 +6,7 @@ namespace DirectorySync.Domain;
 
 public class EntriesHash : ValueObject
 {
-    private readonly string _value;
+    public string Value { get; }
 
     /// <summary>
     /// Creates EntriesHash from string representation.
@@ -20,7 +20,7 @@ public class EntriesHash : ValueObject
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(hash));
         }
 
-        _value = hash;
+        Value = hash;
     }
     
     /// <summary>
@@ -40,20 +40,10 @@ public class EntriesHash : ValueObject
         return new(value);
     }
 
-    public static implicit operator string(EntriesHash hash)
-    {
-        if (hash is null)
-        {
-            throw new InvalidCastException("Hash is null");
-        }
-
-        return hash._value;
-    }
-
-    public override string ToString() => $"{nameof(EntriesHash)} '{_value}'";
+    public override string ToString() => $"{nameof(EntriesHash)} '{Value}'";
 
     protected override IEnumerable<object> GetEqualityComponents()
     {
-        yield return _value;
+        yield return Value;
     }
 }

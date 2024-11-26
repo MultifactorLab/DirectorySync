@@ -1,3 +1,4 @@
+using DirectorySync.Domain;
 using LiteDB;
 
 namespace DirectorySync.Infrastructure.Data.Models;
@@ -10,21 +11,14 @@ internal class DirectoryGroupMemberPersistenceModel
 
     public DirectoryGroupMemberPersistenceModel(Guid guid, 
         string identity,
-        string hash)
+        AttributesHash hash)
     {
-        if (string.IsNullOrWhiteSpace(identity))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(identity));
-        }
-        
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(hash));
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(identity, nameof(identity));
+        ArgumentNullException.ThrowIfNull(hash);
 
         Guid = guid;
         Identity = identity;
-        Hash = hash;
+        Hash = hash.Value;
     }
 
     [BsonCtor]

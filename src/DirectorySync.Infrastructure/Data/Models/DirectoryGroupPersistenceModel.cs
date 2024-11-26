@@ -1,3 +1,4 @@
+using DirectorySync.Domain;
 using LiteDB;
 
 namespace DirectorySync.Infrastructure.Data.Models;
@@ -11,11 +12,13 @@ internal class DirectoryGroupPersistenceModel
     public List<DirectoryGroupMemberPersistenceModel> Members { get; private set; }
     
     public DirectoryGroupPersistenceModel(Guid id,
-        string hash,
+        EntriesHash hash,
         IEnumerable<DirectoryGroupMemberPersistenceModel> members)
     {
         Id = id;
-        Hash = hash ?? throw new ArgumentNullException(nameof(hash));
+
+        ArgumentNullException.ThrowIfNull(hash);
+        Hash = hash.Value;
         
         ArgumentNullException.ThrowIfNull(members);
         Members = members.ToList();

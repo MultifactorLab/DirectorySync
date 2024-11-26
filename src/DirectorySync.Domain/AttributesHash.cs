@@ -9,7 +9,7 @@ namespace DirectorySync.Domain;
 /// </summary>
 public class AttributesHash : ValueObject
 {
-    private readonly string _value;
+    public string Value { get; }
 
     /// <summary>
     /// Creates AttributesHash from the string representation.
@@ -23,7 +23,7 @@ public class AttributesHash : ValueObject
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(hash));
         }
 
-        _value = hash;
+        Value = hash;
     }
 
     public AttributesHash(LdapAttributeCollection attributes)
@@ -43,24 +43,14 @@ public class AttributesHash : ValueObject
         var joinedAttrs = string.Join(';', attrs);
         var bytes = Encoding.UTF8.GetBytes(joinedAttrs);
         var hash = SHA256.HashData(bytes);
-        
-        _value = BitConverter.ToString(hash).Replace("-", string.Empty);
-    }
-    
-    public static implicit operator string(AttributesHash hash)
-    {
-        if (hash is null)
-        {
-            throw new InvalidCastException("Hash is null");
-        }
 
-        return hash._value;
+        Value = BitConverter.ToString(hash).Replace("-", string.Empty);
     }
     
-    public override string ToString() => $"{nameof(AttributesHash)} '{_value}'";
+    public override string ToString() => $"{nameof(AttributesHash)} '{Value}'";
 
     protected override IEnumerable<object> GetEqualityComponents()
     {
-        yield return _value;
+        yield return Value;
     }
 }

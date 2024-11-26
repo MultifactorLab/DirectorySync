@@ -7,6 +7,8 @@ namespace DirectorySync.Application.Integrations.Ldap.Windows;
 
 internal sealed class BaseDnResolver
 {
+    const string _defaultNamengContextAttr = "defaultNamingContext";
+
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly LdapConnectionString _connectionString;
     private readonly ILogger<BaseDnResolver> _logger;
@@ -35,8 +37,6 @@ internal sealed class BaseDnResolver
     
     private string GetBaseDnInternal(LdapConnection conn)
     {
-        const string defaultNamengContextAttr = "defaultNamingContext";
-
         if (_connectionString.HasBaseDn)
         {
             _logger.LogDebug("Base DN was consumed from config: {BaseDN:l}", _connectionString.Container);
@@ -46,7 +46,7 @@ internal sealed class BaseDnResolver
         _logger.LogDebug("Try to consume Base DN from LDAP server");
 
         var filter = "(objectclass=*)";
-        var searchRequest = new SearchRequest(null, filter, SearchScope.Base, defaultNamengContextAttr);
+        var searchRequest = new SearchRequest(null, filter, SearchScope.Base, _defaultNamengContextAttr);
 
         var response = conn.SendRequest(searchRequest);
         if (response is not SearchResponse searchResponse)
@@ -56,19 +56,19 @@ internal sealed class BaseDnResolver
 
         if (searchResponse.Entries.Count == 0)
         {
-            throw new Exception($"Unable to consume {defaultNamengContextAttr} from LDAP server: empty search result entrues");
+            throw new Exception($"Unable to consume {_defaultNamengContextAttr} from LDAP server: empty search result entrues");
         }
 
-        var defaultNamingContext = searchResponse.Entries[0].GetSingleValuedAttribute(defaultNamengContextAttr);
+        var defaultNamingContext = searchResponse.Entries[0].GetSingleValuedAttribute(_defaultNamengContextAttr);
         if (!defaultNamingContext.HasValues)
         {
-            throw new Exception($"Unable to consume {defaultNamengContextAttr} from LDAP server: '{defaultNamengContextAttr}' attr was not found");
+            throw new Exception($"Unable to consume {_defaultNamengContextAttr} from LDAP server: '{_defaultNamengContextAttr}' attr was not found");
         }
 
         var value = defaultNamingContext.GetNotEmptyValues().FirstOrDefault();
         if (value is null)
         {
-            throw new Exception($"Unable to consume {defaultNamengContextAttr} from LDAP server: '{defaultNamengContextAttr} attr value is empty'");
+            throw new Exception($"Unable to consume {_defaultNamengContextAttr} from LDAP server: '{_defaultNamengContextAttr} attr value is empty'");
         }
 
         _logger.LogDebug("Base DN was consumed from LDAP server: {BaseDN:l}", value);
