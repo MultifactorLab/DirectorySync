@@ -9,17 +9,21 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConf
     public sealed class CloudConfigApi
     {
         const string _path = "ds/settings";
-        private readonly HttpClient _client;
+        private readonly HttpClientAdapter _adapter;
 
         public CloudConfigApi(HttpClient client)
         {
-            _client = client ?? throw new ArgumentNullException(nameof(client));
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            _adapter = new HttpClientAdapter(client);
         }        
 
         public async Task<CloudConfigDto> GetConfigAsync()
         {
-            var adapter = new HttpClientAdapter(_client);
-            var response = await adapter.GetAsync<CloudConfigDto>(_path);
+            var response = await _adapter.GetAsync<CloudConfigDto>(_path);
             if (!response.IsSuccessStatusCode)
             {
                 throw new PullCloudConfigException("Failed to pull settings from Multifactor Cloud", response);

@@ -11,13 +11,14 @@
     <String Id="LicenseDialogTitle" Value="Directory Sync Setup" />
 		
 	
-    <String Id="ApiDialogTitle" Value="Multipactor API" />
-	<String Id="ApiDialogInfo" Value="Configure Multifactor API integration" />
+    <String Id="ApiDialogTitle" Value="Multifactor Cloud API" />
+	<String Id="ApiDialogInfo" Value="Configure Multifactor Cloud API integration" />
     <String Id="ApiDialogApiKeyLabel" Value="API key*" />
     <String Id="ApiDialogApiSecretLabel" Value="API secret*" />
     <String Id="ApiDialogBack" Value="Back" />
     <String Id="ApiDialogNext" Value="Next" />
     <String Id="ApiDialogCancel" Value="Cancel" />
+    <String Id="ApiTestButton" Value="Check configuration" />
     <String Id="ApiDialogRequiredFieldsLabel" Value="* - required fields" />
 	
     <String Id="ApiKeyValue" Value="" />

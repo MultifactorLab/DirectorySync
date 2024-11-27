@@ -1,15 +1,19 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DirectorySync.Infrastructure.Shared.Http
 {
     public class HttpClientAdapter
     {
-        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        private static readonly JsonSerializerSettings _jsonOptions = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
         private readonly HttpClient _client;
 
         public HttpClientAdapter(HttpClient client)
@@ -190,13 +194,13 @@ namespace DirectorySync.Infrastructure.Shared.Http
                 return default;
             }
 
-            var dto = JsonSerializer.Deserialize<T>(json, _jsonOptions);
+            var dto = JsonConvert.DeserializeObject<T>(json, _jsonOptions);
             return dto;
         }
 
         private StringContent CreateJsonStringContent(object data)
         {
-            var json = JsonSerializer.Serialize(data, _jsonOptions);
+            var json = JsonConvert.SerializeObject(data, _jsonOptions);
             return new StringContent(json, Encoding.UTF8, "application/json");
         }
     }

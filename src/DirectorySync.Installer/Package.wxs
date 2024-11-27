@@ -7,6 +7,13 @@
 		UpgradeCode="0c9b82db-ff15-472f-9059-f4b018189bdb"
 		Compressed="yes" 
 		Scope="perMachine">
+
+		<Binary Id="InstallerActionsBinary" SourceFile="$(var.DirectorySync.Installer.Actions.TargetDir)$(var.DirectorySync.Installer.Actions.TargetName).CA.dll" />
+		<CustomAction Id="PullCloudConfig" 
+					  Impersonate="no"  
+					  BinaryRef="InstallerActionsBinary"
+					  DllEntry="PullCloudSettings" 
+					  Return="check" />
 		
 		<!-- 
 		Обновление уже установленного продукта. Удаляется старая версию, затем устанавливается новая. 
