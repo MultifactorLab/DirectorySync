@@ -1,6 +1,5 @@
 using DirectorySync.Infrastructure.Shared.Http;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using WixToolset.Dtf.WindowsInstaller;
 using System.Windows.Forms;
@@ -14,8 +13,13 @@ namespace DirectorySync.Installer.Actions
         [CustomAction]
         public static ActionResult PullCloudSettings(Session session)
         {
+            const string urlIsEmpty = "Multifactor Cloud API url is empty";
+            const string keyIsEmpty = "Multifactor Cloud API key is empty";
+            const string secretIsEmpty = "Multifactor Cloud API secret is empty";
+
             using (var logger = SessionLogger.Create(session))
             {
+
                 logger.Log("Begin CustomActions.PullCloudSettings");
 
                 var url = session["PROP_APIURL"];
@@ -24,22 +28,24 @@ namespace DirectorySync.Installer.Actions
 
                 if (string.IsNullOrEmpty(url))
                 {
-                    logger.Log("Multifactor Cloud API url is empty");
-                    ShowFail("Multifactor Cloud API url is empty");
+                    logger.Log(urlIsEmpty);
+                    ShowFail($"{urlIsEmpty}{Environment.NewLine}Log file: {logger.FilePath}");
+
                     return ActionResult.Success;
                 }
 
                 if (string.IsNullOrEmpty(key))
                 {
-                    logger.Log("Multifactor Cloud API key is empty");
-                    ShowFail("Multifactor Cloud API key is empty");
+                    logger.Log(keyIsEmpty);
+                    ShowFail($"{keyIsEmpty}{Environment.NewLine}Log file: {logger.FilePath}");
+
                     return ActionResult.Success;
                 }
 
                 if (string.IsNullOrEmpty(secret))
                 {
-                    logger.Log("Multifactor Cloud API secret is empty");
-                    ShowFail("Multifactor Cloud API secret is empty");
+                    logger.Log(secretIsEmpty);
+                    ShowFail($"{secretIsEmpty}{Environment.NewLine}Log file: {logger.FilePath}");
                     return ActionResult.Success;
                 }
 
@@ -55,13 +61,13 @@ namespace DirectorySync.Installer.Actions
                 {
                     logger.LogError(ex);
                     logger.Log(ex.Response.ToString());
-                    ShowFail(ex);
+                    ShowFail($"Error: {ex.Message}{Environment.NewLine}Log file: {logger.FilePath}");
                     return ActionResult.Success;
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex);
-                    ShowFail(ex);
+                    ShowFail($"Error: {ex.Message}{Environment.NewLine}Log file: {logger.FilePath}");
                     return ActionResult.Success;
                 }
             }
@@ -82,14 +88,6 @@ namespace DirectorySync.Installer.Actions
                 caption: "Fail", 
                 buttons: MessageBoxButtons.OK);
         }        
-        
-        private static void ShowFail(Exception ex)
-        {
-            MessageBox.Show(
-                text: $"Error: {ex.Message}",
-                caption: "Fail",
-                buttons: MessageBoxButtons.OK);
-        }
 
         private static CloudConfigApi GetApi(string url, string key, string secret)
         {
@@ -101,6 +99,7 @@ namespace DirectorySync.Installer.Actions
             };
             var auth = new BasicAuthHeaderValue(key, secret);
             cli.DefaultRequestHeaders.Add("Authorization", $"Basic {auth.GetBase64()}");
+            cli.DefaultRequestHeaders.Add("mf-trace-id", $"ds-installer-{Guid.NewGuid()}");
 
             return new CloudConfigApi(cli);
         }
