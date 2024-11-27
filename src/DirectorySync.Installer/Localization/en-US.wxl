@@ -18,6 +18,7 @@
     <String Id="ApiDialogBack" Value="Back" />
     <String Id="ApiDialogNext" Value="Next" />
     <String Id="ApiDialogCancel" Value="Cancel" />
+    <String Id="ApiDialogRequiredFieldsLabel" Value="* - required fields" />
 	
     <String Id="ApiKeyValue" Value="" />
     <String Id="ApiSecretValue" Value="" />
@@ -31,11 +32,17 @@
     <String Id="LdapDialogLdapPathLabel" Value="LDAP path*" />
     <String Id="LdapDialogLdapUsernameLabel" Value="Username*" />
     <String Id="LdapDialogLdapPasswordLabel" Value="Password*" />
+	<String Id="LdapDialogRequiredFieldsLabel" Value="* - required fields" />
 	
     <String Id="PropLdapPathValue" Value="" />
     <String Id="PropLdapContainerValue" Value="" />
     <String Id="PropLdapUsernameValue" Value="" />
     <String Id="PropLdapPasswordValue" Value="" />
+	
+	
+    <String Id="CustomMaintenanceTypeDlgTooltip" Value="Configure Directory Sync" />
+    <String Id="CustomMaintenanceTypeDlgConfigureButton" Value="Configure" />
+    <String Id="CustomMaintenanceTypeDlgConfigureText" Value="Customize Directory Sync service settings" />
     
     
 </WixLocalization>

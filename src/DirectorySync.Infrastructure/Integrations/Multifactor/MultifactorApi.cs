@@ -2,11 +2,11 @@
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
-using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Delete;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Update;
+using DirectorySync.Infrastructure.Shared.Http;
 using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.Integrations.Multifactor;

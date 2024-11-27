@@ -1,7 +1,6 @@
-using DirectorySync.Application.Integrations.Multifactor.GetSettings.Dto;
-using DirectorySync.Exceptions;
-using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Logging;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 using System.Text.Json;
 
 namespace DirectorySync.ConfigSources.MultifactorCloud;
@@ -56,18 +55,8 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
     {
         CloudInteractionLogger.Verbose("Pulling settings from Multifactor Cloud");
 
-        var adapter = new HttpClientAdapter(_client);
-        var response = adapter.GetAsync<CloudConfigDto>("ds/settings").GetAwaiter().GetResult();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new PullCloudConfigException("Failed to pull settings from Multifactor Cloud", response);
-        }
-
-        var dto = response.Model;
-        if (dto is null)
-        {
-            throw new PullCloudConfigException("Empty config was retrieved from Multifactor Cloud", response);
-        }
+        var api = new CloudConfigApi(_client);
+        var dto = api.GetConfigAsync().GetAwaiter().GetResult();
 
         CloudInteractionLogger.Verbose("Settings pulled from Multifactor Cloud");
 

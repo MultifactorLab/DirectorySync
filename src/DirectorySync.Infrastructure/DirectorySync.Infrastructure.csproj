@@ -16,10 +16,12 @@
       <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
       <PackageReference Include="Serilog.Sinks.EventLog" Version="3.1.0" />
       <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+      <PackageReference Include="System.DirectoryServices.Protocols" Version="8.0.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DirectorySync.Application\DirectorySync.Application.csproj" />
+      <ProjectReference Include="..\DirectorySync.Infrastructure.Shared\DirectorySync.Infrastructure.Shared.csproj" />
     </ItemGroup>
 
 </Project>

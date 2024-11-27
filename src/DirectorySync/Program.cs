@@ -2,10 +2,10 @@ using System.Runtime.InteropServices;
 using DirectorySync.Application;
 using DirectorySync.ConfigSources.MultifactorCloud;
 using DirectorySync.ConfigSources.SystemEnvironmentVariables;
-using DirectorySync.Exceptions;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
 using DirectorySync.Infrastructure.Logging;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
 
 IHost? host = null;
 

@@ -28,16 +28,13 @@
 				<Control Id="LabelLdapPassword" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapPasswordLabel)" />
 				<Control Id="EditLdapPassword" Type="Edit" X="140" Y="137" Height="17" Width="150" Password="yes" Property="PROP_LDAP_PASSWORD" Indirect="no"/>
 
+				<Control Id="LabelRequiredFields" Type="Text" X="20" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogRequiredFieldsLabel)" />
+
 				
 				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />
 				
-				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" 
-						 Text="!(loc.DialogNext)" 
-						 DisableCondition="(NOT (PROP_LDAP_PATH)) OR (NOT (PROP_LDAP_USERNAME)) OR (NOT (PROP_LDAP_PASSWORD))"
-						 EnableCondition="(PROP_LDAP_PATH) AND (PROP_LDAP_USERNAME) AND (PROP_LDAP_PASSWORD)" />
-				
+				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.DialogNext)" />
 				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.DialogBack)" />
-				
 				<Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.DialogCancel)">
 					<Publish Event="SpawnDialog" Value="CancelDlg" />
 				</Control>

@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 	<Fragment>
+			
 		<UI>
-
+			
 			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
 			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
 
 			<?if $(var.Configuration) = Debug ?>
 				<Property Id="PROP_APIURL" Value="https://api.multifactor.dev" />
 			<?else?>
-			<Property Id="PROP_APIURL" Value="https://api.multifactor.ru" />
+				<Property Id="PROP_APIURL" Value="https://api.multifactor.ru" />
 			<?endif?>
 			
 			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
@@ -36,16 +37,14 @@
 				<?else?>
 					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
 				<?endif?>
+				
+				<Control Id="LabelRequiredFields" Type="Text" X="20" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogRequiredFieldsLabel)" />
 
 
 				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />
 
-				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.DialogNext)" 
-						 DisableCondition="(NOT (PROP_APIKEY)) OR (NOT (PROP_APISECRET)) OR (NOT (PROP_APIURL))" 
-						 EnableCondition="(PROP_APIKEY) AND (PROP_APISECRET) AND (PROP_APIURL)" />
-				
-				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.DialogBack)" />
-				
+				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.DialogNext)" />
+				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.DialogBack)" />		
 				<Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.DialogCancel)">
 					<Publish Event="SpawnDialog" Value="CancelDlg" />
 				</Control>
