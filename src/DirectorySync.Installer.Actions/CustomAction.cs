@@ -5,6 +5,7 @@ using System;
 using WixToolset.Dtf.WindowsInstaller;
 using System.Windows.Forms;
 using System.Net.Http;
+using System.Net;
 
 namespace DirectorySync.Installer.Actions
 {
@@ -44,11 +45,17 @@ namespace DirectorySync.Installer.Actions
 
                 try
                 {
-                    var provider = BuildProvider(url, key, secret);
-                    var api = provider.GetRequiredService<CloudConfigApi>();
-
+                    var api = GetApi(url, key, secret);
                     _ = api.GetConfigAsync().GetAwaiter().GetResult();
+
                     ShowOk();
+                    return ActionResult.Success;
+                }
+                catch (PullCloudConfigException ex)
+                {
+                    logger.LogError(ex);
+                    logger.Log(ex.Response.ToString());
+                    ShowFail(ex);
                     return ActionResult.Success;
                 }
                 catch (Exception ex)
@@ -84,19 +91,18 @@ namespace DirectorySync.Installer.Actions
                 buttons: MessageBoxButtons.OK);
         }
 
-        private static ServiceProvider BuildProvider(string url, string key, string secret)
+        private static CloudConfigApi GetApi(string url, string key, string secret)
         {
-            var services = new ServiceCollection();
-            services.AddTransient<CloudConfigApi>();
-            services.AddHttpClient<CloudConfigApi>(cli =>
-            {
-                cli.BaseAddress = new Uri(url);
-                var auth = new BasicAuthHeaderValue(key, secret);
-                cli.DefaultRequestHeaders.Add("Authorization", $"Basic {auth.GetBase64()}");
-            });
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
-            var provider = services.BuildServiceProvider();
-            return provider;
+            var cli = new HttpClient
+            {
+                BaseAddress = new Uri(url)
+            };
+            var auth = new BasicAuthHeaderValue(key, secret);
+            cli.DefaultRequestHeaders.Add("Authorization", $"Basic {auth.GetBase64()}");
+
+            return new CloudConfigApi(cli);
         }
     }
 }
