@@ -83,9 +83,15 @@ namespace DirectorySync.Installer.Actions
             _sb.AppendLine($"[{DateTime.Now:O} ERR] [{_category}]: {ex}");
         }
 
-        public SessionLogger ConsumeProperty(string sessionpropertyName, bool secure = false)
+        /// <summary>
+        /// Before the logger will been disposed the specified property will be consumed from the <see cref="Session"/>.
+        /// </summary>
+        /// <param name="sessionPropertyName">Property name.</param>
+        /// <param name="secure">Property value should be masked.</param>
+        /// <returns>Current instance of SessionLogger</returns>
+        public SessionLogger ConsumeProperty(string sessionPropertyName, bool secure = false)
         {
-            _properties[sessionpropertyName] = new SessionProperty(sessionpropertyName, secure);
+            _properties[sessionPropertyName] = new SessionProperty(sessionPropertyName, secure);
             return this;
         }
 
