@@ -1,15 +1,32 @@
 ﻿using System;
-using System.Windows.Forms;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using WixToolset.Dtf.WindowsInstaller;
 
 namespace DirectorySync.Installer.Actions
 {
+    internal class SessionProperty
+    {
+        public string Name { get; }
+        public bool Secure { get; }
+
+        public SessionProperty(string name, bool secure = false)
+        {
+            Name = name;
+            Secure = secure;
+        }
+    }
+    /// <summary>
+    /// 
+    /// </summary>
     internal class SessionLogger : IDisposable
     {
         private readonly Session _session;
+        private readonly string _category;
         private readonly StringBuilder _sb;
+        private readonly Dictionary<string, SessionProperty> _properties;
 
         private readonly Lazy<string> _path = new Lazy<string>(() =>
         {
@@ -33,36 +50,43 @@ namespace DirectorySync.Installer.Actions
 
         public string FilePath => _path.Value;
 
-        private SessionLogger(Session session)
+        private SessionLogger(Session session, string category)
         {
             _session = session;
+            _category = category;
             _sb = new StringBuilder();
-
-            Log("Session Components:");
-            foreach (var comp in session.Components)
-            {
-                Log(comp.Name);
-            }
+            _properties = new Dictionary<string, SessionProperty>();
         }
 
-        public static SessionLogger Create(Session session)
+        /// <summary>
+        /// Creates a new instance of Session logger.
+        /// </summary>
+        /// <param name="session">Installer session.</param>
+        /// <returns>Session logger.</returns>
+        public static SessionLogger Create(Session session, string category)
         {
-            return new SessionLogger(session);
+            return new SessionLogger(session, category ?? string.Empty);
         }
 
         public void Log(string message)
         {
-            _sb.AppendLine($"[{DateTime.Now:O} INF]: {message}");
+            _sb.AppendLine($"[{DateTime.Now:O} INF] [{_category}]: {message}");
         }
 
         public void LogError(string message)
         {
-            _sb.AppendLine($"[{DateTime.Now:O} ERR]: {message}");
+            _sb.AppendLine($"[{DateTime.Now:O} ERR] [{_category}]: {message}");
         }        
         
         public void LogError(Exception ex)
         {
-            _sb.AppendLine($"[{DateTime.Now:O} ERR]: {ex}");
+            _sb.AppendLine($"[{DateTime.Now:O} ERR] [{_category}]: {ex}");
+        }
+
+        public SessionLogger ConsumeProperty(string sessionpropertyName, bool secure = false)
+        {
+            _properties[sessionpropertyName] = new SessionProperty(sessionpropertyName, secure);
+            return this;
         }
 
         private void Flush()
@@ -83,13 +107,25 @@ namespace DirectorySync.Installer.Actions
             }
         }
 
-        private void LogSessionProperties()
+        private void LogSessionData()
         {
-            Log("Session Properties:");
-            Log($"PROP_APIURL: {_session["PROP_APIURL"]}");
-            Log($"PROP_APIKEY: {_session["PROP_APIKEY"]}");
-            Log($"PROP_APISECRET: {MaskIfNotEmpty(_session["PROP_APISECRET"])}");
+            if (_properties.Count == 0)
+            {
+                return;
+            }
+
+            var sb = new StringBuilder("Session Properties");
+            sb.AppendLine();
+            foreach (var prop in _properties.Values)
+            {
+                var value = _session[prop.Name];
+                var sanitized = prop.Secure ? MaskIfNotEmpty(value) : value;
+                sb.AppendFormat("   {0}: {1}{2}", prop.Name, sanitized, Environment.NewLine);
+            }
+
+            Log(sb.ToString());
         }
+
         private static string MaskIfNotEmpty(string str)
         {
             if (string.IsNullOrWhiteSpace(str))
@@ -97,20 +133,17 @@ namespace DirectorySync.Installer.Actions
                 return str;
             }
 
-            return $"{str[0]}***";
+            return "***";
         }
 
         private void ShowAlert()
         {
-            MessageBox.Show(
-                text: $"Failed to write log to file. And now we will just show you this log: {Environment.NewLine}{_sb}",
-                caption: "Fail",
-                buttons: MessageBoxButtons.OK);
+            Notification.Warning($"Failed to write log to file. And now we will just show you this log: {Environment.NewLine}{_sb}");
         }
 
         public void Dispose()
         {
-            LogSessionProperties();
+            LogSessionData();
             Flush();
             _sb.Clear();
         }

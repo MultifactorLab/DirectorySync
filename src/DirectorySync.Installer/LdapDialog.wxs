@@ -28,7 +28,14 @@
 				<Control Id="LabelLdapPassword" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="!(loc.LdapDialogLdapPasswordLabel)" />
 				<Control Id="EditLdapPassword" Type="Edit" X="140" Y="137" Height="17" Width="150" Password="yes" Property="PROP_LDAP_PASSWORD" Indirect="no"/>
 
+				
+				<Control Id="LdapTest" Type="PushButton" X="190" Y="160" Width="100" Height="17"  Text="!(loc.LdapTestButton)">
+					<Publish Event="DoAction" Value="BindToLdapServer" />
+				</Control>
+
+				
 				<Control Id="LabelRequiredFields" Type="Text" X="20" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogRequiredFieldsLabel)" />
+				<Control Id="LabelVersion" Type="Text" X="309" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.LabelVersionLabel) !(bind.Property.ProductVersion)" />
 
 				
 				<Control Id="BottomLine" Type="Line" X="3" Y="234" Width="366" Height="0" />

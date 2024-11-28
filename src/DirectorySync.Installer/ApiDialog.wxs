@@ -43,6 +43,7 @@
 				</Control>
 				
 				<Control Id="LabelRequiredFields" Type="Text" X="20" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogRequiredFieldsLabel)" />
+				<Control Id="LabelVersion" Type="Text" X="309" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.LabelVersionLabel) !(bind.Property.ProductVersion)" />
 
 
 				<Control Id="BottomLine" Type="Line" X="3" Y="234" Width="366" Height="0" />

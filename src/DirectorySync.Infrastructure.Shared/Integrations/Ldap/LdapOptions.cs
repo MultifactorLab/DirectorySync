@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace DirectorySync.Infrastructure.Shared.Integrations.Ldap
@@ -15,5 +16,7 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Ldap
 
         [Range(1, 5000)]
         public int PageSize { get; set; } = 500;
+
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
     }
 }

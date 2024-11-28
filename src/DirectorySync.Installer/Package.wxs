@@ -9,10 +9,17 @@
 		Scope="perMachine">
 
 		<Binary Id="InstallerActionsBinary" SourceFile="$(var.DirectorySync.Installer.Actions.TargetDir)$(var.DirectorySync.Installer.Actions.TargetName).CA.dll" />
+		
 		<CustomAction Id="PullCloudConfig" 
 					  Impersonate="no"  
 					  BinaryRef="InstallerActionsBinary"
 					  DllEntry="PullCloudSettings" 
+					  Return="check" />
+
+		<CustomAction Id="BindToLdapServer"
+					  Impersonate="no"
+					  BinaryRef="InstallerActionsBinary"
+					  DllEntry="BindToLdapServer"
 					  Return="check" />
 		
 		<!-- 

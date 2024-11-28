@@ -33,6 +33,7 @@
     <String Id="LdapDialogLdapPathLabel" Value="LDAP path*" />
     <String Id="LdapDialogLdapUsernameLabel" Value="Username*" />
     <String Id="LdapDialogLdapPasswordLabel" Value="Password*" />
+    <String Id="LdapTestButton" Value="Bind to server" />
 	<String Id="LdapDialogRequiredFieldsLabel" Value="* - required fields" />
 	
     <String Id="PropLdapPathValue" Value="" />
@@ -44,6 +45,8 @@
     <String Id="CustomMaintenanceTypeDlgTooltip" Value="Configure Directory Sync" />
     <String Id="CustomMaintenanceTypeDlgConfigureButton" Value="Configure" />
     <String Id="CustomMaintenanceTypeDlgConfigureText" Value="Customize Directory Sync service settings" />
+	
+    <String Id="LabelVersionLabel" Value="Version" />
     
     
 </WixLocalization>
