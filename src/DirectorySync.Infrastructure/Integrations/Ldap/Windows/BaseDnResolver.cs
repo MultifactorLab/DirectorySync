@@ -1,7 +1,8 @@
 ﻿using System.DirectoryServices.Protocols;
+using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
+using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
 using LiteDB;
 using Microsoft.Extensions.Logging;
-using Multifactor.Core.Ldap;
 
 namespace DirectorySync.Application.Integrations.Ldap.Windows;
 

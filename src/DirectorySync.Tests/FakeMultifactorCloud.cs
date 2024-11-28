@@ -1,4 +1,4 @@
-﻿using DirectorySync.Application.Integrations.Multifactor;
+﻿using DirectorySync.Infrastructure.Shared.Http;
 using Moq;
 using Moq.Contrib.HttpClient;
 using System.Net;

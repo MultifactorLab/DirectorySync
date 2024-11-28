@@ -2,8 +2,9 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using DirectorySync.Application.Ports;
-using Multifactor.Core.Ldap;
 using Microsoft.Extensions.Options;
+using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
+using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
 
 namespace DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions
 {

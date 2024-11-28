@@ -3,11 +3,32 @@
 	<Package
 		Name="Directory Sync"
 		Manufacturer="Multifactor"
-		Version="1.0.0.0"
-		UpgradeCode="0c9b82db-ff15-472f-9059-f4b018189bdb" Compressed="yes" Scope="perMachine">
-		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)"
-					  AllowDowngrades="no" 
-					  AllowSameVersionUpgrades="no" />
+		Version="1.0.1"
+		UpgradeCode="0c9b82db-ff15-472f-9059-f4b018189bdb"
+		Compressed="yes" 
+		Scope="perMachine">
+
+		<Binary Id="InstallerActionsBinary" SourceFile="$(var.DirectorySync.Installer.Actions.TargetDir)$(var.DirectorySync.Installer.Actions.TargetName).CA.dll" />
+		
+		<CustomAction Id="PullCloudConfig" 
+					  Impersonate="no"  
+					  BinaryRef="InstallerActionsBinary"
+					  DllEntry="PullCloudSettings" 
+					  Return="check" />
+
+		<CustomAction Id="BindToLdapServer"
+					  Impersonate="no"
+					  BinaryRef="InstallerActionsBinary"
+					  DllEntry="BindToLdapServer"
+					  Return="check" />
+		
+		<!-- 
+		Обновление уже установленного продукта. Удаляется старая версию, затем устанавливается новая. 
+		AllowSameVersionUpgrades=yes предотвращает установку двух копий с одной версией или с разными версиями 4-го порядка (x.x.x.1). 
+		Почему: потому что винда не воспринимает версии 4-го порядка и сравнивает лишь maj.min.patch. 
+		-->
+		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" 
+					  AllowSameVersionUpgrades="yes" />
 		
 		<MediaTemplate EmbedCab="yes" />
 		<UIRef Id="WixUI_Common" />
@@ -17,18 +38,21 @@
 		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER"/>
 
 		<Binary Id="TopBmp" SourceFile="Resources\top.bmp" />
-
+		
+		
 		<UIRef Id="MainWizard" />
 
 		<Property Id="ApplicationFolderName" Value="DirectorySync" />
 		<Property Id="WixAppFolder" Value="WixPerMachineFolder" />
 
 		<Feature Id="Main">
+			
 			<ComponentRef Id="ProductCommonFiles" />
 			<ComponentRef Id="CreateLogsFolderComponent" />
 			<ComponentGroupRef Id="EnvironmentVariablesComponents" />
 			<ComponentGroupRef Id="WindowsServiceComponents" />
+			
 		</Feature>
-	
+
 	</Package>
 </Wix>

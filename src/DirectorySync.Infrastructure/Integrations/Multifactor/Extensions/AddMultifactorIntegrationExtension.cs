@@ -1,5 +1,6 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Infrastructure.Http;
+using DirectorySync.Infrastructure.Shared.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;

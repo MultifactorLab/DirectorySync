@@ -17,11 +17,11 @@
             <Dialog Id="LicenseDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				
 				<Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="TopBmp" />
-				<Control Id="BannerLine" Type="Line" X="0" Y="44" Width="372" Height="0" />
+				<Control Id="BannerLine" Type="Line" X="3" Y="44" Width="366" Height="0" />
 
 				<Control Id="Title" Type="Text" X="15" Y="15" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}!(loc.LicenseDialogTitle)" />
                                
-				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" />
+				<Control Id="BottomLine" Type="Line" X="3" Y="234" Width="366" Height="0" />
                 
                 <Control Id="LicenseAcceptedCheckBox" Type="CheckBox" X="20" Y="207" Width="330" Height="18" CheckBoxValue="1" Property="LicenseAccepted" Text="!(loc.LicenseAgreementDlgLicenseAcceptedCheckBox)" />
                                 

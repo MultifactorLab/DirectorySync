@@ -15,6 +15,7 @@
     <PackageReference Include="WixToolset.UI.wixext" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DirectorySync.Installer.Actions\DirectorySync.Installer.Actions.csproj" />
     <ProjectReference Include="..\DirectorySync\DirectorySync.csproj">
       <Name>DirectorySync</Name>
       <Project>{30b79712-2107-4151-a686-c39959cf4fd3}</Project>

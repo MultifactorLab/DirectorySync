@@ -1,5 +1,5 @@
-﻿using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Infrastructure.Http;
+﻿using DirectorySync.Infrastructure.Http;
+using DirectorySync.Infrastructure.Shared.Http;
 
 namespace DirectorySync.ConfigSources.MultifactorCloud;
 

@@ -19,8 +19,4 @@
       <ProjectReference Include="..\DirectorySync.Infrastructure\DirectorySync.Infrastructure.csproj" />
     </ItemGroup>
 
-	<ItemGroup>
-		<InternalsVisibleTo Include="DirectorySync.Tests" />
-	</ItemGroup>
-
 </Project>
