@@ -1,7 +1,7 @@
 ﻿using System.DirectoryServices.Protocols;
 using DirectorySync.Domain;
 
-namespace DirectorySync.Application.Integrations.Ldap.Windows;
+namespace DirectorySync.Infrastructure.Integrations.Ldap;
 
 internal static class SearchResultEntryExtensions
 {

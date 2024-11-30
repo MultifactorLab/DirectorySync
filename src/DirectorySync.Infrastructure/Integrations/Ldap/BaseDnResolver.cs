@@ -4,7 +4,7 @@ using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
 using LiteDB;
 using Microsoft.Extensions.Logging;
 
-namespace DirectorySync.Application.Integrations.Ldap.Windows;
+namespace DirectorySync.Infrastructure.Integrations.Ldap;
 
 internal sealed class BaseDnResolver
 {
@@ -16,7 +16,7 @@ internal sealed class BaseDnResolver
     private readonly Lazy<string> _dn;
 
     public BaseDnResolver(LdapConnectionFactory connectionFactory,
-        LdapConnectionString connectionString, 
+        LdapConnectionString connectionString,
         ILogger<BaseDnResolver> logger)
     {
         _connectionFactory = connectionFactory;
@@ -35,7 +35,7 @@ internal sealed class BaseDnResolver
     /// </summary>
     /// <returns>BASE DN.</returns>
     public string GetBaseDn() => _dn.Value;
-    
+
     private string GetBaseDnInternal(LdapConnection conn)
     {
         if (_connectionString.HasBaseDn)

@@ -10,19 +10,19 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SearchOption = System.DirectoryServices.Protocols.SearchOption;
 
-namespace DirectorySync.Application.Integrations.Ldap.Windows;
+namespace DirectorySync.Infrastructure.Integrations.Ldap;
 
-internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
+internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
 {
     private readonly LdapOptions _ldapOptions;
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly BaseDnResolver _baseDnResolver;
-    private readonly ILogger<GetReferenceGroupWithLdapConnection> _logger;
+    private readonly ILogger<GetRefGroupWithDirectoryServicesProtocols> _logger;
 
-    public GetReferenceGroupWithLdapConnection(LdapConnectionFactory connectionFactory,
+    public GetRefGroupWithDirectoryServicesProtocols(LdapConnectionFactory connectionFactory,
         IOptions<LdapOptions> ldapOptions,
         BaseDnResolver baseDnResolver,
-        ILogger<GetReferenceGroupWithLdapConnection> logger)
+        ILogger<GetRefGroupWithDirectoryServicesProtocols> logger)
     {
         _ldapOptions = ldapOptions.Value;
         _connectionFactory = connectionFactory;
@@ -49,7 +49,7 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
 
     private string? FindGroupDn(DirectoryGuid guid, LdapConnection conn)
     {
-        var filter = $"(&(objectCategory=group)(objectGUID={guid.OctetString}))";
+        var filter = LdapFilters.FindGroupByGuid(guid);
         _logger.LogDebug("Searching by group with filter '{Filter:s}'...", filter);
 
         var result = Find(filter, ["distinguishedName"], conn);
@@ -62,11 +62,11 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
         return first.DistinguishedName;
     }
 
-    private IEnumerable<ReferenceDirectoryUser> GetMembers(string groupDn, 
-        string[] requiredAttributes, 
+    private IEnumerable<ReferenceDirectoryUser> GetMembers(string groupDn,
+        string[] requiredAttributes,
         LdapConnection conn)
     {
-        var filter = $"(&(objectClass=user)(memberof={groupDn}))";
+        var filter = LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn);
         _logger.LogDebug("Searching by group members with filter '{Filter:s}'...", filter);
         var attrs = requiredAttributes.Concat(["ObjectGUID"]).ToArray();
 
@@ -91,8 +91,8 @@ internal class GetReferenceGroupWithLdapConnection : IGetReferenceGroup
         return new Guid(bytes);
     }
 
-    private IEnumerable<SearchResultEntry> Find(string filter, 
-        string[] requiredAttributes, 
+    private IEnumerable<SearchResultEntry> Find(string filter,
+        string[] requiredAttributes,
         LdapConnection conn)
     {
         var baseDn = _baseDnResolver.GetBaseDn();

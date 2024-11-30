@@ -1,5 +1,5 @@
 ﻿using DirectorySync.Infrastructure.Data.Extensions;
-using DirectorySync.Infrastructure.Integrations.Ldap.Windows.Extensions;
+using DirectorySync.Infrastructure.Integrations.Ldap.Extensions;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Extensions;
 using Microsoft.Extensions.Hosting;
 
@@ -11,7 +11,7 @@ namespace DirectorySync.Infrastructure
         {
             ArgumentNullException.ThrowIfNull(builder);
 
-            builder.AddLdapWindowsIntegration();
+            builder.AddLdapIntegration();
             builder.AddLiteDbStorage();
             builder.AddMultifactorIntegration();
         }
