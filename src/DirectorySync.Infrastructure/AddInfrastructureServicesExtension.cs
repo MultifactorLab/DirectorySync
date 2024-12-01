@@ -7,13 +7,13 @@ namespace DirectorySync.Infrastructure
 {
     public static class AddInfrastructureServicesExtension
     {
-        public static void AddInfrastructureServices(this HostApplicationBuilder builder)
+        public static void AddInfrastructureServices(this HostApplicationBuilder builder, params string[] args)
         {
             ArgumentNullException.ThrowIfNull(builder);
 
-            builder.AddLdapIntegration();
-            builder.AddLiteDbStorage();
-            builder.AddMultifactorIntegration();
+            builder.AddLdapIntegration(args);
+            builder.AddLiteDbStorage(args);
+            builder.AddMultifactorIntegration(args);
         }
     }
 }

@@ -12,6 +12,7 @@ IHost? host = null;
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
+    args ??= [];
 
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
     {
@@ -33,7 +34,7 @@ try
     }
 #endif
 
-    builder.RegisterLogger();
+    builder.RegisterLogger(args);
 
     builder.Configuration.AddMultifactorCloudConfiguration();
 

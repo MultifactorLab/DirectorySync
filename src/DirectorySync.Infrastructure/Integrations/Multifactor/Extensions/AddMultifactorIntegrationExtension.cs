@@ -10,7 +10,7 @@ namespace DirectorySync.Infrastructure.Integrations.Multifactor.Extensions;
 
 internal static class AddMultifactorIntegrationExtension
 {
-    public static void AddMultifactorIntegration(this HostApplicationBuilder builder)
+    public static void AddMultifactorIntegration(this HostApplicationBuilder builder, params string[] args)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

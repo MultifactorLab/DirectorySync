@@ -11,7 +11,7 @@ namespace DirectorySync.Infrastructure.Logging;
 
 public static class RegisterLoggerExtension
 {
-    public static void RegisterLogger(this HostApplicationBuilder builder)
+    public static void RegisterLogger(this HostApplicationBuilder builder, params string[] args)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

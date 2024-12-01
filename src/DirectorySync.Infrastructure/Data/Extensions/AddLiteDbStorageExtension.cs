@@ -7,7 +7,7 @@ namespace DirectorySync.Infrastructure.Data.Extensions;
 
 internal static class AddLiteDbStorageExtension
 {
-    public static void AddLiteDbStorage(this HostApplicationBuilder builder)
+    public static void AddLiteDbStorage(this HostApplicationBuilder builder, params string[] args)
     {
         ArgumentNullException.ThrowIfNull(builder);
         
@@ -30,7 +30,7 @@ internal static class AddLiteDbStorageExtension
         {
             var conn = prov.GetRequiredService<LiteDbConnection>();
 
-            if (DatabaseCleanupRequested())
+            if (DatabaseCleanupRequested(args))
             {
                 var factory = prov.GetRequiredService<ILoggerFactory>();
                 var logger = factory.CreateLogger("DirectorySync");
@@ -44,10 +44,9 @@ internal static class AddLiteDbStorageExtension
         builder.Services.AddTransient<IApplicationStorage, LiteDbApplicationStorage>();
     }
 
-    private static bool DatabaseCleanupRequested()
+    private static bool DatabaseCleanupRequested(params string[] args)
     {
         const string cleanupToken = "--cleanup";
-        var args = Environment.GetCommandLineArgs();
         return args.Contains(cleanupToken, StringComparer.OrdinalIgnoreCase);
     }
 

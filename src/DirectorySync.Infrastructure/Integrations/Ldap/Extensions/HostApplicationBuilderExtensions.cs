@@ -9,7 +9,7 @@ namespace DirectorySync.Infrastructure.Integrations.Ldap.Extensions
 {
     internal static class HostApplicationBuilderExtensions
     {
-        public static void AddLdapIntegration(this HostApplicationBuilder builder)
+        public static void AddLdapIntegration(this HostApplicationBuilder builder, params string[] args)
         {
             ArgumentNullException.ThrowIfNull(builder);
 

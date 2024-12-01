@@ -10,7 +10,7 @@ namespace DirectorySync.Installer.Actions
                 text: message,
                 caption: "Success",
                 buttons: MessageBoxButtons.OK,
-                icon: MessageBoxIcon.Error);
+                icon: MessageBoxIcon.Information);
         }
 
         public static void Warning(string message)
@@ -19,7 +19,7 @@ namespace DirectorySync.Installer.Actions
                 text: message,
                 caption: "Warning",
                 buttons: MessageBoxButtons.OK,
-                icon: MessageBoxIcon.Information);
+                icon: MessageBoxIcon.Warning);
         }
     }
 }
