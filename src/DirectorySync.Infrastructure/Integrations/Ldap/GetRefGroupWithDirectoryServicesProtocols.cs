@@ -74,7 +74,7 @@ internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
         foreach (var entry in result)
         {
             var guid = GetObjectGuid(entry);
-            var map = requiredAttributes.Select(x => entry.GetSingleValuedAttribute(x));
+            var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
             var attributes = new LdapAttributeCollection(map);
             yield return new ReferenceDirectoryUser(guid, attributes);
         }

@@ -1,7 +1,9 @@
 ﻿using DirectorySync.Application.Ports;
+using DirectorySync.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 
 namespace DirectorySync.Infrastructure.Data.Extensions;
 
@@ -11,8 +13,8 @@ internal static class AddLiteDbStorageExtension
     {
         ArgumentNullException.ThrowIfNull(builder);
         
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var dir = Path.Combine(localAppData, "DirectorySync");
+        var localAppData = GetLocalAppData();
+        var dir = Path.Combine(localAppData, "Multifactor", "Directory Sync");
         
         if (!Directory.Exists(dir))
         {
@@ -21,9 +23,10 @@ internal static class AddLiteDbStorageExtension
 
         builder.Services.Configure<LiteDbConfig>(x =>
         {
-
             var path = Path.Combine(dir, "storage.db");
             x.ConnectionString = $"Filename={path};Upgrade=true";
+
+            StartupLogger.Information("Database location: {Location:l}", path);
         });
         builder.Services.AddSingleton<LiteDbConnection>();
         builder.Services.AddSingleton((Func<IServiceProvider, ILiteDbConnection>)(prov =>
@@ -44,9 +47,19 @@ internal static class AddLiteDbStorageExtension
         builder.Services.AddTransient<IApplicationStorage, LiteDbApplicationStorage>();
     }
 
+    private static string GetLocalAppData()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return Environment.ExpandEnvironmentVariables("%localappdata%");
+        }
+
+        throw new PlatformNotSupportedException("Only Windows platform");
+    }
+
     private static bool DatabaseCleanupRequested(params string[] args)
     {
-        const string cleanupToken = "--cleanup";
+        const string cleanupToken = "cleanup";
         return args.Contains(cleanupToken, StringComparer.OrdinalIgnoreCase);
     }
 

@@ -11,6 +11,7 @@ internal static partial class LdapFilters
     
     public static string FindEnabledGroupMembersByGroupDn(string groupDn)
     {
-        return $"(&(objectClass=user)(memberof={groupDn}))";
+        // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
+        return $"(&(objectClass=user)(memberof={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
     }
 }

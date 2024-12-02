@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.ServiceProcess;
 using DirectorySync.Application;
 using DirectorySync.ConfigSources.MultifactorCloud;
 using DirectorySync.ConfigSources.SystemEnvironmentVariables;
@@ -12,6 +13,7 @@ IHost? host = null;
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
+
     args ??= [];
 
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -23,6 +25,7 @@ try
     {
         options.ServiceName = Literals.ServiceName;
     });
+
 
     builder.Configuration.AddSystemEnvironmentVariables("DIRECTORYSYNC_");
     builder.Configuration.AddEnvironmentVariables("DIRECTORYSYNC_");
@@ -39,7 +42,7 @@ try
     builder.Configuration.AddMultifactorCloudConfiguration();
 
     builder.AddApplicationServices();
-    builder.AddInfrastructureServices();
+    builder.AddInfrastructureServices(args);
     builder.AddHostedServices();
 
     host = builder.Build();
