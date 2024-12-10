@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -31,14 +31,14 @@ public class AttributesHash : ValueObject
         ArgumentNullException.ThrowIfNull(attributes);
 
         var attrs = attributes
-            .OrderByDescending(x => x.Name)
             .Select(x =>
             {
                 var values = x.Values.Length == 0
                     ? string.Empty
                     : $":{string.Join(',', x.Values)}";
                 return $"{x.Name}{values}";
-            });
+            })
+            .OrderByDescending(x => x);
 
         var joinedAttrs = string.Join(';', attrs);
         var bytes = Encoding.UTF8.GetBytes(joinedAttrs);
@@ -49,7 +49,7 @@ public class AttributesHash : ValueObject
     
     public override string ToString() => $"{nameof(AttributesHash)} '{Value}'";
 
-    protected override IEnumerable<object> GetEqualityComponents()
+    protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Value;
     }

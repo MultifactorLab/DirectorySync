@@ -4,12 +4,12 @@ namespace DirectorySync.Application.Workloads;
 
 public class UserProcessingOptions
 {
-    [Range(1, 500)]
+    [Range(1, 100)]
     public int DeletingBatchSize { get; set; } = 50;
 
-    [Range(1, 200)]
+    [Range(1, 100)]
     public int CreatingBatchSize { get; set; } = 20;
 
-    [Range(1, 300)]
+    [Range(1, 100)]
     public int UpdatingBatchSize { get; set; } = 50;
 }

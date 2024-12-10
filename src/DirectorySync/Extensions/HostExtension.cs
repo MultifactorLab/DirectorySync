@@ -2,7 +2,7 @@ using DirectorySync.Application;
 
 namespace DirectorySync.Extensions
 {
-    internal static class RegisterApplicationHostEventsLoggingExtension
+    internal static class HostExtension
     {
         public static void RegisterApplicationHostEventsLogging(this IHost host)
         {

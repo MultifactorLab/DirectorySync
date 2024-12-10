@@ -4,11 +4,13 @@ using DirectorySync.Infrastructure.Shared.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
+using Polly;
 
 namespace DirectorySync.Infrastructure.Integrations.Multifactor.Extensions;
 
-internal static class AddMultifactorIntegrationExtension
+internal static class HostApplicationBuilderExtensions
 {
     public static void AddMultifactorIntegration(this HostApplicationBuilder builder, params string[] args)
     {
@@ -29,7 +31,21 @@ internal static class AddMultifactorIntegrationExtension
             var auth = new BasicAuthHeaderValue(options.Key, options.Secret);
             cli.DefaultRequestHeaders.Add("Authorization", $"Basic {auth.GetBase64()}");
 
-        }).AddHttpMessageHandler<HttpLogger>().AddHttpMessageHandler<MfTraceIdHeaderSetter>();
+        }).AddHttpMessageHandler<HttpLogger>()
+        .AddHttpMessageHandler<MfTraceIdHeaderSetter>()
+        .AddResilienceHandler("mf-api-pipeline", x =>
+        {
+            // Defaults: https://www.pollydocs.org/strategies/retry.html#defaults
+            x.AddRetry(new HttpRetryStrategyOptions
+            {
+                MaxRetryAttempts = 3,
+                Delay = TimeSpan.FromSeconds(2),
+                BackoffType = DelayBackoffType.Exponential
+            });
+
+            // Defaults: https://www.pollydocs.org/strategies/timeout.html#defaults
+            x.AddTimeout(TimeSpan.FromSeconds(5));
+        });
 
         builder.Services.AddSingleton<IMultifactorApi, MultifactorApi>();
     }

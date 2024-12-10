@@ -1,5 +1,4 @@
 ﻿using System.DirectoryServices.Protocols;
-using CSharpFunctionalExtensions;
 using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;

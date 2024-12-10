@@ -1,17 +1,16 @@
-using CSharpFunctionalExtensions;
-
 namespace DirectorySync.Domain.Entities;
 
-public class CachedDirectoryGroupMember : Entity<DirectoryGuid>
+public class CachedDirectoryGroupMember
 {
+    public DirectoryGuid Id { get; }
     public string Identity { get; }
     public AttributesHash Hash { get; private set; }
     
     public CachedDirectoryGroupMember(DirectoryGuid guid,
         string identity,
-        AttributesHash hash) 
-        : base(guid)
+        AttributesHash hash)
     {
+        Id = guid;
         Identity = identity ?? throw new ArgumentNullException(nameof(identity));
         Hash = hash ?? throw new ArgumentNullException(nameof(hash));
     }

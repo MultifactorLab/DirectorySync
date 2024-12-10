@@ -1,4 +1,3 @@
-using CSharpFunctionalExtensions;
 using System.Text;
 
 namespace DirectorySync.Domain;
@@ -6,7 +5,7 @@ namespace DirectorySync.Domain;
 /// <summary>
 /// LDAP attribute object.
 /// </summary>
-public class LdapAttribute : ComparableValueObject
+public class LdapAttribute : ValueObject
 {
     /// <summary>
     /// Attribute name.
@@ -56,7 +55,7 @@ public class LdapAttribute : ComparableValueObject
         return sb.ToString();
     }
 
-    protected override IEnumerable<IComparable> GetComparableEqualityComponents()
+    protected override IEnumerable<object?> GetEqualityComponents()
     {
         const string nullValue = "_null_";
 

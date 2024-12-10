@@ -24,7 +24,7 @@ internal class OrderBoard
             {
                 _logger.LogDebug("Workload '{Workload}' was placed. All workloads: {Workloads:l}", 
                     workload,
-                    string.Join(", ", _orders.Select(x => $"{{{x.Workload}, {x.Placed:hh:mm:ss}}}")));
+                    string.Join(", ", _orders.Select(x => x.Workload)));
             }
         }
     }
@@ -53,9 +53,6 @@ internal class OrderBoard
         lock (_locker)
         {
             _orders.RemoveWhere(x => x.Workload == workload);
-            _logger.LogDebug("Workload '{Workload}' is completed and was removed. All workloads: {Workloads:l}", 
-                workload,
-                string.Join(", ", _orders.Select(x => $"{{{x.Workload}, {x.Placed:hh:mm:ss}}}")));
         }
     }
 

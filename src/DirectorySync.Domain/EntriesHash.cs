@@ -1,4 +1,3 @@
-using CSharpFunctionalExtensions;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -31,7 +30,7 @@ public class EntriesHash : ValueObject
     {
         ArgumentNullException.ThrowIfNull(guids);
 
-        var ordered = guids.OrderDescending();
+        var ordered = guids.Select(x => x.Value).OrderDescending();
         var joinedGuids = string.Join(';', ordered);
         var bytes = Encoding.UTF8.GetBytes(joinedGuids);
         var hash = SHA256.HashData(bytes);
@@ -42,7 +41,7 @@ public class EntriesHash : ValueObject
 
     public override string ToString() => $"{nameof(EntriesHash)} '{Value}'";
 
-    protected override IEnumerable<object> GetEqualityComponents()
+    protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Value;
     }

@@ -1,10 +1,10 @@
 ﻿using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Workloads;
 
@@ -21,25 +21,28 @@ internal class ScanUsers : IScanUsers
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
     private readonly IGetReferenceGroup _getReferenceGroup;
     private readonly IApplicationStorage _storage;
-    private readonly MultifactorPropertyMapper _propertyMapper;
+    private readonly Creator _creator;
     private readonly IMultifactorApi _api;
     private readonly CodeTimer _timer;
+    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
     private readonly ILogger<ScanUsers> _logger;
 
     public ScanUsers(RequiredLdapAttributes requiredLdapAttributes,
         IGetReferenceGroup getReferenceGroup,
         IApplicationStorage storage,
-        MultifactorPropertyMapper propertyMapper,
+        Creator creator,
         IMultifactorApi api,
         CodeTimer timer,
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
         ILogger<ScanUsers> logger)
     {
         _requiredLdapAttributes = requiredLdapAttributes;
         _getReferenceGroup = getReferenceGroup;
         _storage = storage;
-        _propertyMapper = propertyMapper;
+        _creator = creator;
         _api = api;
         _timer = timer;
+        _attrMappingOptions = attrMappingOptions;
         _logger = logger;
     }
 
@@ -79,9 +82,8 @@ internal class ScanUsers : IScanUsers
         }
 
         _logger.LogDebug("Found new users: {New}", newDirectoryUsers.Length);
-        
-        await CreateAsync(cachedGroup, newDirectoryUsers, token);
-        
+        await _creator.CreateManyAsync(cachedGroup, newDirectoryUsers);
+
         var cacheGroupTimer = _timer.Start("Cache Group");
         _storage.UpdateGroup(cachedGroup);
         cacheGroupTimer.Stop();
@@ -89,55 +91,8 @@ internal class ScanUsers : IScanUsers
         _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
     }
 
-    private async Task CreateAsync(CachedDirectoryGroup group, 
-        ReferenceDirectoryUser[] referenceUsers,
-        CancellationToken token)
-    {
-        var bucket = BuildBucket(referenceUsers);
-
-        var createApiTimer = _timer.Start("Api Request: Create Users");
-        var res = await _api.CreateManyAsync(bucket, token);
-        createApiTimer.Stop();
-
-        foreach (var created in res.CreatedUsers)
-        {
-            var refUser = referenceUsers.FirstOrDefault(x => x.Guid == created.Id);
-            if (refUser is null)
-            {
-                continue;
-            }
-
-            var cachedMember = CachedDirectoryGroupMember.Create(created.Id, created.Identity, refUser.Attributes);
-            group.AddMembers(cachedMember);
-        }
-    }
-
     private static IEnumerable<ReferenceDirectoryUser> FindNewUsers(ReferenceDirectoryGroup refGroup, CachedDirectoryGroup cachedGroup)
     {
         return refGroup.Members.Where(x => !cachedGroup.Members.Select(s => s.Id).Contains(x.Guid));
-    }
-
-    private NewUsersBucket BuildBucket(ReferenceDirectoryUser[] referenceUsers)
-    {
-        var bucket = new NewUsersBucket();
-        foreach (var refUser in referenceUsers)
-        {
-            using var withUser = _logger.EnrichWithLdapUser(refUser.Guid);
-
-            var props = _propertyMapper.Map(refUser.Attributes);
-            if (props.Count == 0)
-            {
-                continue;
-            }
-
-            var identity = props[MultifactorPropertyName.IdentityProperty]!;
-            var user = bucket.AddNewUser(refUser.Guid, identity);
-            foreach (var prop in props.Where(x => !x.Key.Equals(MultifactorPropertyName.IdentityProperty, StringComparison.OrdinalIgnoreCase)))
-            {
-                user.AddProperty(prop.Key, prop.Value);
-            }
-        }
-
-        return bucket;
     }
 }

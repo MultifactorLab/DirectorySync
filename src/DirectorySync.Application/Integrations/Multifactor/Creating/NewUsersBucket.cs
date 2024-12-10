@@ -12,7 +12,9 @@ internal class NewUsersBucket : INewUsersBucket
 {
     private readonly List<INewUser> _newUsers = [];
     public ReadOnlyCollection<INewUser> NewUsers => new (_newUsers);
-    
+
+    public int Count => _newUsers.Count;
+
     public NewUser AddNewUser(DirectoryGuid id, string identity)
     {
         if (id is null)

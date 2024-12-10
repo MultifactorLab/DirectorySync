@@ -15,28 +15,27 @@ internal class HttpLogger : DelegatingHandler
     {
         if (_logger.IsEnabled(LogLevel.Debug))
         {
-            var reqBody = string.Empty;
-            if (request.Content != null)
-            {
-                reqBody = await request.Content.ReadAsStringAsync(cancellationToken);
-            }
-            _logger.LogDebug("Sending {Method} request to {Url} with {Body}",
-                request.Method, request.RequestUri, reqBody);
+            return await ActWithDebug(request, cancellationToken);
         }
 
-        var response = await base.SendAsync(request, cancellationToken);
+        return await base.SendAsync(request, cancellationToken);
+    }
 
-        if (_logger.IsEnabled(LogLevel.Debug))
+    private async Task<HttpResponseMessage> ActWithDebug(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Sending {Method} request to {Url}:{ContentLength} content length",
+            request.Method, request.RequestUri, request.Content?.Headers.ContentLength ?? 0);
+
+        var responseDbg = await base.SendAsync(request, cancellationToken);
+
+        var respBody = string.Empty;
+        if (responseDbg?.Content != null)
         {
-            var respBody = string.Empty;
-            if (response?.Content != null)
-            {
-                respBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            }
-            _logger.LogDebug("Got {HttpCode} response from {Url} with {Body}",
-                response?.StatusCode, request.RequestUri, respBody);
+            respBody = await responseDbg.Content.ReadAsStringAsync(cancellationToken);
         }
+        _logger.LogDebug("Got {HttpCode} response from {Url} with {Body}",
+            responseDbg?.StatusCode, request.RequestUri, respBody);
 
-        return response;
+        return responseDbg;
     }
 }

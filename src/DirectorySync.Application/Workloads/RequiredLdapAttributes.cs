@@ -6,33 +6,44 @@ namespace DirectorySync.Application.Workloads;
 
 internal class RequiredLdapAttributes
 {
-    private readonly LdapAttributeMappingOptions _options;
+    private readonly object _locker = new();
+    private string[] _requiredLdapAttributes = [];
 
-    public RequiredLdapAttributes(IOptions<LdapAttributeMappingOptions> options)
+    public RequiredLdapAttributes(IOptionsMonitor<LdapAttributeMappingOptions> options)
     {
-        _options = options.Value;
+        _requiredLdapAttributes = Map(options.CurrentValue).ToArray();
+        options.OnChange(x => 
+        { 
+            lock (_locker)
+            {
+                _requiredLdapAttributes = Map(x).ToArray();
+            }
+        });
     }
 
-    public IEnumerable<string> GetNames()
+    public string[] GetNames()
     {
-        if (string.IsNullOrWhiteSpace(_options.IdentityAttribute))
+        lock (_locker)
         {
-            throw new IdentityAttributeNotDefinedException();
+            return _requiredLdapAttributes;
+        }
+    }
+
+    public IEnumerable<string> Map(LdapAttributeMappingOptions options)
+    {
+        yield return options.IdentityAttribute;
+
+        if (!string.IsNullOrWhiteSpace(options.NameAttribute))
+        {
+            yield return options.NameAttribute;
         }
 
-        yield return _options.IdentityAttribute;
-
-        if (!string.IsNullOrWhiteSpace(_options.NameAttribute))
-        {
-            yield return _options.NameAttribute;
-        }
-
-        foreach (var emailAttrName in _options.EmailAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var emailAttrName in options.EmailAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
         {
             yield return emailAttrName;
         }
 
-        foreach (var phoneAttrName in _options.PhoneAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var phoneAttrName in options.PhoneAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
         {
             yield return phoneAttrName;
         }

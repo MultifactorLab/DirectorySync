@@ -1,11 +1,9 @@
-using CSharpFunctionalExtensions;
-
 namespace DirectorySync.Domain;
 
 /// <summary>
 /// Ldap attribute name.
 /// </summary>
-public class LdapAttributeName : ComparableValueObject
+public class LdapAttributeName : ValueObject
 {
     public string Value { get; }
     
@@ -41,7 +39,7 @@ public class LdapAttributeName : ComparableValueObject
         }
     }
 
-    protected override IEnumerable<IComparable> GetComparableEqualityComponents()
+    protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Value.ToLowerInvariant();
     }

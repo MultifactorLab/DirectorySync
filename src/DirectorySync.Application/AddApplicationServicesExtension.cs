@@ -14,14 +14,14 @@ public static class AddApplicationServicesExtension
             .BindConfiguration("UserProcessing")
             .ValidateDataAnnotations();
 
-        builder.Services.AddSingleton<Deleter>();
-        builder.Services.AddSingleton<Updater>();
+        builder.Services.AddTransient<Creator>();
+        builder.Services.AddTransient<Updater>();
+        builder.Services.AddTransient<Deleter>();
 
-        builder.Services.AddSingleton<ISynchronizeUsers, SynchronizeUsers>();
-        builder.Services.AddSingleton<IScanUsers, ScanUsers>();
+        builder.Services.AddTransient<ISynchronizeUsers, SynchronizeUsers>();
+        builder.Services.AddTransient<IScanUsers, ScanUsers>();
 
-        builder.Services.AddSingleton<RequiredLdapAttributes>();
-        builder.Services.AddSingleton<MultifactorPropertyMapper>();
+        builder.Services.AddTransient<RequiredLdapAttributes>();
 
         builder.Services.AddOptions<LdapAttributeMappingOptions>()
             .BindConfiguration("Sync")

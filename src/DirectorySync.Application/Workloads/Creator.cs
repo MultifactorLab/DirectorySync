@@ -1,23 +1,22 @@
 ﻿using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
-using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Workloads;
 
-internal sealed class Updater
+internal sealed class Creator
 {
     private readonly IMultifactorApi _api;
     private readonly IApplicationStorage _storage;
     private readonly CodeTimer _codeTimer;
-    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
     private readonly UserProcessingOptions _options;
+    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
 
-    public Updater(IMultifactorApi api,
+    public Creator(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
@@ -26,18 +25,18 @@ internal sealed class Updater
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
-        _attrMappingOptions = attrMappingOptions;
         _options = options.Value;
+        _attrMappingOptions = attrMappingOptions;
     }
 
-    public async Task UpdateManyAsync(CachedDirectoryGroup group,
-        ReferenceDirectoryUser[] modified,
+    public async Task CreateManyAsync(CachedDirectoryGroup group,
+        ReferenceDirectoryUser[] created,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
-        ArgumentNullException.ThrowIfNull(modified);
+        ArgumentNullException.ThrowIfNull(created);
 
-        if (modified.Length == 0)
+        if (created.Length == 0)
         {
             return;
         }
@@ -47,13 +46,18 @@ internal sealed class Updater
         var skip = 0;
         while (true)
         {
-            var bucket = new ModifiedUsersBucket();
-            foreach (var member in modified.Skip(skip).Take(_options.UpdatingBatchSize))
+            var bucket = new NewUsersBucket();
+            foreach (var refUser in created.Skip(skip).Take(_options.CreatingBatchSize))
             {
-                var cachedMember = group.Members.First(x => x.Id == member.Guid);
-                var user = bucket.Add(cachedMember.Id, cachedMember.Identity);
+                var identity = refUser.Attributes.GetSingleOrDefault(options.IdentityAttribute);
+                if (identity is null)
+                {
+                    continue;
+                }
 
-                SetProperties(options, member, user);
+                var user = bucket.AddNewUser(refUser.Guid, identity);
+
+                SetProperties(options, refUser, user);
             }
 
             if (bucket.Count == 0)
@@ -61,18 +65,18 @@ internal sealed class Updater
                 break;
             }
 
-            var updateApiTimer = _codeTimer.Start("Api Request: Update Users");
-            var res = await _api.UpdateManyAsync(bucket, ct);
+            var updateApiTimer = _codeTimer.Start("Api Request: Create Users");
+            var res = await _api.CreateManyAsync(bucket, ct);
             updateApiTimer.Stop();
 
-            UpdateCachedGroup(group, modified, res);
+            UpdateCachedGroup(group, created, res);
             skip += bucket.Count;
         }
     }
 
     private static void SetProperties(LdapAttributeMappingOptions options, 
         ReferenceDirectoryUser refUser, 
-        ModifiedUser user)
+        NewUser user)
     {
         if (!string.IsNullOrWhiteSpace(options.NameAttribute))
         {
@@ -96,21 +100,20 @@ internal sealed class Updater
         }
     }
 
-    private void UpdateCachedGroup(CachedDirectoryGroup group, 
-        ReferenceDirectoryUser[] modified, 
-        IUpdateUsersOperationResult res)
+    private void UpdateCachedGroup(CachedDirectoryGroup group,
+        ReferenceDirectoryUser[] referenceUsers,
+        ICreateUsersOperationResult res)
     {
-        foreach (var user in res.UpdatedUsers)
+        foreach (var created in res.CreatedUsers)
         {
-            var cachedUser = group.Members.FirstOrDefault(x => x.Id == user.Id);
-            if (cachedUser is null)
+            var refUser = referenceUsers.FirstOrDefault(x => x.Guid == created.Id);
+            if (refUser is null)
             {
                 continue;
             }
 
-            var refMember = modified.First(x => x.Guid == cachedUser.Id);
-            var hash = new AttributesHash(refMember.Attributes);
-            cachedUser.UpdateHash(hash);
+            var cachedMember = CachedDirectoryGroupMember.Create(created.Id, created.Identity, refUser.Attributes);
+            group.AddMembers(cachedMember);
         }
 
         _storage.UpdateGroup(group);

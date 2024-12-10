@@ -47,10 +47,6 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         _task = Task.Run(ProcessWorkloads, _cts.Token);
         _syncOptions.OnChange(SetTimers);
 
-        _logger.LogInformation(ApplicationEvent.UserScanningServiceStarted, "SCAN is started");
-        _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStarted, "SYNC is started");
-
-
         return Task.CompletedTask;
     }
 
@@ -72,19 +68,17 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         await Task.Delay(TimeSpan.FromSeconds(3), _cts.Token);
         while (!_cts.IsCancellationRequested)
         {
-            if (!_syncOptions.CurrentValue.ScanEnabled && !_syncOptions.CurrentValue.SyncEnabled)
+            if (!_syncOptions.CurrentValue.ScanEnabled)
             {
-                await Task.Delay(TimeSpan.FromSeconds(1));
-                continue;
+                _board.Done(WorkloadKind.Scan);
+            }            
+            
+            if (!_syncOptions.CurrentValue.SyncEnabled)
+            {
+                _board.Done(WorkloadKind.Synchronize);
             }
 
             var workload = _board.Take();
-            if (workload == WorkloadKind.Empty)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(2));
-                continue;
-            }
-
             switch (workload)
             {
                 case WorkloadKind.Synchronize:
@@ -93,22 +87,29 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
                         _board.Done(WorkloadKind.Synchronize);
                         break;
                     }
+
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncUsers();
                     break;
                 
-                case WorkloadKind.Scan when _syncOptions.CurrentValue.ScanEnabled:
+                case WorkloadKind.Scan:
                     if (!_syncOptions.CurrentValue.ScanEnabled)
                     {
                         _board.Done(WorkloadKind.Scan);
                         break;
                     }
+
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await ScanUsers();
                     break;
-                
+
+                case WorkloadKind.Empty:
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    break;
+
                 default:
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    _logger.LogDebug("Unknown workload kind: {Workload}", workload);
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                     break;
             }
         }
@@ -125,10 +126,6 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             try
             {
                 await _synchronizeUsers.ExecuteAsync(guid, _cts.Token);
-            }
-            catch (IdentityAttributeNotDefinedException)
-            {
-                _logger.LogError(ApplicationEvent.InvalidServiceConfiguration, "Identity attribute mapping should be specified");
             }
             catch (Exception ex)
             {
@@ -153,10 +150,6 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             try
             {
                 await _scanUsers.ExecuteAsync(guid, _cts.Token);
-            }
-            catch (IdentityAttributeNotDefinedException)
-            {
-                _logger.LogError(ApplicationEvent.InvalidServiceConfiguration, "Identity attribute mapping should be specified");
             }
             catch (Exception ex)
             {

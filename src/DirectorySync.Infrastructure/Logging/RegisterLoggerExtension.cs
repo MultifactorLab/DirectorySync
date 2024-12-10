@@ -1,9 +1,9 @@
 using System.Runtime.InteropServices;
-using DirectorySync.Infrastructure.Logging.Enrichers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 
@@ -25,9 +25,9 @@ public static class RegisterLoggerExtension
         DataAnnotationsValidator.Validate(options);
 
         SelfLog.Enable(Console.WriteLine);
+        var sw = new LoggingLevelSwitch(LogEventLevel.Verbose);
         var loggerConfig = new LoggerConfiguration()
             .Enrich.FromLogContext()
-            .Enrich.With(new MfTraceIdEnricher())
             .MinimumLevel.Verbose()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
         
