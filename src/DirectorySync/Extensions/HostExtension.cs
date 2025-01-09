@@ -1,4 +1,5 @@
 using DirectorySync.Application;
+using System.Reflection;
 
 namespace DirectorySync.Extensions
 {
@@ -15,7 +16,10 @@ namespace DirectorySync.Extensions
 
             events.ApplicationStarted.Register(() =>
             {
-                logger.LogInformation(ApplicationEvent.ApplicationStarted, "Application successfully started");
+                logger.LogInformation(ApplicationEvent.ApplicationStarted, 
+                    "Copyright Multifactor 2019–{0}, ver.: {1}. Application successfully started.",
+                    DateTime.Now.Year,
+                    Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString() ?? "1.0.1");
             });
 
             events.ApplicationStopped.Register(() =>

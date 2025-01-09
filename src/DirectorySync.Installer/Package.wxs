@@ -3,7 +3,7 @@
 	<Package
 		Name="Directory Sync"
 		Manufacturer="Multifactor"
-		Version="1.0.1"
+		Version="!(bind.fileVersion.DirectorySync.exe)"
 		UpgradeCode="0c9b82db-ff15-472f-9059-f4b018189bdb"
 		Compressed="yes" 
 		Scope="perMachine">
@@ -28,7 +28,7 @@
 		Почему: потому что винда не воспринимает версии 4-го порядка и сравнивает лишь maj.min.patch. 
 		-->
 		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" 
-					  AllowSameVersionUpgrades="yes" />
+					  AllowSameVersionUpgrades="no" />
 		
 		<MediaTemplate EmbedCab="yes" />
 		<UIRef Id="WixUI_Common" />

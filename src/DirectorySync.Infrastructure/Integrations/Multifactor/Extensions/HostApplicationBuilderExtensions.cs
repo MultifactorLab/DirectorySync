@@ -38,7 +38,7 @@ internal static class HostApplicationBuilderExtensions
             // Defaults: https://www.pollydocs.org/strategies/retry.html#defaults
             x.AddRetry(new HttpRetryStrategyOptions
             {
-                MaxRetryAttempts = 3,
+                MaxRetryAttempts = 2,
                 Delay = TimeSpan.FromSeconds(2),
                 BackoffType = DelayBackoffType.Exponential
             });

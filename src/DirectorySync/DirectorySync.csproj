@@ -5,6 +5,19 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-DirectorySync-B8E3752F-FEC2-49EA-A218-E2ADEF376A23</UserSecretsId>
+        <PackageProjectUrl>https://github.com/MultifactorLab/DirectorySync</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/MultifactorLab/DirectorySync</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>ldap</PackageTags>
+		<Company>Multifactor</Company>
+		<Authors>$(Company)</Authors>
+		<Copyright>$(Company)</Copyright>
+		<Description>$(Company) DirectorySync</Description>
+		<Version>1.0.1</Version>
+		<FileVersion>$(Version).*</FileVersion>
+		<ProductVersion>$(Version)</ProductVersion>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
