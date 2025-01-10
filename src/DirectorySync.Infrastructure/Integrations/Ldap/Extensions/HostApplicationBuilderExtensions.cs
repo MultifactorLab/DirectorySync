@@ -15,6 +15,10 @@ namespace DirectorySync.Infrastructure.Integrations.Ldap.Extensions
 
             builder.Services.AddOptions<LdapOptions>()
                 .BindConfiguration("Ldap")
+                .ValidateDataAnnotations();            
+            
+            builder.Services.AddOptions<RequestOptions>()
+                .BindConfiguration("Sync")
                 .ValidateDataAnnotations();
 
             builder.Services.AddTransient(prov =>

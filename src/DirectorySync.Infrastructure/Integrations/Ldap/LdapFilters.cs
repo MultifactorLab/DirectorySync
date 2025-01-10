@@ -13,6 +13,13 @@ internal static partial class LdapFilters
     {
         // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
         // Active Directory only.
+        return $"(&(objectClass=user)(memberof={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
+    }
+
+    public static string FindEnabledGroupMembersByGroupDnRecursively(string groupDn)
+    {
+        // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
+        // Active Directory only.
         return $"(&(objectClass=user)(memberof:1.2.840.113556.1.4.1941:={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
     }
 }

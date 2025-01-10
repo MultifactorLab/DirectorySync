@@ -1,6 +1,7 @@
 using DirectorySync.Infrastructure.Logging;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
+using System;
 using System.Text.Json;
 
 namespace DirectorySync.ConfigSources.MultifactorCloud;
@@ -88,6 +89,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         {
             Data[$"Sync:Groups:{index}"] = config.DirectoryGroups[index];
         }
+        Data[$"Sync:IncludeNestedGroups"] = config.IncludeNestedDirectoryGroups.ToString();
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
         Data["Sync:NameAttribute"] = config.PropertyMapping.NameAttribute;

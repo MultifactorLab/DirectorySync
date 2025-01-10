@@ -13,18 +13,21 @@ namespace DirectorySync.Infrastructure.Integrations.Ldap;
 
 internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
 {
-    private readonly LdapOptions _ldapOptions;
     private readonly LdapConnectionFactory _connectionFactory;
+    private readonly LdapOptions _ldapOptions;
+    private readonly IOptionsMonitor<RequestOptions> _requestOptions;
     private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<GetRefGroupWithDirectoryServicesProtocols> _logger;
 
     public GetRefGroupWithDirectoryServicesProtocols(LdapConnectionFactory connectionFactory,
         IOptions<LdapOptions> ldapOptions,
+        IOptionsMonitor<RequestOptions> requestOptions,
         BaseDnResolver baseDnResolver,
         ILogger<GetRefGroupWithDirectoryServicesProtocols> logger)
     {
         _ldapOptions = ldapOptions.Value;
         _connectionFactory = connectionFactory;
+        _requestOptions = requestOptions;
         _baseDnResolver = baseDnResolver;
         _logger = logger;
     }
@@ -65,7 +68,7 @@ internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
         string[] requiredAttributes,
         LdapConnection conn)
     {
-        var filter = LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn);
+        var filter = LdapFilters.FindEnabledGroupMembersByGroupDnRecursively(groupDn);
         _logger.LogDebug("Searching by group members with filter '{Filter:s}'...", filter);
         var attrs = requiredAttributes.Concat(["ObjectGUID"]).ToArray();
 
@@ -77,6 +80,16 @@ internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
             var attributes = new LdapAttributeCollection(map);
             yield return new ReferenceDirectoryUser(guid, attributes);
         }
+    }
+
+    private string GetFilter(string groupDn)
+    {
+        if (_requestOptions.CurrentValue.IncludeNestedGroups)
+        {
+            return LdapFilters.FindEnabledGroupMembersByGroupDnRecursively(groupDn);
+        }
+
+        return LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn);
     }
 
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
@@ -143,4 +156,9 @@ internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
             }
         }
     }
+}
+
+internal sealed class RequestOptions
+{
+    public bool IncludeNestedGroups { get; set; } = false;
 }

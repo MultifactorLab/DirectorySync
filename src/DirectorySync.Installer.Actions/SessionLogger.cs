@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using WixToolset.Dtf.WindowsInstaller;
 
@@ -111,6 +110,10 @@ namespace DirectorySync.Installer.Actions
             {
                 ShowAlert();
             }
+            finally
+            {
+                _sb.Clear();
+            }
         }
 
         private void LogSessionData()
@@ -151,7 +154,6 @@ namespace DirectorySync.Installer.Actions
         {
             LogSessionData();
             Flush();
-            _sb.Clear();
         }
     }
 }

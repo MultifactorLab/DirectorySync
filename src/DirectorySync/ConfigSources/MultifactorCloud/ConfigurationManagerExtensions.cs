@@ -3,7 +3,7 @@ using DirectorySync.Infrastructure.Shared.Http;
 
 namespace DirectorySync.ConfigSources.MultifactorCloud;
 
-internal static class AddMultifactorCloudConfigurationExtension
+internal static class ConfigurationManagerExtensions
 {
     public static void AddMultifactorCloudConfiguration(this ConfigurationManager manager)
     {
