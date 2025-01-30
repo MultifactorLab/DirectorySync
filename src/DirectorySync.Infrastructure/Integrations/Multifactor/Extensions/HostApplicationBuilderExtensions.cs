@@ -44,7 +44,7 @@ internal static class HostApplicationBuilderExtensions
             });
 
             // Defaults: https://www.pollydocs.org/strategies/timeout.html#defaults
-            x.AddTimeout(TimeSpan.FromSeconds(5));
+            x.AddTimeout(TimeSpan.FromSeconds(20));
         });
 
         builder.Services.AddSingleton<IMultifactorApi, MultifactorApi>();

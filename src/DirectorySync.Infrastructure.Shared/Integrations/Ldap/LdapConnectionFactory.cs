@@ -27,11 +27,10 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Ldap
         }
 
         internal LdapConnectionFactory(LdapConnectionString connectionString,
-            IOptions<LdapOptions> options)
+            LdapOptions options)
         {
             _connectionString = connectionString;
-            _options = options.Value;
-            _logger = null;
+            _options = options;
         }
 
         /// <summary>
@@ -58,6 +57,27 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Ldap
                 _connectionString.WellFormedLdapUrl,
                 _options.Username,
                 authType.ToString());
+
+            return connenction;
+        }
+
+        /// <summary>
+        /// Establishes a LDAP connection and bind user.
+        /// </summary>
+        /// <returns>LdapConnection</returns>
+        internal LdapConnection CreateConnectionInternal()
+        {
+            var id = new LdapDirectoryIdentifier(_connectionString.Host, _connectionString.Port);
+            var authType = AuthType.Basic;
+            var connenction = new LdapConnection(id,
+                new NetworkCredential(_options.Username, _options.Password),
+                authType);
+
+            connenction.SessionOptions.ProtocolVersion = 3;
+            connenction.SessionOptions.VerifyServerCertificate = (connection, certificate) => true;
+            connenction.Timeout = GetTimeout();
+
+            connenction.Bind();
 
             return connenction;
         }

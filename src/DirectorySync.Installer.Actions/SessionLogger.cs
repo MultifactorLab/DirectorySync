@@ -75,8 +75,8 @@ namespace DirectorySync.Installer.Actions
         public void LogError(string message)
         {
             _sb.AppendLine($"[{DateTime.Now:O} ERR] [{_category}]: {message}");
-        }        
-        
+        }
+
         public void LogError(Exception ex)
         {
             _sb.AppendLine($"[{DateTime.Now:O} ERR] [{_category}]: {ex}");
@@ -109,10 +109,6 @@ namespace DirectorySync.Installer.Actions
             catch
             {
                 ShowAlert();
-            }
-            finally
-            {
-                _sb.Clear();
             }
         }
 
@@ -154,6 +150,7 @@ namespace DirectorySync.Installer.Actions
         {
             LogSessionData();
             Flush();
+            _sb.Clear();
         }
     }
 }

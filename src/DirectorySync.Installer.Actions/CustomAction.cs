@@ -1,4 +1,5 @@
 using DirectorySync.Installer.Actions.Actions;
+using System;
 using WixToolset.Dtf.WindowsInstaller;
 
 namespace DirectorySync.Installer.Actions
@@ -10,17 +11,34 @@ namespace DirectorySync.Installer.Actions
         {
             using (var logger = SessionLogger.Create(session, nameof(PullCloudSettings)))
             {
-                PullCloudSettingsAction.Execute(session, logger);
+                try
+                {
+                    PullCloudSettingsAction.Execute(session, logger);
+                }
+                catch (Exception ex)
+                {
+                    Notification.Warning($"Error: {ex.Message}{Environment.NewLine}Log file: {logger.FilePath}");
+                    logger.LogError(ex.ToString());
+                }
+
                 return ActionResult.Success;
             }
         }
 
         [CustomAction]
         public static ActionResult BindToLdapServer(Session session)
-        {
+        {      
             using (var logger = SessionLogger.Create(session, nameof(BindToLdapServer)))
             {
-                BindToLdapServerAction.Execute(session, logger);
+                try
+                {
+                    BindToLdapServerAction.Execute(session, logger);
+                }
+                catch (Exception ex)
+                {
+                    Notification.Warning($"Error: {ex.Message}{Environment.NewLine}Log file: {logger.FilePath}");
+                    logger.LogError(ex.ToString());
+                }
                 return ActionResult.Success;
             }
         }

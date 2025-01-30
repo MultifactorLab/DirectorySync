@@ -11,16 +11,16 @@
 		<Binary Id="InstallerActionsBinary" SourceFile="$(var.DirectorySync.Installer.Actions.TargetDir)$(var.DirectorySync.Installer.Actions.TargetName).CA.dll" />
 		
 		<CustomAction Id="PullCloudConfig" 
-					  Impersonate="no"  
+					  Impersonate="yes"
 					  BinaryRef="InstallerActionsBinary"
 					  DllEntry="PullCloudSettings" 
-					  Return="check" />
+					  Return="ignore" />
 
 		<CustomAction Id="BindToLdapServer"
-					  Impersonate="no"
+					  Impersonate="yes"
 					  BinaryRef="InstallerActionsBinary"
 					  DllEntry="BindToLdapServer"
-					  Return="check" />
+					  Return="ignore" />
 		
 		<!-- 
 		Обновление уже установленного продукта. Удаляется старая версию, затем устанавливается новая. 

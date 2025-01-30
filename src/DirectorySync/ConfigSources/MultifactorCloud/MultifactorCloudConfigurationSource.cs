@@ -3,6 +3,7 @@ using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 using System;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace DirectorySync.ConfigSources.MultifactorCloud;
 
@@ -26,7 +27,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
     public override void Load()
     {
-        LoadCloudConfigData();
+        LoadCloudConfigData(true);
 
         if (_refreshTimer == TimeSpan.Zero)
         {
@@ -44,7 +45,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
     {
         try
         {
-            LoadCloudConfigData();
+            LoadCloudConfigData(false);
         }
         catch (Exception ex)
         {
@@ -64,7 +65,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         return dto;
     }
 
-    private void LoadCloudConfigData()
+    private void LoadCloudConfigData(bool initial)
     {
         var config = Pull();
         if (!HasChanges(config))
@@ -72,15 +73,20 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
             return;
         }
 
-        SetData(config);
+        SetData(config, initial);
         Remember(config);
 
         OnReload();
         CloudInteractionLogger.Information("Cloud settings was changed");
     }
 
-    private void SetData(CloudConfigDto config)
+    private void SetData(CloudConfigDto config, bool initial)
     {
+        if (!initial)
+        {
+            CheckGroups(config);
+        }
+
         Data["Sync:Enabled"] = config.Enabled.ToString();
         Data["Sync:SyncTimer"] = config.SyncTimer.ToString();
         Data["Sync:ScanTimer"] = config.ScanTimer.ToString();
@@ -89,6 +95,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         {
             Data[$"Sync:Groups:{index}"] = config.DirectoryGroups[index];
         }
+        RemoveTheRestArrayItems("Sync:Groups", config.PropertyMapping.EmailAttributes.Length - 1);
         Data[$"Sync:IncludeNestedGroups"] = config.IncludeNestedDirectoryGroups.ToString();
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
@@ -98,14 +105,55 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         {
             Data[$"Sync:EmailAttributes:{index}"] = config.PropertyMapping.EmailAttributes[index];
         }
+        RemoveTheRestArrayItems("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes.Length - 1);
 
         for (int index = 0; index < config.PropertyMapping.PhoneAttributes.Length; index++)
         {
             Data[$"Sync:PhoneAttributes:{index}"] = config.PropertyMapping.PhoneAttributes[index];
         }
+        RemoveTheRestArrayItems("Sync:PhoneAttributes", config.PropertyMapping.EmailAttributes.Length - 1);
 
         _refreshTimer = config.CloudConfigRefreshTimer;
         _timer?.Change(TimeSpan.Zero, _refreshTimer);
+    }
+
+    private void RemoveTheRestArrayItems(string key, int startIndex)
+    {
+        while (true)
+        {
+            var k = $"{key}:{startIndex}";
+            if (!Data.TryGetValue(k, out var _))
+            {
+                return;
+            }
+
+            Data.Remove(k);
+            startIndex++;
+        }
+    }
+
+    private void CheckGroups(CloudConfigDto config)
+    {
+        var r = new Regex("^Sync:Groups:\\d$+");
+        var currentKeys = Data.Keys
+            .Where(x => r.IsMatch(x))
+            .ToArray();
+
+        if (currentKeys.Length != config.DirectoryGroups.Length)
+        {
+            throw new Exception("Group GUIDs received from the Cloud are different from local ones");
+        }
+
+        var currentValues = Data
+            .Where(x => currentKeys.Contains(x.Key))
+            .Select(x => x.Value)
+            .OrderByDescending(x => x)
+            .ToArray();
+
+        if (currentValues.Any(x => !config.DirectoryGroups.Contains(x, StringComparer.OrdinalIgnoreCase)))
+        {
+            throw new Exception("Group GUIDs received from the Cloud are different from local ones");
+        }
     }
 
     private bool HasChanges(CloudConfigDto newConfig)
