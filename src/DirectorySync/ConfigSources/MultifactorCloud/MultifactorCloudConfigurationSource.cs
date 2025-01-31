@@ -95,7 +95,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         {
             Data[$"Sync:Groups:{index}"] = config.DirectoryGroups[index];
         }
-        RemoveTheRestArrayItems("Sync:Groups", config.PropertyMapping.EmailAttributes.Length - 1);
+        RemoveTheRestArrayItems("Sync:Groups", config.PropertyMapping.EmailAttributes.Length);
         Data[$"Sync:IncludeNestedGroups"] = config.IncludeNestedDirectoryGroups.ToString();
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
@@ -105,13 +105,13 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         {
             Data[$"Sync:EmailAttributes:{index}"] = config.PropertyMapping.EmailAttributes[index];
         }
-        RemoveTheRestArrayItems("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes.Length - 1);
+        RemoveTheRestArrayItems("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes.Length);
 
         for (int index = 0; index < config.PropertyMapping.PhoneAttributes.Length; index++)
         {
             Data[$"Sync:PhoneAttributes:{index}"] = config.PropertyMapping.PhoneAttributes[index];
         }
-        RemoveTheRestArrayItems("Sync:PhoneAttributes", config.PropertyMapping.EmailAttributes.Length - 1);
+        RemoveTheRestArrayItems("Sync:PhoneAttributes", config.PropertyMapping.EmailAttributes.Length);
 
         _refreshTimer = config.CloudConfigRefreshTimer;
         _timer?.Change(TimeSpan.Zero, _refreshTimer);
