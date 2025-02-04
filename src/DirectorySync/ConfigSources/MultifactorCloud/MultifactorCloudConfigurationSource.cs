@@ -1,7 +1,8 @@
 using DirectorySync.Infrastructure.Logging;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
-using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -9,6 +10,9 @@ namespace DirectorySync.ConfigSources.MultifactorCloud;
 
 internal class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
 {
+    public static string InconsistentConfigMessage { get; } = $"Group GUIDs received from the Cloud are different from local ones.{Environment.NewLine}" +
+            "To confirm these changes, restart the service.";
+
     private readonly HttpClient _client;
     private TimeSpan _refreshTimer;
     private Timer? _timer;
@@ -20,6 +24,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         _refreshTimer = refreshTimer;
     }
 
+    [DebuggerStepThrough]
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
         return this;
@@ -80,7 +85,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         CloudInteractionLogger.Information("Cloud settings was changed");
     }
 
-    private void SetData(CloudConfigDto config, bool initial)
+    protected internal void SetData(CloudConfigDto config, bool initial)
     {
         if (!initial)
         {
@@ -91,30 +96,28 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         Data["Sync:SyncTimer"] = config.SyncTimer.ToString();
         Data["Sync:ScanTimer"] = config.ScanTimer.ToString();
 
-        for (int index = 0; index < config.DirectoryGroups.Length; index++)
-        {
-            Data[$"Sync:Groups:{index}"] = config.DirectoryGroups[index];
-        }
-        RemoveTheRestArrayItems("Sync:Groups", config.PropertyMapping.EmailAttributes.Length);
+        SetCollection("Sync:Groups", config.DirectoryGroups);
+
         Data[$"Sync:IncludeNestedGroups"] = config.IncludeNestedDirectoryGroups.ToString();
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
         Data["Sync:NameAttribute"] = config.PropertyMapping.NameAttribute;
 
-        for (int index = 0; index < config.PropertyMapping.EmailAttributes.Length; index++)
-        {
-            Data[$"Sync:EmailAttributes:{index}"] = config.PropertyMapping.EmailAttributes[index];
-        }
-        RemoveTheRestArrayItems("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes.Length);
-
-        for (int index = 0; index < config.PropertyMapping.PhoneAttributes.Length; index++)
-        {
-            Data[$"Sync:PhoneAttributes:{index}"] = config.PropertyMapping.PhoneAttributes[index];
-        }
-        RemoveTheRestArrayItems("Sync:PhoneAttributes", config.PropertyMapping.EmailAttributes.Length);
+        SetCollection("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes);
+        SetCollection("Sync:PhoneAttributes", config.PropertyMapping.PhoneAttributes);
 
         _refreshTimer = config.CloudConfigRefreshTimer;
         _timer?.Change(TimeSpan.Zero, _refreshTimer);
+    }
+
+    private void SetCollection(string key, string?[] elements)
+    {
+        for (int index = 0; index < elements.Length; index++)
+        {
+            Data[$"{key}:{index}"] = elements[index];
+        }
+
+        RemoveTheRestArrayItems(key, elements.Length);
     }
 
     private void RemoveTheRestArrayItems(string key, int startIndex)
@@ -141,7 +144,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
         if (currentKeys.Length != config.DirectoryGroups.Length)
         {
-            throw new Exception("Group GUIDs received from the Cloud are different from local ones");
+            InconstistentEx();
         }
 
         var currentValues = Data
@@ -152,8 +155,15 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
         if (currentValues.Any(x => !config.DirectoryGroups.Contains(x, StringComparer.OrdinalIgnoreCase)))
         {
-            throw new Exception("Group GUIDs received from the Cloud are different from local ones");
+            InconstistentEx();
         }
+    }
+
+    [DoesNotReturn]
+    [DebuggerStepThrough]
+    private void InconstistentEx()
+    {
+        throw new InconsistentConfigurationException(InconsistentConfigMessage);
     }
 
     private bool HasChanges(CloudConfigDto newConfig)
@@ -166,4 +176,10 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
     {
         _currentConfig = JsonSerializer.Serialize(config);
     }
+}
+
+internal sealed class InconsistentConfigurationException : Exception
+{
+    public InconsistentConfigurationException(string message) : base(message) { }
+    public InconsistentConfigurationException(string message, Exception inner) : base(message, inner) { }
 }
