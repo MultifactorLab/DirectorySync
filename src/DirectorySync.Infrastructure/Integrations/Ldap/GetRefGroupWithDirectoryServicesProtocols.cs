@@ -68,7 +68,7 @@ internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
         string[] requiredAttributes,
         LdapConnection conn)
     {
-        var filter = LdapFilters.FindEnabledGroupMembersByGroupDnRecursively(groupDn);
+        var filter = GetFilter(groupDn);
         _logger.LogDebug("Searching by group members with filter '{Filter:s}'...", filter);
         var attrs = requiredAttributes.Concat(["ObjectGUID"]).ToArray();
 

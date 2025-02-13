@@ -19,7 +19,7 @@ public class MultifactorCloudConfigurationSourceTests
             {
                 SignUpGroups = new[] { "mygroup" }
             },
-            IncludeNestedDirectoryGroups = true,
+            IncludeNestedGroups = true,
             PropertyMapping = new
             {
                 IdentityAttribute = "sAmaccountname",

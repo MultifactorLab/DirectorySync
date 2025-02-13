@@ -2,6 +2,7 @@
   <PropertyGroup>
     <Company>Multifactor</Company>
     <Product>DirectorySync</Product>
+    <OutputName>DirectorySync Installer</OutputName>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Resources\top.bmp">
