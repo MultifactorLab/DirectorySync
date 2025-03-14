@@ -6,7 +6,7 @@ public class MfTraceIdHeaderSetter : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var trace = ActivityContext.Current.ActivityId;
+        var trace = $"ds-{ActivityContext.Current.ActivityId}";
         if (!request.Headers.Contains(_key))
         {
             request.Headers.Add(_key, trace);

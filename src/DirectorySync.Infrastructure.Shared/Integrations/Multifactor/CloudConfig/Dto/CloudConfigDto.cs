@@ -10,7 +10,7 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConf
         public TimeSpan ScanTimer { get; set; }
 
         public string[] DirectoryGroups { get; set; } = Array.Empty<string>();
-        public bool IncludeNestedGroups { get; set; } = false;
+        public bool IncludeNestedGroups { get; set; } = true;
 
         public PropsMappingDto PropertyMapping { get; set; } = new PropsMappingDto();
 

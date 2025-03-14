@@ -71,7 +71,7 @@ public static class RegisterLoggerExtension
                 x.Filter.ByIncludingOnly("SourceContext like 'DirectorySync%' or CustomSourceContext like 'DirectorySync%'");
                 x.WriteTo.EventLog(source: Literals.ServiceName,
                     logName: "Application",
-                    manageEventSource: false,
+                    manageEventSource: true,
                     restrictedToMinimumLevel: LogEventLevel.Information,
                     eventIdProvider: new DirectorySyncEventIdProvider());
             });

@@ -98,7 +98,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
         SetCollection("Sync:Groups", config.DirectoryGroups);
 
-        Data[$"Sync:IncludeNestedGroups"] = config.IncludeNestedGroups.ToString();
+        Data[$"Sync:IncludeNestedGroups"] = "True";
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
         Data["Sync:NameAttribute"] = config.PropertyMapping.NameAttribute;

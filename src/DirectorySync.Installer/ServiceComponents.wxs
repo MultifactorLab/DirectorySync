@@ -4,7 +4,7 @@
 		
 		<Files Include="$(var.DirectorySync.TargetDir)\**">
             <Exclude Files="$(var.DirectorySync.TargetDir)\DirectorySync.exe" />
-            <Exclude Files="$(var.DirectorySync.TargetDir)\logs\**" />
+			<Exclude Files="$(var.DirectorySync.TargetDir)\logs\**" />
 		</Files>
 		
       <Component Id="ServiceExecutable">
@@ -15,14 +15,19 @@
 		  
 			<ServiceInstall Id="ServiceInstaller"
 					Type="ownProcess"
+					Interactive="yes"
 					Name="MultifactorDirectorySync"
 					DisplayName="Multifactor Directory Sync"
 					Description="Multifactor Directory Sync"
 					Start="auto"
 					ErrorControl="normal" />
-
-			<ServiceControl Id="StartService"
+		  
+		 	<ServiceControl Id="SC_StartService"
 					Start="install"
+					Name="MultifactorDirectorySync"
+					Wait="true" />
+
+			<ServiceControl Id="SC_StopService"
 					Stop="both"
 					Remove="uninstall"
 					Name="MultifactorDirectorySync"

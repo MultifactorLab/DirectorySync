@@ -21,7 +21,7 @@
       <Name>DirectorySync</Name>
       <Project>{30b79712-2107-4151-a686-c39959cf4fd3}</Project>
       <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
+      <DoNotHarvest>False</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>

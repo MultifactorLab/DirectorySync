@@ -11,7 +11,7 @@ using SearchOption = System.DirectoryServices.Protocols.SearchOption;
 
 namespace DirectorySync.Infrastructure.Integrations.Ldap;
 
-internal class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
+internal sealed class GetRefGroupWithDirectoryServicesProtocols : IGetReferenceGroup
 {
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly LdapOptions _ldapOptions;
