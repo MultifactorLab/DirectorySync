@@ -106,6 +106,8 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         SetCollection("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes);
         SetCollection("Sync:PhoneAttributes", config.PropertyMapping.PhoneAttributes);
 
+        Data["Ldap:Timeout"] = config.TimeoutLdap.ToString();
+
         _refreshTimer = config.CloudConfigRefreshTimer;
         _timer?.Change(TimeSpan.Zero, _refreshTimer);
     }

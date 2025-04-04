@@ -8,6 +8,7 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConf
         public TimeSpan CloudConfigRefreshTimer { get; set; }
         public TimeSpan SyncTimer { get; set; }
         public TimeSpan ScanTimer { get; set; }
+        public TimeSpan TimeoutLdap { get; set; }
 
         public string[] DirectoryGroups { get; set; } = Array.Empty<string>();
         public bool IncludeNestedGroups { get; set; } = true;
