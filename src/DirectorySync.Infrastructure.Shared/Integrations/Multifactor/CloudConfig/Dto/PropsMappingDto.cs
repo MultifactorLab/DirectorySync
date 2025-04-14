@@ -13,5 +13,8 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConf
         public string NameAttribute { get; set; }
         public string[] EmailAttributes { get; set; } = Array.Empty<string>();
         public string[] PhoneAttributes { get; set; } = Array.Empty<string>();
+
+        public bool SendEnrollmentLink { get; set; }
+        public TimeSpan EnrollmentLinkTtl { get; set; }
     }
 }

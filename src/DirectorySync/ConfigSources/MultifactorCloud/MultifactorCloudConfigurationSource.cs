@@ -103,8 +103,13 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
         Data["Sync:NameAttribute"] = config.PropertyMapping.NameAttribute;
 
+        Data["Sync:SendEnrollmentLink"] = config.PropertyMapping.SendEnrollmentLink.ToString();
+        Data["Sync:EnrollmentLinkTtl"] = config.PropertyMapping.EnrollmentLinkTtl.ToString();
+
         SetCollection("Sync:EmailAttributes", config.PropertyMapping.EmailAttributes);
         SetCollection("Sync:PhoneAttributes", config.PropertyMapping.PhoneAttributes);
+
+        Data["Ldap:Timeout"] = config.TimeoutAD.ToString();
 
         _refreshTimer = config.CloudConfigRefreshTimer;
         _timer?.Change(TimeSpan.Zero, _refreshTimer);

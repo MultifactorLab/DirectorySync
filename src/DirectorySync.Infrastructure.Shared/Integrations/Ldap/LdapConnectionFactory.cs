@@ -9,9 +9,9 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Ldap
 {
     public sealed class LdapConnectionFactory
     {
-        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
-        private static readonly TimeSpan _minTimeout = TimeSpan.FromSeconds(1);
-        private static readonly TimeSpan _maxTimeout = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan _minTimeout = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan _maxTimeout = TimeSpan.FromMinutes(1000);
 
         private readonly LdapConnectionString _connectionString;
         private readonly ILogger<LdapConnectionFactory> _logger;
