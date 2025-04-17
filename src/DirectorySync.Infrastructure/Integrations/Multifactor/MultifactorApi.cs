@@ -1,4 +1,5 @@
-﻿using DirectorySync.Application.Integrations.Multifactor;
+﻿using System.Text.Json;
+using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
@@ -40,17 +41,12 @@ internal class MultifactorApi : IMultifactorApi
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
-
         var response = await adapter.PostAsync<CreateUsersResponseDto>("ds/users", dto);
         var result = new CreateUsersOperationResult();
+
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Recieved unsuccessfull response from Multifactor API");
-
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
-            }
+            LogUnseccessfulResponse(response);
 
             return result;
         }
@@ -80,7 +76,6 @@ internal class MultifactorApi : IMultifactorApi
         return result;
     }
 
-
     public async Task<IUpdateUsersOperationResult> UpdateManyAsync(IModifiedUsersBucket bucket, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(bucket);
@@ -101,12 +96,7 @@ internal class MultifactorApi : IMultifactorApi
         var result = new UpdateUsersOperationResult();
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Recieved unsuccessfull response from Multifactor API");
-
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
-            }
+            LogUnseccessfulResponse(response);
 
             return result;
         }
@@ -154,12 +144,7 @@ internal class MultifactorApi : IMultifactorApi
         var result = new DeleteUsersOperationResult();
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Recieved unsuccessfull response from Multifactor API");
-
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
-            }
+            LogUnseccessfulResponse(response);
 
             return result;
         }
@@ -187,5 +172,26 @@ internal class MultifactorApi : IMultifactorApi
         }
 
         return result;
+    }
+
+    private void LogUnseccessfulResponse(HttpClientResponse response)
+    {
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
+        }
+        else
+        {
+            var options = new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true,
+            };
+            var errorResponse = JsonSerializer.Deserialize<UnsuccessfulResponse>(response.Content, options);
+            var statusCode = Convert.ToInt32(response.StatusCode);
+
+            _logger.LogWarning("Multifactor API request failed with status {0}. Error message: {1}",
+                statusCode,
+                errorResponse?.Message);
+        }
     }
 }

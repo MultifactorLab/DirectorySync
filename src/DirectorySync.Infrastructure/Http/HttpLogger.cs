@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.Http;
 
@@ -32,6 +33,7 @@ internal class HttpLogger : DelegatingHandler
         if (responseDbg?.Content != null)
         {
             respBody = await responseDbg.Content.ReadAsStringAsync(cancellationToken);
+            respBody = Regex.Unescape(respBody);
         }
         _logger.LogDebug("Got {HttpCode} response from {Url} with {Body}",
             responseDbg?.StatusCode, request.RequestUri, respBody);
