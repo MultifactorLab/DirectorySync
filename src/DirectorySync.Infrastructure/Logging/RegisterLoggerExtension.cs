@@ -29,8 +29,9 @@ public static class RegisterLoggerExtension
         var loggerConfig = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .MinimumLevel.Verbose()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
-        
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("Polly", LogEventLevel.Warning);
+
         if (!builder.Environment.IsProduction() || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             ConfigureConsoleLogging(loggerConfig, options.Console);

@@ -36,8 +36,8 @@ namespace DirectorySync.Infrastructure.ConfigurationSources.Configurations
                 {
                     var errorMessage = await GetHttpResponseErrorMessage(args.Outcome.Result, args.Context.CancellationToken);
 
-                    var message = $"Fallback after failed attempt for 403 (Forbidden).\n {errorMessage ?? "No details"} " +
-                         "\n Throwing ForbiddenException... Please check log file and \"Accounts Synchronization\" section settings in the Multifactor Cloud.";
+                    var message = $"Fallback after failed attempt for 403 (Forbidden).\n{errorMessage ?? "No details"} " +
+                         "\nThrowing ForbiddenException... Please check log file and \"Accounts Synchronization\" section settings in the Multifactor Cloud.";
 
                     throw new ForbiddenException(message);
                 }
@@ -58,7 +58,7 @@ namespace DirectorySync.Infrastructure.ConfigurationSources.Configurations
                     {
                         var errorMessage = await GetHttpResponseErrorMessage(args.Outcome.Result, args.Context.CancellationToken);
 
-                        var message = $"Fallback after failed attempt for 409 (Conflict).\n {errorMessage ?? "No details"} " +
+                        var message = $"Fallback after failed attempt for 409 (Conflict).\n{errorMessage ?? "No details"} " +
                              "\nThrowing ConflictException... Please check log file and \"Accounts Synchronization\" section settings in the Multifactor Cloud.";
 
                         throw new ConflictException(message);
@@ -78,7 +78,7 @@ namespace DirectorySync.Infrastructure.ConfigurationSources.Configurations
                 {
                     var errorMessage = await GetHttpResponseErrorMessage(args.Outcome.Result, args.Context.CancellationToken);
 
-                    var message = $"Fallback after failed attempt for 401 (Unauthorized).\n {errorMessage ?? "No details"} " +
+                    var message = $"Fallback after failed attempt for 401 (Unauthorized).\n{errorMessage ?? "No details"} " +
                             "\nThrowing UnauthorizedException... Please check log file and valid credentials in the \"Accounts Synchronization\" section of the Multifactor Cloud.";
 
                     throw new UnauthorizedException(message);
