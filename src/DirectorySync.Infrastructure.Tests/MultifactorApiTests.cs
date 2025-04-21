@@ -1,12 +1,18 @@
+using System.Net;
+using System.Text.Json;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Infrastructure.ConfigurationSources.Configurations;
+using DirectorySync.Infrastructure.Exceptions;
 using DirectorySync.Infrastructure.Integrations.Multifactor;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.AutoMock;
-using System.Net;
+using Polly;
 
 namespace DirectorySync.Infrastructure.Tests;
 
@@ -53,21 +59,26 @@ public class MultifactorApiTests
             Assert.Empty(response.CreatedUsers);
         }
 
-        [Fact]
-        public async Task Unauthorized_ShouldLog()
+        [Theory]
+        [InlineData(401, typeof(UnauthorizedException))]
+        [InlineData(403, typeof(ForbiddenException))]
+        [InlineData(409, typeof(ConflictException))]
+        public async Task CreateUsers_FallbackReturnsSuccess(int statusCode, Type exceptionType)
         {
-            var mocker = new AutoMocker();
-            mocker.GetMock<IHttpClientFactory>()
-                .Setup(x => x.CreateClient(It.IsAny<string>()))
-                .Returns(FakeMultifactorCloud.ClientMock.Users_Create(statusCode: HttpStatusCode.Unauthorized));
-            var api = mocker.CreateInstance<MultifactorApi>();
+            // Arrange
+            var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
+
             var bucket = new NewUsersBucket();
             bucket.AddNewUser(Guid.NewGuid(), "identity1");
 
-            _ = await api.CreateManyAsync(bucket);
+            var exception = await Assert.ThrowsAsync(exceptionType, async () =>
+            {
+                await service.CreateManyAsync(bucket);
+            });
 
-            const string log = "Recieved 401 status from Multifactor API. Check API integration";
-            mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
+            // Дополнительные проверки:
+            Assert.IsType(exceptionType, exception);
+            Assert.NotNull(exception.Message);
         }
 
         [Fact]
@@ -184,21 +195,26 @@ public class MultifactorApiTests
             Assert.Empty(response.UpdatedUsers.Select(x => x.Identity));
         }
 
-        [Fact]
-        public async Task Unauthorized_ShouldLog()
+        [Theory]
+        [InlineData(401, typeof(UnauthorizedException))]
+        [InlineData(403, typeof(ForbiddenException))]
+        [InlineData(409, typeof(ConflictException))]
+        public async Task UpdateUsers_FallbackReturnsSuccess(int statusCode, Type exceptionType)
         {
-            var mocker = new AutoMocker();
-            mocker.GetMock<IHttpClientFactory>()
-                .Setup(x => x.CreateClient(It.IsAny<string>()))
-                .Returns(FakeMultifactorCloud.ClientMock.Users_Update(statusCode: HttpStatusCode.Unauthorized));
-            var api = mocker.CreateInstance<MultifactorApi>();
+            // Arrange
+            var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
+
             var bucket = new ModifiedUsersBucket();
             bucket.Add(Guid.NewGuid(), "identity1");
 
-            _ = await api.UpdateManyAsync(bucket);
+            var exception = await Assert.ThrowsAsync(exceptionType, async () =>
+            {
+                await service.UpdateManyAsync(bucket);
+            });
 
-            const string log = "Recieved 401 status from Multifactor API. Check API integration";
-            mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
+            // Дополнительные проверки:
+            Assert.IsType(exceptionType, exception);
+            Assert.NotNull(exception.Message);
         }
 
         [Fact]
@@ -315,21 +331,26 @@ public class MultifactorApiTests
             Assert.Empty(response.DeletedUsers);
         }
 
-        [Fact]
-        public async Task Unauthorized_ShouldLog()
+        [Theory]
+        [InlineData(401, typeof(UnauthorizedException))]
+        [InlineData(403, typeof(ForbiddenException))]
+        [InlineData(409, typeof(ConflictException))]
+        public async Task DeleteUsers_FallbackReturnsSuccess(int statusCode, Type exceptionType)
         {
-            var mocker = new AutoMocker();
-            mocker.GetMock<IHttpClientFactory>()
-                .Setup(x => x.CreateClient(It.IsAny<string>()))
-                .Returns(FakeMultifactorCloud.ClientMock.Users_Delete(statusCode: HttpStatusCode.Unauthorized));
-            var api = mocker.CreateInstance<MultifactorApi>();
+            // Arrange
+            var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
+
             var bucket = new DeletedUsersBucket();
             bucket.Add(Guid.NewGuid(), "identity1");
 
-            _ = await api.DeleteManyAsync(bucket);
+            var exception = await Assert.ThrowsAsync(exceptionType, async () =>
+            {
+                await service.DeleteManyAsync(bucket);
+            });
 
-            const string log = "Recieved 401 status from Multifactor API. Check API integration";
-            mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
+            // Дополнительные проверки:
+            Assert.IsType(exceptionType, exception);
+            Assert.NotNull(exception.Message);
         }
 
         [Fact]
@@ -403,5 +424,46 @@ public class MultifactorApiTests
             Assert.DoesNotContain("identity1", response.DeletedUsers.Select(x => x.Identity));
             Assert.Contains("identity2", response.DeletedUsers.Select(x => x.Identity));
         }
+    }
+
+    internal static MultifactorApi GetMockMultifactorApiWithResiliencePolisies(HttpStatusCode statusCode)
+    {
+
+        var mocker = new AutoMocker();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddLogging();
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        var pipelineBuilder = new ResiliencePipelineBuilder<HttpResponseMessage>();
+        pipelineBuilder
+            .AddRetry(ResiliencePolicy.GetDefaultRetryPolicy())
+            .AddFallback(ResiliencePolicy.GetConflictPolicy(serviceProvider))
+            .AddFallback(ResiliencePolicy.GetForbiddenPolicy())
+            .AddFallback(ResiliencePolicy.GetUnauthorizedPolicy())
+            .AddTimeout(TimeSpan.FromSeconds(20));
+
+        var pipeline = pipelineBuilder.Build();
+
+        var mockHandler = new MockHttpMessageHandler(
+            JsonSerializer.Serialize(new { Error = "test error" }),
+            statusCode
+        );
+
+        var resilienceHandler = new ResilienceHandler(pipeline)
+        {
+            InnerHandler = mockHandler
+        };
+
+        var httpClient = new HttpClient(resilienceHandler)
+        {
+            BaseAddress = new Uri(FakeMultifactorCloud.Uri)
+        };
+        httpClient.DefaultRequestHeaders.Add("Authorization", "Basic dGVzdA==");
+
+        mocker.GetMock<IHttpClientFactory>()
+            .Setup(x => x.CreateClient(It.IsAny<string>()))
+            .Returns(httpClient);
+
+        return mocker.CreateInstance<MultifactorApi>();
     }
 }

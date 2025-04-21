@@ -1,5 +1,5 @@
-using DirectorySync.ConfigSources.MultifactorCloud;
 using DirectorySync.Domain;
+using DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 using Moq;
 using Moq.Contrib.HttpClient;
