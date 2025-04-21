@@ -1,9 +1,10 @@
 ﻿using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Shared.Http;
+using Microsoft.Extensions.Configuration;
 
-namespace DirectorySync.ConfigSources.MultifactorCloud;
+namespace DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
 
-internal static class ConfigurationManagerExtensions
+public static class ConfigurationManagerExtensions
 {
     public static void AddMultifactorCloudConfiguration(this ConfigurationManager manager)
     {

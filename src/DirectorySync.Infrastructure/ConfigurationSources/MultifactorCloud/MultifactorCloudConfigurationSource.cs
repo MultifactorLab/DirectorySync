@@ -1,15 +1,19 @@
-using DirectorySync.Infrastructure.Logging;
-using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
-using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DirectorySync.Infrastructure.Logging;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
+using Microsoft.Extensions.Configuration;
 
-namespace DirectorySync.ConfigSources.MultifactorCloud;
+namespace DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
 
-internal class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
+public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
 {
+
+    public static event EventHandler? ConfigurationChanged;
+
     public static string InconsistentConfigMessage { get; } = $"Group GUIDs received from the Cloud are different from local ones.{Environment.NewLine}" +
             "To confirm these changes, restart the service.";
 
@@ -27,6 +31,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
     [DebuggerStepThrough]
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
+        ConfigurationChanged += (sender, args) => Refresh(null);
         return this;
     }
 
@@ -46,7 +51,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         });
     }
 
-    private void Refresh(object? state)
+    public void Refresh(object? state)
     {
         try
         {
@@ -56,6 +61,11 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         {
             CloudInteractionLogger.Error(ex, "Failed to refresh settings from Multifactor Cloud. Local Directory Sync service settings may be out of date.");
         }
+    }
+
+    public static void RaiseConfigurationChanged()
+    {
+        ConfigurationChanged?.Invoke(null, EventArgs.Empty);
     }
 
     private CloudConfigDto Pull()
@@ -183,7 +193,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
     }
 }
 
-internal sealed class InconsistentConfigurationException : Exception
+public sealed class InconsistentConfigurationException : Exception
 {
     public InconsistentConfigurationException(string message) : base(message) { }
     public InconsistentConfigurationException(string message, Exception inner) : base(message, inner) { }

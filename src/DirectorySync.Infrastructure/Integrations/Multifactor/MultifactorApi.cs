@@ -3,6 +3,7 @@ using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Infrastructure.Common.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Delete;
@@ -176,22 +177,15 @@ internal class MultifactorApi : IMultifactorApi
 
     private void LogUnseccessfulResponse(HttpClientResponse response)
     {
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        var options = new JsonSerializerOptions()
         {
-            _logger.LogWarning("Recieved 401 status from Multifactor API. Check API integration");
-        }
-        else
-        {
-            var options = new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true,
-            };
-            var errorResponse = JsonSerializer.Deserialize<UnsuccessfulResponse>(response.Content, options);
-            var statusCode = Convert.ToInt32(response.StatusCode);
+            PropertyNameCaseInsensitive = true,
+        };
+        var errorResponse = JsonSerializer.Deserialize<UnsuccessfulResponse>(response.Content, options);
+        var statusCode = Convert.ToInt32(response.StatusCode);
 
-            _logger.LogWarning("Multifactor API request failed with status {0}. Error message: {1}",
-                statusCode,
-                errorResponse?.Message);
-        }
+        _logger.LogWarning("Multifactor API request failed with status {0}. Error message: {1}",
+            statusCode,
+            errorResponse?.Message);
     }
 }

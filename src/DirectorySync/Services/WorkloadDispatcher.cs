@@ -1,5 +1,4 @@
 ﻿using DirectorySync.Application;
-using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Workloads;
 using DirectorySync.Infrastructure;
@@ -71,8 +70,8 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             if (!_syncOptions.CurrentValue.ScanEnabled)
             {
                 _board.Done(WorkloadKind.Scan);
-            }            
-            
+            }
+
             if (!_syncOptions.CurrentValue.SyncEnabled)
             {
                 _board.Done(WorkloadKind.Synchronize);
@@ -82,7 +81,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             switch (workload)
             {
                 case WorkloadKind.Synchronize:
-                    if (!_syncOptions.CurrentValue.SyncEnabled) 
+                    if (!_syncOptions.CurrentValue.SyncEnabled)
                     {
                         _board.Done(WorkloadKind.Synchronize);
                         break;
@@ -91,7 +90,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncUsers();
                     break;
-                
+
                 case WorkloadKind.Scan:
                     if (!_syncOptions.CurrentValue.ScanEnabled)
                     {
@@ -129,7 +128,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ApplicationEvent.UserSynchronizationServiceError, ex, "Error occured while synchronizing users");
+                _logger.LogError(ApplicationEvent.UserSynchronizationServiceError, ex, "Error occured while synchronizing users. Details: {0}", ex.Message);
             }
             
             timer.Stop();
@@ -153,7 +152,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ApplicationEvent.UserScanningServiceError, ex, "Error occured while scanning users");
+                _logger.LogError(ApplicationEvent.UserScanningServiceError, ex, "Error occured while scanning users. Details: {0}", ex.Message);
             }
             
             timer.Stop();
