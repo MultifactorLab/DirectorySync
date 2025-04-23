@@ -5,11 +5,10 @@ using System.Text.RegularExpressions;
 using DirectorySync.Infrastructure.Logging;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
-using Microsoft.Extensions.Configuration;
 
-namespace DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
+namespace DirectorySync.ConfigSources.MultifactorCloud;
 
-public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
+internal class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
 {
     public static string InconsistentConfigMessage { get; } = $"Group GUIDs received from the Cloud are different from local ones.{Environment.NewLine}" +
             "To confirm these changes, restart the service.";
@@ -47,7 +46,7 @@ public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfi
         });
     }
 
-    public void Refresh(object? state)
+    private void Refresh(object? state)
     {
         try
         {
@@ -184,7 +183,7 @@ public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfi
     }
 }
 
-public sealed class InconsistentConfigurationException : Exception
+internal sealed class InconsistentConfigurationException : Exception
 {
     public InconsistentConfigurationException(string message) : base(message) { }
     public InconsistentConfigurationException(string message, Exception inner) : base(message, inner) { }

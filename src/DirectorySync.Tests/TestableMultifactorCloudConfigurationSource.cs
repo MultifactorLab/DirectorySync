@@ -1,4 +1,4 @@
-﻿using DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
+﻿using DirectorySync.ConfigSources.MultifactorCloud;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 
 namespace DirectorySync.Tests;

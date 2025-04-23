@@ -27,4 +27,8 @@
       <ProjectReference Include="..\DirectorySync.Infrastructure.Shared\DirectorySync.Infrastructure.Shared.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="ConfigurationSources\" />
+    </ItemGroup>
+
 </Project>

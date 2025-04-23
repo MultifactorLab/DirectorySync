@@ -3,7 +3,7 @@ using System.Text.Json;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
-using DirectorySync.Infrastructure.ConfigurationSources.Configurations;
+using DirectorySync.Infrastructure.Configurations;
 using DirectorySync.Infrastructure.Exceptions;
 using DirectorySync.Infrastructure.Integrations.Multifactor;
 using Microsoft.Extensions.DependencyInjection;

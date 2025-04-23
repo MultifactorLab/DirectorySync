@@ -1,5 +1,5 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Infrastructure.ConfigurationSources.Configurations;
+using DirectorySync.Infrastructure.Configurations;
 using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Shared.Http;
 using Microsoft.Extensions.Configuration;

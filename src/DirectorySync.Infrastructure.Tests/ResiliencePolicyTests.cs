@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Text;
-using DirectorySync.Infrastructure.ConfigurationSources.Configurations;
+using DirectorySync.Infrastructure.Configurations;
 using DirectorySync.Infrastructure.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;

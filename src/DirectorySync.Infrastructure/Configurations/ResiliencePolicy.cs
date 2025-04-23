@@ -8,7 +8,7 @@ using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.Fallback;
 
-namespace DirectorySync.Infrastructure.ConfigurationSources.Configurations;
+namespace DirectorySync.Infrastructure.Configurations;
 
 internal static class ResiliencePolicy
 {

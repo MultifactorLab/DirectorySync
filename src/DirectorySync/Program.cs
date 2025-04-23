@@ -1,9 +1,9 @@
 using System.Runtime.InteropServices;
 using DirectorySync.Application;
+using DirectorySync.ConfigSources.MultifactorCloud;
 using DirectorySync.ConfigSources.SystemEnvironmentVariables;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
-using DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
 using DirectorySync.Infrastructure.Logging;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
 
