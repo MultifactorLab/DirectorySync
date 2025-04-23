@@ -38,7 +38,7 @@ public class MultifactorApiTests
         [InlineData(401)]
         [InlineData(404)]
         [InlineData(500)]
-        public async Task IsSuccessStatusCode_ShouldReturnEmpty(int statusCode)
+        public async Task UnsuccessfulStatusCode_ShouldReturnEmpty(int statusCode)
         {
             var mocker = new AutoMocker();
             mocker.GetMock<IOptions<MultifactorApiOptions>>()
@@ -63,20 +63,21 @@ public class MultifactorApiTests
         [InlineData(401, typeof(UnauthorizedException))]
         [InlineData(403, typeof(ForbiddenException))]
         [InlineData(409, typeof(ConflictException))]
-        public async Task CreateUsers_FallbackReturnsSuccess(int statusCode, Type exceptionType)
+        public async Task CreateUsers_ShouldThrowExpectedExceptionTypes(int statusCode, Type exceptionType)
         {
             // Arrange
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
 
             var bucket = new NewUsersBucket();
             bucket.AddNewUser(Guid.NewGuid(), "identity1");
-
+            
+            // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
             {
                 await service.CreateManyAsync(bucket);
             });
 
-            // Дополнительные проверки:
+            // Assert
             Assert.IsType(exceptionType, exception);
             Assert.NotNull(exception.Message);
         }
@@ -199,7 +200,7 @@ public class MultifactorApiTests
         [InlineData(401, typeof(UnauthorizedException))]
         [InlineData(403, typeof(ForbiddenException))]
         [InlineData(409, typeof(ConflictException))]
-        public async Task UpdateUsers_FallbackReturnsSuccess(int statusCode, Type exceptionType)
+        public async Task UpdateUsers_ShouldThrowExpectedExceptionTypes(int statusCode, Type exceptionType)
         {
             // Arrange
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
@@ -207,12 +208,13 @@ public class MultifactorApiTests
             var bucket = new ModifiedUsersBucket();
             bucket.Add(Guid.NewGuid(), "identity1");
 
+            // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
             {
                 await service.UpdateManyAsync(bucket);
             });
 
-            // Дополнительные проверки:
+            // Assert
             Assert.IsType(exceptionType, exception);
             Assert.NotNull(exception.Message);
         }
@@ -335,7 +337,7 @@ public class MultifactorApiTests
         [InlineData(401, typeof(UnauthorizedException))]
         [InlineData(403, typeof(ForbiddenException))]
         [InlineData(409, typeof(ConflictException))]
-        public async Task DeleteUsers_FallbackReturnsSuccess(int statusCode, Type exceptionType)
+        public async Task DeleteUsers_ShouldThrowExpectedExceptionTypes(int statusCode, Type exceptionType)
         {
             // Arrange
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
@@ -343,12 +345,13 @@ public class MultifactorApiTests
             var bucket = new DeletedUsersBucket();
             bucket.Add(Guid.NewGuid(), "identity1");
 
+            // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
             {
                 await service.DeleteManyAsync(bucket);
             });
 
-            // Дополнительные проверки:
+            // Assert
             Assert.IsType(exceptionType, exception);
             Assert.NotNull(exception.Message);
         }
@@ -458,7 +461,6 @@ public class MultifactorApiTests
         {
             BaseAddress = new Uri(FakeMultifactorCloud.Uri)
         };
-        httpClient.DefaultRequestHeaders.Add("Authorization", "Basic dGVzdA==");
 
         mocker.GetMock<IHttpClientFactory>()
             .Setup(x => x.CreateClient(It.IsAny<string>()))

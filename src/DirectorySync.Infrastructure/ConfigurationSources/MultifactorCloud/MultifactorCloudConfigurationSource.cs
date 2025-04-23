@@ -11,9 +11,6 @@ namespace DirectorySync.Infrastructure.ConfigurationSources.MultifactorCloud;
 
 public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfigurationSource
 {
-
-    public static event EventHandler? ConfigurationChanged;
-
     public static string InconsistentConfigMessage { get; } = $"Group GUIDs received from the Cloud are different from local ones.{Environment.NewLine}" +
             "To confirm these changes, restart the service.";
 
@@ -31,7 +28,6 @@ public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfi
     [DebuggerStepThrough]
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
-        ConfigurationChanged += (sender, args) => Refresh(null);
         return this;
     }
 
@@ -61,11 +57,6 @@ public class MultifactorCloudConfigurationSource : ConfigurationProvider, IConfi
         {
             CloudInteractionLogger.Error(ex, "Failed to refresh settings from Multifactor Cloud. Local Directory Sync service settings may be out of date.");
         }
-    }
-
-    public static void RaiseConfigurationChanged()
-    {
-        ConfigurationChanged?.Invoke(null, EventArgs.Empty);
     }
 
     private CloudConfigDto Pull()

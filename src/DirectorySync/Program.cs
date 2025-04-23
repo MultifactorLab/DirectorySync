@@ -40,9 +40,6 @@ try
 
     builder.Configuration.AddMultifactorCloudConfiguration();
 
-    var configurationRoot = (IConfigurationRoot)builder.Configuration;
-    builder.Services.AddSingleton(configurationRoot);
-
     builder.AddApplicationServices();
     builder.AddInfrastructureServices(args);
     builder.AddHostedServices();
