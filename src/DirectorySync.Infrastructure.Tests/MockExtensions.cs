@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using Moq;
-using System.Text.RegularExpressions;
 
 namespace DirectorySync.Infrastructure.Tests;
 

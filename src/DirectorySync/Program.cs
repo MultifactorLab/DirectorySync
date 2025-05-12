@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.ServiceProcess;
 using DirectorySync.Application;
 using DirectorySync.ConfigSources.MultifactorCloud;
 using DirectorySync.ConfigSources.SystemEnvironmentVariables;

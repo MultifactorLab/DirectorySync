@@ -1,10 +1,10 @@
-using DirectorySync.Infrastructure.Logging;
-using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
-using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DirectorySync.Infrastructure.Logging;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
+using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
 
 namespace DirectorySync.ConfigSources.MultifactorCloud;
 

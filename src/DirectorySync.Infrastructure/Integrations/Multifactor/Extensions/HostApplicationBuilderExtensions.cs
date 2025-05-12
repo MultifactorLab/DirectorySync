@@ -1,10 +1,11 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Infrastructure.Configurations;
 using DirectorySync.Infrastructure.Http;
 using DirectorySync.Infrastructure.Shared.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;
 
@@ -33,18 +34,16 @@ internal static class HostApplicationBuilderExtensions
 
         }).AddHttpMessageHandler<HttpLogger>()
         .AddHttpMessageHandler<MfTraceIdHeaderSetter>()
-        .AddResilienceHandler("mf-api-pipeline", x =>
+        .AddResilienceHandler("mf-api-pipeline", (resilBuilder, resilContext) =>
         {
-            // Defaults: https://www.pollydocs.org/strategies/retry.html#defaults
-            x.AddRetry(new HttpRetryStrategyOptions
-            {
-                MaxRetryAttempts = 2,
-                Delay = TimeSpan.FromSeconds(2),
-                BackoffType = DelayBackoffType.Exponential
-            });
+            resilBuilder.AddRetry(ResiliencePolicy.GetDefaultRetryPolicy());
+
+            resilBuilder.AddFallback(ResiliencePolicy.GetConflictPolicy(resilContext.ServiceProvider));
+            resilBuilder.AddFallback(ResiliencePolicy.GetForbiddenPolicy());
+            resilBuilder.AddFallback(ResiliencePolicy.GetUnauthorizedPolicy());
 
             // Defaults: https://www.pollydocs.org/strategies/timeout.html#defaults
-            x.AddTimeout(TimeSpan.FromSeconds(20));
+            resilBuilder.AddTimeout(TimeSpan.FromSeconds(20));
         });
 
         builder.Services.AddSingleton<IMultifactorApi, MultifactorApi>();
