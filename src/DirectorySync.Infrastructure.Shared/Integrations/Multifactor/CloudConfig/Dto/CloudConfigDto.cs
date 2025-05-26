@@ -11,7 +11,7 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConf
 
         public TimeSpan TimeoutAD { get; set; }
 
-        public string[] DirectoryGroups { get; set; } = Array.Empty<string>();
+        public GroupMappingsDto[] DirectoryGroupMappings { get; set; } = Array.Empty<GroupMappingsDto>();
         public bool IncludeNestedGroups { get; set; } = true;
 
         public PropsMappingDto PropertyMapping { get; set; } = new PropsMappingDto();

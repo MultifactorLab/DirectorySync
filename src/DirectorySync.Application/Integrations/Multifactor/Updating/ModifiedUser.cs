@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Domain;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Updating;
@@ -7,6 +8,7 @@ public interface IModifiedUser
 {
     DirectoryGuid Id { get; }
     string Identity { get; }
+    SignUpGroupChanges SignUpGroupChanges { get; }
     ReadOnlyCollection<MultifactorProperty> Properties { get; }
 }
 
@@ -17,8 +19,9 @@ internal class ModifiedUser : IModifiedUser
 
     public DirectoryGuid Id { get; }
     public string Identity { get; }
-    
-    public ModifiedUser(DirectoryGuid id, string identity)
+    public SignUpGroupChanges SignUpGroupChanges { get; }
+
+    public ModifiedUser(DirectoryGuid id, string identity, SignUpGroupChanges signUpGroupChanges)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
@@ -26,6 +29,7 @@ internal class ModifiedUser : IModifiedUser
         }
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Identity = identity;
+        SignUpGroupChanges = signUpGroupChanges;
     }
 
     public ModifiedUser AddProperty(string name, string? value)

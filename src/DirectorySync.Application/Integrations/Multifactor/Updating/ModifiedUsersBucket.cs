@@ -1,4 +1,5 @@
-﻿using DirectorySync.Domain;
+﻿using DirectorySync.Application.Integrations.Multifactor.Models;
+using DirectorySync.Domain;
 using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Updating;
@@ -12,10 +13,9 @@ internal class ModifiedUsersBucket : IModifiedUsersBucket
 {
     private readonly List<IModifiedUser> _modified = [];
     public ReadOnlyCollection<IModifiedUser> ModifiedUsers => new (_modified);
-
     public int Count => _modified.Count;
     
-    public ModifiedUser Add(DirectoryGuid id, string identity)
+    public ModifiedUser Add(DirectoryGuid id, string identity, SignUpGroupChanges signUpGroupChanges)
     {
         if (id is null)
         {
@@ -34,7 +34,7 @@ internal class ModifiedUsersBucket : IModifiedUsersBucket
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(identity));
         }
 
-        var user = new ModifiedUser(id, identity);
+        var user = new ModifiedUser(id, identity, signUpGroupChanges);
         _modified.Add(user);
         
         return user;

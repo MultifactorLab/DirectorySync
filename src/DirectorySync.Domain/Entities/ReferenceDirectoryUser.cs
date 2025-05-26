@@ -6,6 +6,8 @@ public record ReferenceDirectoryUser
 {
     public DirectoryGuid Guid { get; }
     public LdapAttributeCollection Attributes { get; }
+    public DirectoryGuid[] UnlinkedGroups => _unlinkedGroups.ToArray();
+    private readonly HashSet<DirectoryGuid> _unlinkedGroups = new();
 
     public ReferenceDirectoryUser(DirectoryGuid guid, LdapAttributeCollection attributes)
     {
@@ -18,5 +20,10 @@ public record ReferenceDirectoryUser
         var sb = new StringBuilder($"member: {Guid}{Environment.NewLine}");
         sb.Append(Attributes.ToString());
         return sb.ToString();
+    }
+
+    public void AddUnlinkedGroup(DirectoryGuid groupGuid)
+    {
+        _unlinkedGroups.Add(groupGuid);
     }
 }

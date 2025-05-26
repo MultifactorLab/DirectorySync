@@ -19,6 +19,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
     private readonly IGetReferenceGroup _getReferenceGroup;
+    private readonly IGetReferenceUser _getReferenceUser;
     private readonly IApplicationStorage _storage;
     private readonly Deleter _deleter;
     private readonly Updater _updater;
@@ -27,6 +28,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
 
     public SynchronizeUsers(RequiredLdapAttributes requiredLdapAttributes,
         IGetReferenceGroup getReferenceGroup,
+        IGetReferenceUser getReferenceUser,
         IApplicationStorage storage,
         Deleter deleter,
         Updater updater,
@@ -35,6 +37,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
     {
         _requiredLdapAttributes = requiredLdapAttributes;
         _getReferenceGroup = getReferenceGroup;
+        _getReferenceUser = getReferenceUser;
         _storage = storage;
         _deleter = deleter;
         _updater = updater;
@@ -63,37 +66,64 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
+        List<DirectoryGuid> groupUnlinkedMembers = new();
+
         if (ReferenceGroupHasDifferentCountOfMembers(referenceGroup, cachedGroup))
         {
             _logger.LogDebug("Reference and cached groups are different");
             _logger.LogDebug("Searching for deleted members...");
             
-            var deleted = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
-            if (deleted.Length == 0)
+            var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
+
+            var allGroups = _storage.GetAllGroups();
+
+            foreach (var deletedMemberGuid in deletedFromGroup)
+            {
+                if (IsUserMemberOfOtherGroups(deletedMemberGuid, allGroups, cachedGroup))
+                {
+                    groupUnlinkedMembers.Add(deletedMemberGuid);
+                }
+            }
+
+            var deletedMembers = deletedFromGroup.Except(groupUnlinkedMembers).ToArray();
+
+            if (deletedMembers.Length == 0)
             {
                 _logger.LogDebug("Deleted members was not found");
             }
             else
             {
-                _logger.LogDebug("Found deleted users: {Deleted}", deleted.Length);
+                _logger.LogDebug("Found deleted users: {Deleted}", deletedMembers.Length);
 
-                await _deleter.DeleteManyAsync(cachedGroup, deleted, token);
+                await _deleter.DeleteManyAsync(cachedGroup, deletedMembers, token);
 
                 _logger.LogDebug("Deleted members are synchronized");
             }
         }
 
         _logger.LogDebug("Searching for existed but modified members...");
-        var modifiedMembers = MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup).ToArray();
-        if (modifiedMembers.Length == 0)
+        var modifiedMembers = MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup).ToList();
+
+        foreach (var memberGuid in groupUnlinkedMembers)
+        {
+            var refUser = _getReferenceUser.Execute(memberGuid, names);
+
+            if (refUser != null)
+            {
+                refUser.AddUnlinkedGroup(new DirectoryGuid(groupGuid));
+                modifiedMembers.Add(refUser);
+            }
+        }
+
+        if (modifiedMembers.Count == 0)
         {
             _logger.LogDebug("Modified members was not found");
             _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization for group {group}", groupGuid);
             return;
         }
 
-        _logger.LogDebug("Found modified users: {Modified}", modifiedMembers.Length);
-        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers, token);
+        _logger.LogDebug("Found modified users: {Modified}", modifiedMembers);
+        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers.ToArray(), token);
 
         var updateModifiedTimer = _codeTimer.Start("Update Cached Group: Modified Users");
         _storage.UpdateGroup(cachedGroup);
@@ -115,5 +145,14 @@ internal class SynchronizeUsers : ISynchronizeUsers
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
         var cachedMemberGuids = cachedGroup.Members.Select(x => x.Id);
         return cachedMemberGuids.Except(refMemberGuids);
+    }
+
+    private static bool IsUserMemberOfOtherGroups(DirectoryGuid memberId, 
+        IEnumerable<CachedDirectoryGroup> allGroups, 
+        CachedDirectoryGroup excludedGroup)
+    {
+        return allGroups
+            .Where(group => group.GroupGuid != excludedGroup.GroupGuid)
+            .Any(group => group.Members.Any(member => member.Id == memberId));
     }
 }

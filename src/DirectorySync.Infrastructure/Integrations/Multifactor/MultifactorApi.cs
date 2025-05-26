@@ -37,12 +37,14 @@ internal class MultifactorApi : IMultifactorApi
         }
 
         var dtos = bucket.NewUsers
-            .Select(x => new NewUserDto(x.Identity, x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value))));
+            .Select(x => new NewUserDto(x.Identity, 
+            x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
+            new SignUpGroupChangesDto(x.SignUpGroupChanges.SignUpGroupsToAdd, x.SignUpGroupChanges.SignUpGroupsToRemove)));
         var dto = new CreateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
-        var response = await adapter.PostAsync<CreateUsersResponseDto>("ds/users", dto);
+        var response = await adapter.PostAsync<CreateUsersResponseDto>("v2/ds/users", dto);
         var result = new CreateUsersOperationResult();
 
         if (!response.IsSuccessStatusCode)
@@ -87,13 +89,16 @@ internal class MultifactorApi : IMultifactorApi
         }
 
         var dtos = bucket.ModifiedUsers
-            .Select(x => new ModifiedUserDto(x.Identity, x.Properties.Select(s => new UserPropertyDto(s.Name, s.Value))));
+            .Select(x => new ModifiedUserDto(
+                x.Identity,
+                x.Properties.Select(s => new UserPropertyDto(s.Name, s.Value)),
+                new SignUpGroupChangesDto(x.SignUpGroupChanges.SignUpGroupsToAdd, x.SignUpGroupChanges.SignUpGroupsToRemove)));
         var dto = new UpdateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
 
-        var response = await adapter.PutAsync<UpdateUsersResponseDto>("ds/users", dto);
+        var response = await adapter.PutAsync<UpdateUsersResponseDto>("v2/ds/users", dto);
         var result = new UpdateUsersOperationResult();
         if (!response.IsSuccessStatusCode)
         {

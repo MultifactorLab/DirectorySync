@@ -1,3 +1,4 @@
+using System;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -29,6 +30,20 @@ internal class LiteDbApplicationStorage : IApplicationStorage
 
         var directoryGroup = group.ToDomainModel();
         return directoryGroup;
+    }
+
+    public IEnumerable<CachedDirectoryGroup> GetAllGroups()
+    {
+        var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
+
+        var groups = collection.FindAll();
+        if (groups is null)
+        {
+            return Enumerable.Empty<CachedDirectoryGroup>();
+        }
+
+        var directoryGroups = groups.Select(c => c.ToDomainModel());
+        return directoryGroups;
     }
 
     public void InsertGroup(CachedDirectoryGroup group)

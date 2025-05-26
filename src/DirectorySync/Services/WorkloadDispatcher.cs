@@ -96,7 +96,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
                     {
                         _board.Done(WorkloadKind.Scan);
                         break;
-                    }
+                    } 
 
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await ScanUsers();

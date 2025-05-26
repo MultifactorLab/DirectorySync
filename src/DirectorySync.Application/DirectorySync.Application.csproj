@@ -23,6 +23,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DirectorySync.Domain\DirectorySync.Domain.csproj" />
+      <ProjectReference Include="..\DirectorySync.Infrastructure.Shared\DirectorySync.Infrastructure.Shared.csproj" />
     </ItemGroup>
 
 </Project>

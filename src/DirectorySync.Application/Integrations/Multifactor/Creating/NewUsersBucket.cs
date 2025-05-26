@@ -1,4 +1,5 @@
-﻿using DirectorySync.Domain;
+﻿using DirectorySync.Application.Integrations.Multifactor.Models;
+using DirectorySync.Domain;
 using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Creating;
@@ -15,7 +16,7 @@ internal class NewUsersBucket : INewUsersBucket
 
     public int Count => _newUsers.Count;
 
-    public NewUser AddNewUser(DirectoryGuid id, string identity)
+    public NewUser AddNewUser(DirectoryGuid id, string identity, SignUpGroupChanges signUpGroupChanges)
     {
         if (id is null)
         {
@@ -32,7 +33,7 @@ internal class NewUsersBucket : INewUsersBucket
             throw new InvalidOperationException($"User {{{id}, {identity}}} already exists in this bucket");
         }
         
-        var user = new NewUser(id, identity);
+        var user = new NewUser(id, identity, signUpGroupChanges);
         _newUsers.Add(user);
 
         return user;

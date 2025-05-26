@@ -1,5 +1,6 @@
 ﻿using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
@@ -15,19 +16,22 @@ internal sealed class Updater
     private readonly IApplicationStorage _storage;
     private readonly CodeTimer _codeTimer;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
+    private readonly IOptionsMonitor<GroupMappingsOptions> _groupsMappingOptions;
     private readonly UserProcessingOptions _options;
 
     public Updater(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions)
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
+        IOptionsMonitor<GroupMappingsOptions> groupsMappingOptions)
     {
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
         _attrMappingOptions = attrMappingOptions;
         _options = options.Value;
+        _groupsMappingOptions = groupsMappingOptions;
     }
 
     public async Task UpdateManyAsync(CachedDirectoryGroup group,
@@ -51,7 +55,24 @@ internal sealed class Updater
             foreach (var member in modified.Skip(skip).Take(_options.UpdatingBatchSize))
             {
                 var cachedMember = group.Members.First(x => x.Id == member.Guid);
-                var user = bucket.Add(cachedMember.Id, cachedMember.Identity);
+
+                var signUpGroupsToRemove = new List<string>();
+                foreach (var groupGuid in member.UnlinkedGroups)
+                {
+                    if (_groupsMappingOptions.CurrentValue.DirectoryGroupMappings
+                        .TryGetValue(group.GroupGuid.Value.ToString(), out var groupsToRemove))
+                    {
+                        signUpGroupsToRemove.AddRange(groupsToRemove);
+                    }
+
+                }
+
+                var groupsChanges = new SignUpGroupChanges()
+                {
+                    SignUpGroupsToRemove = signUpGroupsToRemove.ToArray() ?? Array.Empty<string>()
+                };
+
+                var user = bucket.Add(cachedMember.Id, cachedMember.Identity, groupsChanges);
 
                 SetProperties(options, member, user);
             }
@@ -109,8 +130,16 @@ internal sealed class Updater
             }
 
             var refMember = modified.First(x => x.Guid == cachedUser.Id);
-            var hash = new AttributesHash(refMember.Attributes);
-            cachedUser.UpdateHash(hash);
+
+            if (refMember.UnlinkedGroups.Any())
+            {
+                group.DeleteMembers(cachedUser.Id);
+            }
+            else
+            {
+                var hash = new AttributesHash(refMember.Attributes);
+                cachedUser.UpdateHash(hash);
+            }
         }
 
         _storage.UpdateGroup(group);

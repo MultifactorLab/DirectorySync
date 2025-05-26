@@ -96,8 +96,8 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         Data["Sync:SyncTimer"] = config.SyncTimer.ToString();
         Data["Sync:ScanTimer"] = config.ScanTimer.ToString();
 
-        SetCollection("Sync:Groups", config.DirectoryGroups);
-
+        SetCollection("Sync:DirectoryGroupMappings", config.DirectoryGroupMappings);
+        SetCollection("Sync:Groups", config.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
         Data[$"Sync:IncludeNestedGroups"] = "True";
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
@@ -125,6 +125,26 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         RemoveTheRestArrayItems(key, elements.Length);
     }
 
+    private void SetCollection(string key, GroupMappingsDto?[] elements)
+    {
+        for (int index = 0; index < elements.Length; index++)
+        {
+            var baseKey = $"{key}:{index}";
+            var mapping = elements[index];
+
+            Data[$"{baseKey}:DirectoryGroup"] = mapping.DirectoryGroup;
+
+            for (int signUpIndex = 0; signUpIndex < mapping.SignUpGroups.Length; signUpIndex++)
+            {
+                Data[$"{baseKey}:SignUpGroups:{signUpIndex}"] = mapping.SignUpGroups[signUpIndex];
+            }
+
+            RemoveTheRestArrayItems($"{baseKey}:SignUpGroups", mapping.SignUpGroups.Length);
+        }
+
+        RemoveTheRestArrayItems(key, elements.Length);
+    }
+
     private void RemoveTheRestArrayItems(string key, int startIndex)
     {
         while (true)
@@ -142,25 +162,42 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
     private void CheckGroups(CloudConfigDto config)
     {
-        var r = new Regex("^Sync:Groups:\\d$+");
+        var r = new Regex("^Sync:DirectoryGroupMappings:\\d$+");
         var currentKeys = Data.Keys
             .Where(x => r.IsMatch(x))
             .ToArray();
 
-        if (currentKeys.Length != config.DirectoryGroups.Length)
+        if (currentKeys.Length != config.DirectoryGroupMappings.Length)
         {
             InconstistentEx();
         }
 
-        var currentValues = Data
-            .Where(x => currentKeys.Contains(x.Key))
-            .Select(x => x.Value)
-            .OrderByDescending(x => x)
-            .ToArray();
-
-        if (currentValues.Any(x => !config.DirectoryGroups.Contains(x, StringComparer.OrdinalIgnoreCase)))
+        for (int i = 0; i < currentKeys.Length; i++)
         {
-            InconstistentEx();
+            var key = currentKeys[i];
+            var index = int.Parse(key.Split(':')[2]);
+            var expected = config.DirectoryGroupMappings[index];
+
+            var directoryGroup = Data[key];
+
+            if (!string.Equals(directoryGroup, expected.DirectoryGroup, StringComparison.OrdinalIgnoreCase))
+            {
+                InconstistentEx();
+            }
+
+            var signUpGroups = new List<string>();
+            int j = 0;
+            while (Data.TryGetValue($"{key}:SignUpGroups:{j}", out var group))
+            {
+                signUpGroups.Add(group);
+                j++;
+            }
+
+            if (signUpGroups.Count != expected.SignUpGroups.Length ||
+                !signUpGroups.SequenceEqual(expected.SignUpGroups, StringComparer.OrdinalIgnoreCase))
+            {
+                InconstistentEx();
+            }
         }
     }
 
