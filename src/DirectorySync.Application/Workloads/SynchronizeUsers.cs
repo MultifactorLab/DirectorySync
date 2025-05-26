@@ -1,5 +1,6 @@
 using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Models;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -102,7 +103,9 @@ internal class SynchronizeUsers : ISynchronizeUsers
         }
 
         _logger.LogDebug("Searching for existed but modified members...");
-        var modifiedMembers = MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup).ToList();
+        var modifiedMembers = MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup)
+            .Select(ReferenceDirectoryUserUpdateModel.FromEntity)
+            .ToList();
 
         foreach (var memberGuid in groupUnlinkedMembers)
         {
@@ -110,8 +113,9 @@ internal class SynchronizeUsers : ISynchronizeUsers
 
             if (refUser != null)
             {
-                refUser.AddUnlinkedGroup(new DirectoryGuid(groupGuid));
-                modifiedMembers.Add(refUser);
+                var modifiedMember = ReferenceDirectoryUserUpdateModel.FromEntity(refUser);
+                modifiedMember.UnlinkFromGroup();
+                modifiedMembers.Add(modifiedMember);
             }
         }
 

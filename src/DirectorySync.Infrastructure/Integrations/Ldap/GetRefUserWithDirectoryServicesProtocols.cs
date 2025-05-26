@@ -12,19 +12,16 @@ namespace DirectorySync.Infrastructure.Integrations.Ldap
     {
         private readonly LdapConnectionFactory _connectionFactory;
         private readonly LdapOptions _ldapOptions;
-        private readonly IOptionsMonitor<RequestOptions> _requestOptions;
         private readonly BaseDnResolver _baseDnResolver;
         private readonly ILogger<GetRefGroupWithDirectoryServicesProtocols> _logger;
 
         public GetRefUserWithDirectoryServicesProtocols(LdapConnectionFactory connectionFactory,
             IOptions<LdapOptions> ldapOptions,
-            IOptionsMonitor<RequestOptions> requestOptions,
             BaseDnResolver baseDnResolver,
             ILogger<GetRefGroupWithDirectoryServicesProtocols> logger)
         {
             _ldapOptions = ldapOptions.Value;
             _connectionFactory = connectionFactory;
-            _requestOptions = requestOptions;
             _baseDnResolver = baseDnResolver;
             _logger = logger;
         }

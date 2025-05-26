@@ -3,6 +3,7 @@ using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Models;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -35,7 +36,7 @@ internal sealed class Updater
     }
 
     public async Task UpdateManyAsync(CachedDirectoryGroup group,
-        ReferenceDirectoryUser[] modified,
+        ReferenceDirectoryUserUpdateModel[] modified,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -48,6 +49,9 @@ internal sealed class Updater
 
         var options = _attrMappingOptions.CurrentValue;
 
+        _groupsMappingOptions.CurrentValue.DirectoryGroupMappings
+                    .TryGetValue(group.GroupGuid.Value.ToString(), out var groupsToRemove);
+
         var skip = 0;
         while (true)
         {
@@ -56,20 +60,11 @@ internal sealed class Updater
             {
                 var cachedMember = group.Members.First(x => x.Id == member.Guid);
 
-                var signUpGroupsToRemove = new List<string>();
-                foreach (var groupGuid in member.UnlinkedGroups)
-                {
-                    if (_groupsMappingOptions.CurrentValue.DirectoryGroupMappings
-                        .TryGetValue(group.GroupGuid.Value.ToString(), out var groupsToRemove))
-                    {
-                        signUpGroupsToRemove.AddRange(groupsToRemove);
-                    }
-
-                }
-
                 var groupsChanges = new SignUpGroupChanges()
                 {
-                    SignUpGroupsToRemove = signUpGroupsToRemove.ToArray() ?? Array.Empty<string>()
+                    SignUpGroupsToRemove = member.IsUnlinkedFromGroup ?
+                    groupsToRemove.ToArray() ?? Array.Empty<string>() :
+                    Array.Empty<string>(),
                 };
 
                 var user = bucket.Add(cachedMember.Id, cachedMember.Identity, groupsChanges);
@@ -91,8 +86,8 @@ internal sealed class Updater
         }
     }
 
-    private static void SetProperties(LdapAttributeMappingOptions options, 
-        ReferenceDirectoryUser refUser, 
+    private static void SetProperties(LdapAttributeMappingOptions options,
+        ReferenceDirectoryUserUpdateModel refUser, 
         ModifiedUser user)
     {
         if (!string.IsNullOrWhiteSpace(options.NameAttribute))
@@ -117,8 +112,8 @@ internal sealed class Updater
         }
     }
 
-    private void UpdateCachedGroup(CachedDirectoryGroup group, 
-        ReferenceDirectoryUser[] modified, 
+    private void UpdateCachedGroup(CachedDirectoryGroup group,
+        ReferenceDirectoryUserUpdateModel[] modified, 
         IUpdateUsersOperationResult res)
     {
         foreach (var user in res.UpdatedUsers)
@@ -131,7 +126,7 @@ internal sealed class Updater
 
             var refMember = modified.First(x => x.Guid == cachedUser.Id);
 
-            if (refMember.UnlinkedGroups.Any())
+            if (refMember.IsUnlinkedFromGroup)
             {
                 group.DeleteMembers(cachedUser.Id);
             }
