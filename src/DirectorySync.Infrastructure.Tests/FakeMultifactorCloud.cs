@@ -22,7 +22,7 @@ internal static class FakeMultifactorCloud
         {
             return GetHttpClientMock(handler =>
             {
-                handler.SetupRequest(HttpMethod.Post, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
+                handler.SetupRequest(HttpMethod.Post, $"{Uri}/v2/ds/users").ReturnsJsonResponse(statusCode, responseBody);
             });
         }
 
@@ -35,7 +35,7 @@ internal static class FakeMultifactorCloud
         {
             return GetHttpClientMock(handler =>
             {
-                handler.SetupRequest(HttpMethod.Put, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
+                handler.SetupRequest(HttpMethod.Put, $"{Uri}/v2/ds/users").ReturnsJsonResponse(statusCode, responseBody);
             });
         }
 

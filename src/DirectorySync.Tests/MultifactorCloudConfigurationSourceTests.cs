@@ -14,7 +14,11 @@ public class MultifactorCloudConfigurationSourceTests
         var model = new
         {
             Enabled = true,
-            DirectoryGroups = new[] { (string)new DirectoryGuid(Guid.Parse("87fa4f55-16f2-4043-aa85-15936db5f1db")) },
+            DirectoryGroupMappings = new GroupMappingsDto[] {new()
+            {
+                DirectoryGroup = (string)new DirectoryGuid(Guid.Parse("87fa4f55-16f2-4043-aa85-15936db5f1db")),
+                SignUpGroups = ["mygroup"]
+            }},
             MultifactorGroupPolicyPreset = new
             {
                 SignUpGroups = new[] { "mygroup" }
@@ -61,7 +65,16 @@ public class MultifactorCloudConfigurationSourceTests
         var src = new TestableMultifactorCloudConfigurationSource(new Mock<HttpMessageHandler>().CreateClient());
         var dto = new CloudConfigDto
         {
-            DirectoryGroups = [ Guid.NewGuid().ToString(), Guid.NewGuid().ToString() ]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            },
+            new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
 
         src.SetConfigurationData(dto, true);
@@ -79,7 +92,11 @@ public class MultifactorCloudConfigurationSourceTests
         var src = new TestableMultifactorCloudConfigurationSource(new Mock<HttpMessageHandler>().CreateClient());
         var dto = new CloudConfigDto
         {
-            DirectoryGroups = [ Guid.NewGuid().ToString(), Guid.NewGuid().ToString() ]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
         src.SetConfigurationData(dto, true);
 
@@ -87,7 +104,11 @@ public class MultifactorCloudConfigurationSourceTests
 
         var dto1 = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
         src.SetConfigurationData(dto1, true);
 
@@ -103,7 +124,16 @@ public class MultifactorCloudConfigurationSourceTests
         var src = new TestableMultifactorCloudConfigurationSource(new Mock<HttpMessageHandler>().CreateClient());
         var dto = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            },
+            new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
         src.SetConfigurationData(dto, true);
 
@@ -111,7 +141,7 @@ public class MultifactorCloudConfigurationSourceTests
 
         var dto1 = new CloudConfigDto
         {
-            DirectoryGroups = []
+            DirectoryGroupMappings = []
         };
         src.SetConfigurationData(dto1, true);
 
@@ -126,7 +156,16 @@ public class MultifactorCloudConfigurationSourceTests
         var src = new TestableMultifactorCloudConfigurationSource(new Mock<HttpMessageHandler>().CreateClient());
         var dto = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+                {
+                    DirectoryGroup = Guid.NewGuid().ToString(),
+                    SignUpGroups = ["mygroup"]
+                },
+                new GroupMappingsDto
+                {
+                    DirectoryGroup = Guid.NewGuid().ToString(),
+                    SignUpGroups = ["mygroup"]
+                }]
         };
         src.SetConfigurationData(dto, true);
 
@@ -134,7 +173,11 @@ public class MultifactorCloudConfigurationSourceTests
 
         var dto1 = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+                {
+                    DirectoryGroup = Guid.NewGuid().ToString(),
+                    SignUpGroups = ["mygroup"]
+                }]
         };
         src.SetConfigurationData(dto1, true);
     }    
@@ -145,7 +188,16 @@ public class MultifactorCloudConfigurationSourceTests
         var src = new TestableMultifactorCloudConfigurationSource(new Mock<HttpMessageHandler>().CreateClient());
         var dto = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+                {
+                    DirectoryGroup = Guid.NewGuid().ToString(),
+                    SignUpGroups = ["mygroup"]
+                },
+                new GroupMappingsDto
+                {
+                    DirectoryGroup = Guid.NewGuid().ToString(),
+                    SignUpGroups = ["mygroup"]
+                }]
         };
         src.SetConfigurationData(dto, true);
 
@@ -153,7 +205,11 @@ public class MultifactorCloudConfigurationSourceTests
 
         var dto1 = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
 
         // Assertion
@@ -168,7 +224,11 @@ public class MultifactorCloudConfigurationSourceTests
         var src = new TestableMultifactorCloudConfigurationSource(new Mock<HttpMessageHandler>().CreateClient());
         var dto = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
         src.SetConfigurationData(dto, true);
 
@@ -176,7 +236,11 @@ public class MultifactorCloudConfigurationSourceTests
 
         var dto1 = new CloudConfigDto
         {
-            DirectoryGroups = [Guid.NewGuid().ToString()]
+            DirectoryGroupMappings = [new GroupMappingsDto
+            {
+                DirectoryGroup = Guid.NewGuid().ToString(),
+                SignUpGroups = ["mygroup"]
+            }]
         };
 
         // Assertion

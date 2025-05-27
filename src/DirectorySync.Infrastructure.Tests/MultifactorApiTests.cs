@@ -51,7 +51,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create(statusCode: (HttpStatusCode)statusCode));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
 
             var response = await api.CreateManyAsync(bucket);
 
@@ -69,7 +69,7 @@ public class MultifactorApiTests
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
 
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
             
             // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
@@ -91,7 +91,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create());
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
 
             var response = await api.CreateManyAsync(bucket);
 
@@ -116,8 +116,8 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1");
-            bucket.AddNewUser(Guid.NewGuid(), "identity2");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
+            bucket.AddNewUser(Guid.NewGuid(), "identity2", new());
 
             var response = await api.CreateManyAsync(bucket);
 
@@ -145,8 +145,8 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1");
-            bucket.AddNewUser(Guid.NewGuid(), "identity2");
+            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
+            bucket.AddNewUser(Guid.NewGuid(), "identity2", new());
 
             var response = await api.CreateManyAsync(bucket);
 
@@ -188,7 +188,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update(statusCode: (HttpStatusCode)statusCode));
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity1", new());
 
             var response = await api.UpdateManyAsync(bucket);
 
@@ -206,7 +206,7 @@ public class MultifactorApiTests
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
 
             var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity1", new());
 
             // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
@@ -228,7 +228,7 @@ public class MultifactorApiTests
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update());
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
+            bucket.Add(Guid.NewGuid(), "identity1", new());
 
             var response = await api.UpdateManyAsync(bucket);
 
@@ -253,8 +253,8 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
-            bucket.Add(Guid.NewGuid(), "identity2");
+            bucket.Add(Guid.NewGuid(), "identity1", new());
+            bucket.Add(Guid.NewGuid(), "identity2", new());
 
             var response = await api.UpdateManyAsync(bucket);
 
@@ -282,8 +282,8 @@ public class MultifactorApiTests
                 .Returns(cli);
             var api = mocker.CreateInstance<MultifactorApi>();
             var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
-            bucket.Add(Guid.NewGuid(), "identity2");
+            bucket.Add(Guid.NewGuid(), "identity1", new());
+            bucket.Add(Guid.NewGuid(), "identity2", new());
 
             var response = await api.UpdateManyAsync(bucket);
 

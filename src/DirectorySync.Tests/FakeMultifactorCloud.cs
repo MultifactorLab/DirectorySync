@@ -21,7 +21,7 @@ internal static class FakeMultifactorCloud
         {
             return GetHttpClientMock(handler =>
             {
-                handler.SetupRequest(HttpMethod.Get, $"{Uri}/ds/settings", x =>
+                handler.SetupRequest(HttpMethod.Get, $"{Uri}/v2/ds/settings", x =>
                 {
                     var auth = new BasicAuthHeaderValue(Key, Secret);
                     var actualAuth = x.Headers.Authorization;
