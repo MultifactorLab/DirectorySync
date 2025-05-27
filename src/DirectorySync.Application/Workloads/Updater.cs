@@ -1,4 +1,5 @@
-﻿using DirectorySync.Application.Extensions;
+﻿using System.Collections.ObjectModel;
+using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
@@ -60,12 +61,9 @@ internal sealed class Updater
             {
                 var cachedMember = group.Members.First(x => x.Id == member.Guid);
 
-                var groupsChanges = new SignUpGroupChanges()
-                {
-                    SignUpGroupsToRemove = member.IsUnlinkedFromGroup ?
-                    groupsToRemove.ToArray() ?? Array.Empty<string>() :
-                    Array.Empty<string>(),
-                };
+                var groupsChanges = member.IsUnlinkedFromGroup ?
+                    GetUserSignUpGroupChanges(member.UserGroupIds, groupsToRemove)
+                    : new SignUpGroupChanges();
 
                 var user = bucket.Add(cachedMember.Id, cachedMember.Identity, groupsChanges);
 
@@ -84,6 +82,46 @@ internal sealed class Updater
             UpdateCachedGroup(group, modified, res);
             skip += bucket.Count;
         }
+    }
+
+    private SignUpGroupChanges GetUserSignUpGroupChanges(ReadOnlyCollection<DirectoryGuid> userGroups, string[] groupsToRemove)
+    {
+        if (groupsToRemove.Length == 0 || userGroups.Count == 0)
+        {
+            return new SignUpGroupChanges();
+        }
+        
+        var userSignUpGroups = new List<string>();
+
+        foreach (var group in userGroups)
+        {
+            if (_groupsMappingOptions.CurrentValue.DirectoryGroupMappings
+                    .TryGetValue(group.Value.ToString(), out var signUpGroups))
+            {
+                userSignUpGroups.AddRange(signUpGroups);
+            }
+        }
+
+        var remainingUserGroups = new List<string>(userSignUpGroups);
+
+        foreach (var groupToRemove in groupsToRemove)
+        {
+            var index = remainingUserGroups.IndexOf(groupToRemove);
+            if (index != -1)
+            {
+                remainingUserGroups.RemoveAt(index);
+            }
+        }
+
+        var signUpGroupsToRemove = groupsToRemove
+            .Where(group => !remainingUserGroups.Contains(group))
+            .Distinct()
+            .ToArray();
+
+        return new SignUpGroupChanges
+        {
+            SignUpGroupsToRemove = signUpGroupsToRemove
+        };
     }
 
     private static void SetProperties(LdapAttributeMappingOptions options,

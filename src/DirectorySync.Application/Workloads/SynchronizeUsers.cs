@@ -45,12 +45,12 @@ internal class SynchronizeUsers : ISynchronizeUsers
         _codeTimer = codeTimer;
         _logger = logger;
     }
-    
+
     public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogInformation(ApplicationEvent.StartUserSynchronization, "Start users synchronization for group {group}", groupGuid);
-        
+
         var names = _requiredLdapAttributes.GetNames().ToArray();
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", names));
 
@@ -58,7 +58,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         var referenceGroup = _getReferenceGroup.Execute(groupGuid, names);
         getGroupTimer.Stop();
         _logger.LogDebug("Reference group found: {Group:l}", referenceGroup);
-        
+
         var cachedGroup = _storage.FindGroup(referenceGroup.Guid);
         if (cachedGroup is null)
         {
@@ -67,57 +67,24 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
-        List<DirectoryGuid> groupUnlinkedMembers = new();
+        var modifiedMembers = new List<ReferenceDirectoryUserUpdateModel>();
 
         if (ReferenceGroupHasDifferentCountOfMembers(referenceGroup, cachedGroup))
         {
             _logger.LogDebug("Reference and cached groups are different");
             _logger.LogDebug("Searching for deleted members...");
-            
-            var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
 
-            var allGroups = _storage.GetAllGroups();
+            var allGroups = _storage.GetAllGroups().ToArray();
+            var memberGroupMap = BuildMemberGroupMap(allGroups, cachedGroup);
 
-            foreach (var deletedMemberGuid in deletedFromGroup)
-            {
-                if (IsUserMemberOfOtherGroups(deletedMemberGuid, allGroups, cachedGroup))
-                {
-                    groupUnlinkedMembers.Add(deletedMemberGuid);
-                }
-            }
+            var groupUnlinkedMembers = GetUnlinkedGuids(referenceGroup, cachedGroup, memberGroupMap);
 
-            var deletedMembers = deletedFromGroup.Except(groupUnlinkedMembers).ToArray();
+            await HandleDeletedMembers(cachedGroup, referenceGroup, groupUnlinkedMembers, token);
 
-            if (deletedMembers.Length == 0)
-            {
-                _logger.LogDebug("Deleted members was not found");
-            }
-            else
-            {
-                _logger.LogDebug("Found deleted users: {Deleted}", deletedMembers.Length);
-
-                await _deleter.DeleteManyAsync(cachedGroup, deletedMembers, token);
-
-                _logger.LogDebug("Deleted members are synchronized");
-            }
+            modifiedMembers.AddRange(GetUnlinkedMembers(groupUnlinkedMembers, names, memberGroupMap));
         }
 
-        _logger.LogDebug("Searching for existed but modified members...");
-        var modifiedMembers = MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup)
-            .Select(ReferenceDirectoryUserUpdateModel.FromEntity)
-            .ToList();
-
-        foreach (var memberGuid in groupUnlinkedMembers)
-        {
-            var refUser = _getReferenceUser.Execute(memberGuid, names);
-
-            if (refUser != null)
-            {
-                var modifiedMember = ReferenceDirectoryUserUpdateModel.FromEntity(refUser);
-                modifiedMember.UnlinkFromGroup();
-                modifiedMembers.Add(modifiedMember);
-            }
-        }
+        modifiedMembers.AddRange(GetModifiedMembers(referenceGroup, cachedGroup));
 
         if (modifiedMembers.Count == 0)
         {
@@ -133,8 +100,56 @@ internal class SynchronizeUsers : ISynchronizeUsers
         _storage.UpdateGroup(cachedGroup);
         updateModifiedTimer.Stop();
         _logger.LogDebug("Modified members are synchronized");
-        
+
         _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization for group {group}", groupGuid);
+    }
+
+    private static Dictionary<DirectoryGuid, List<DirectoryGuid>> BuildMemberGroupMap(IEnumerable<CachedDirectoryGroup> allGroups, CachedDirectoryGroup cachedGroup)
+    {
+        return allGroups
+            .SelectMany(g => g.Members.Select(m => (UserId: m.Id, GroupId: g.GroupGuid)))
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.GroupId).ToList());
+    }
+
+    private List<DirectoryGuid> GetUnlinkedGuids(ReferenceDirectoryGroup referenceGroup, CachedDirectoryGroup cachedGroup, Dictionary<DirectoryGuid, List<DirectoryGuid>> memberGroupMap)
+    {
+        var result = new List<DirectoryGuid>();
+
+        var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
+
+        foreach (var deletedMemberGuid in deletedFromGroup)
+        {
+            if (memberGroupMap.ContainsKey(deletedMemberGuid))
+            {
+                result.Add(deletedMemberGuid);
+            }
+        }
+
+        return result;
+    }
+
+    private async Task HandleDeletedMembers(CachedDirectoryGroup cachedGroup, ReferenceDirectoryGroup referenceGroup, List<DirectoryGuid> groupUnlinkedMembers, CancellationToken token)
+    {
+        var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
+        var deletedMembers = deletedFromGroup.Except(groupUnlinkedMembers).ToArray();
+
+        if (deletedMembers.Length == 0)
+        {
+            _logger.LogDebug("Deleted members was not found");
+            return;
+        }
+
+        _logger.LogDebug("Found deleted users: {Deleted}", deletedMembers.Length);
+        await _deleter.DeleteManyAsync(cachedGroup, deletedMembers, token);
+        _logger.LogDebug("Deleted members are synchronized");
+    }
+
+    private List<ReferenceDirectoryUserUpdateModel> GetModifiedMembers(ReferenceDirectoryGroup referenceGroup, CachedDirectoryGroup cachedGroup)
+    {
+        return MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup)
+            .Select(ReferenceDirectoryUserUpdateModel.FromEntity)
+            .ToList();
     }
 
     private static bool ReferenceGroupHasDifferentCountOfMembers(ReferenceDirectoryGroup refGroup, CachedDirectoryGroup cachedGroup)
@@ -143,7 +158,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         return referenceMembersHash != cachedGroup.Hash;
     }
 
-    private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup, 
+    private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup,
         CachedDirectoryGroup cachedGroup)
     {
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
@@ -151,12 +166,22 @@ internal class SynchronizeUsers : ISynchronizeUsers
         return cachedMemberGuids.Except(refMemberGuids);
     }
 
-    private static bool IsUserMemberOfOtherGroups(DirectoryGuid memberId, 
-        IEnumerable<CachedDirectoryGroup> allGroups, 
-        CachedDirectoryGroup excludedGroup)
+    private IEnumerable<ReferenceDirectoryUserUpdateModel> GetUnlinkedMembers(IEnumerable<DirectoryGuid> groupUnlinkedMembers,
+        string[] names,
+        Dictionary<DirectoryGuid, List<DirectoryGuid>> memberGroupMap)
     {
-        return allGroups
-            .Where(group => group.GroupGuid != excludedGroup.GroupGuid)
-            .Any(group => group.Members.Any(member => member.Id == memberId));
+        foreach (var memberGuid in groupUnlinkedMembers)
+        {
+            var refUser = _getReferenceUser.Execute(memberGuid, names);
+
+            if (refUser != null)
+            {
+                memberGroupMap.TryGetValue(refUser.Guid, out var groupGuids);
+                var modifiedMember = ReferenceDirectoryUserUpdateModel.FromEntity(refUser);
+                modifiedMember.SetUserGroups(groupGuids?.Select(g => new DirectoryGuid(g)).ToList() ?? new List<DirectoryGuid>());
+                modifiedMember.UnlinkFromGroup();
+                yield return modifiedMember;
+            }
+        }
     }
 }
