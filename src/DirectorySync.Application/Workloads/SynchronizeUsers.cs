@@ -77,11 +77,13 @@ internal class SynchronizeUsers : ISynchronizeUsers
             var allGroups = _storage.GetAllGroups().ToArray();
             var memberGroupMap = BuildMemberGroupMap(allGroups, cachedGroup);
 
-            var groupUnlinkedMembers = GetUnlinkedGuids(referenceGroup, cachedGroup, memberGroupMap);
+            var groupUnlinkedGuids = GetUnlinkedGuids(referenceGroup, cachedGroup, memberGroupMap);
+
+            var groupUnlinkedMembers = GetUnlinkedMembers(groupUnlinkedGuids, names, memberGroupMap);
 
             await HandleDeletedMembers(cachedGroup, referenceGroup, groupUnlinkedMembers, token);
 
-            modifiedMembers.AddRange(GetUnlinkedMembers(groupUnlinkedMembers, names, memberGroupMap));
+            modifiedMembers.AddRange(groupUnlinkedMembers);
         }
 
         modifiedMembers.AddRange(GetModifiedMembers(referenceGroup, cachedGroup));
@@ -129,10 +131,14 @@ internal class SynchronizeUsers : ISynchronizeUsers
         return result;
     }
 
-    private async Task HandleDeletedMembers(CachedDirectoryGroup cachedGroup, ReferenceDirectoryGroup referenceGroup, List<DirectoryGuid> groupUnlinkedMembers, CancellationToken token)
+    private async Task HandleDeletedMembers(CachedDirectoryGroup cachedGroup, ReferenceDirectoryGroup referenceGroup, IEnumerable<ReferenceDirectoryUserUpdateModel> groupUnlinkedMembers, CancellationToken token)
     {
         var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
-        var deletedMembers = deletedFromGroup.Except(groupUnlinkedMembers).ToArray();
+        var deletedMembers = deletedFromGroup
+            .Intersect(groupUnlinkedMembers
+                .Where(u => u.UserGroupIds.Count <= 1)
+                .Select(u => u.Guid))
+            .ToArray();
 
         if (deletedMembers.Length == 0)
         {
