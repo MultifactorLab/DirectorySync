@@ -19,23 +19,25 @@ internal sealed class Updater
     private readonly CodeTimer _codeTimer;
     private readonly UserProcessingOptions _options;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
+    private readonly IOptionsMonitor<GroupMappingsOptions> _groupMappingOptions;
 
     public Updater(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions)
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
+        IOptionsMonitor<GroupMappingsOptions> groupMappingOptions)
     {
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
         _options = options.Value;
         _attrMappingOptions = attrMappingOptions;
+        _groupMappingOptions = groupMappingOptions;
     }
 
     public async Task UpdateManyAsync(CachedDirectoryGroup group,
         ReferenceDirectoryUserUpdateModel[] modified,
-        Dictionary<DirectoryGuid, string[]> groupsMapping,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -48,7 +50,13 @@ internal sealed class Updater
 
         var options = _attrMappingOptions.CurrentValue;
 
-        groupsMapping.TryGetValue(group.GroupGuid, out var groupsToRemove);
+        var groupsMappingOptions = _groupMappingOptions.CurrentValue.DirectoryGroupMappings
+            .ToDictionary(
+                kpv => new DirectoryGuid(Guid.Parse(kpv.DirectoryGroup)),
+                kpv => kpv.SignUpGroups.ToArray()
+            );
+
+        groupsMappingOptions.TryGetValue(group.GroupGuid, out var groupsToRemove);
 
         var skip = 0;
         while (true)
@@ -61,7 +69,7 @@ internal sealed class Updater
                 if (cachedMember != null)
                 {
                     var groupsChanges = member.IsUnlinkedFromGroup ?
-                    GetUserSignUpGroupChanges(member.UserGroupIds, groupsToRemove, groupsMapping)
+                    GetUserSignUpGroupChanges(member.UserGroupIds, groupsToRemove, groupsMappingOptions)
                     : new SignUpGroupChanges();
 
                     var user = bucket.Add(cachedMember.Id, cachedMember.Identity, groupsChanges);

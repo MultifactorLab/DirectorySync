@@ -17,23 +17,25 @@ internal sealed class Creator
     private readonly CodeTimer _codeTimer;
     private readonly UserProcessingOptions _options;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
+    private readonly IOptionsMonitor<GroupMappingsOptions> _groupMappingOptions;
 
     public Creator(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions)
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
+        IOptionsMonitor<GroupMappingsOptions> groupMappingOptions)
     {
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
         _options = options.Value;
         _attrMappingOptions = attrMappingOptions;
+        _groupMappingOptions = groupMappingOptions;
     }
 
     public async Task CreateManyAsync(CachedDirectoryGroup group,
         ReferenceDirectoryUser[] created,
-        Dictionary<DirectoryGuid, string[]> groupMappings,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -46,7 +48,13 @@ internal sealed class Creator
 
         var options = _attrMappingOptions.CurrentValue;
 
-        groupMappings.TryGetValue(group.GroupGuid, out var groupsToAdd);
+        var groupsMappingOptions = _groupMappingOptions.CurrentValue.DirectoryGroupMappings
+            .ToDictionary(
+                kpv => new DirectoryGuid(Guid.Parse(kpv.DirectoryGroup)),
+                kpv => kpv.SignUpGroups.ToArray()
+            );
+
+        groupsMappingOptions.TryGetValue(group.GroupGuid, out var groupsToAdd);
 
         var groupsChanges = new SignUpGroupChanges()
         {

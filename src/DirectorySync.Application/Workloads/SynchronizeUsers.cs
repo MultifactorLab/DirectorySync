@@ -13,13 +13,12 @@ namespace DirectorySync.Application.Workloads;
 /// </summary>
 public interface ISynchronizeUsers
 {
-    Task ExecuteAsync(Guid groupGuid, CancellationToken token = default);
+    Task ExecuteAsync(Guid groupGuid, Guid[] trackingGroups, CancellationToken token = default);
 }
 
 internal class SynchronizeUsers : ISynchronizeUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
-    private readonly TrackingGroupsMapping _trackingGroupsMapping;
     private readonly IGetReferenceGroup _getReferenceGroup;
     private readonly IGetReferenceUser _getReferenceUser;
     private readonly IApplicationStorage _storage;
@@ -29,7 +28,6 @@ internal class SynchronizeUsers : ISynchronizeUsers
     private readonly ILogger<SynchronizeUsers> _logger;
 
     public SynchronizeUsers(RequiredLdapAttributes requiredLdapAttributes,
-        TrackingGroupsMapping trackingGroupsMapping,
         IGetReferenceGroup getReferenceGroup,
         IGetReferenceUser getReferenceUser,
         IApplicationStorage storage,
@@ -39,7 +37,6 @@ internal class SynchronizeUsers : ISynchronizeUsers
         ILogger<SynchronizeUsers> logger)
     {
         _requiredLdapAttributes = requiredLdapAttributes;
-        _trackingGroupsMapping = trackingGroupsMapping;
         _getReferenceGroup = getReferenceGroup;
         _getReferenceUser = getReferenceUser;
         _storage = storage;
@@ -49,7 +46,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         _logger = logger;
     }
 
-    public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
+    public async Task ExecuteAsync(Guid groupGuid, Guid[] trackingGroups, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogInformation(ApplicationEvent.StartUserSynchronization, "Start users synchronization for group {group}", groupGuid);
@@ -70,17 +67,13 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
-        var groupMappings = _trackingGroupsMapping.GetGroupsMapping();
-
         var modifiedMembers = new List<ReferenceDirectoryUserUpdateModel>();
 
         if (ReferenceGroupHasDifferentCountOfMembers(referenceGroup, cachedGroup))
         {
             _logger.LogDebug("Reference and cached groups are different");
             _logger.LogDebug("Searching for deleted members...");
-
-            var trackingGroups = groupMappings.Select(c => c.Key);
-            var allGroups = _storage.FindGroups(trackingGroups).ToArray();
+            var allGroups = _storage.FindGroups(trackingGroups.Select(c => new DirectoryGuid(c))).ToArray();
             var memberGroupMap = BuildMemberGroupMap(allGroups, cachedGroup);
 
             var groupUnlinkedGuids = GetUnlinkedGuids(referenceGroup, cachedGroup, memberGroupMap);
@@ -102,7 +95,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         }
 
         _logger.LogDebug("Found modified users: {Modified}", modifiedMembers);
-        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers.ToArray(), groupMappings, token);
+        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers.ToArray(), token);
 
         var updateModifiedTimer = _codeTimer.Start("Update Cached Group: Modified Users");
         _storage.UpdateGroup(cachedGroup);

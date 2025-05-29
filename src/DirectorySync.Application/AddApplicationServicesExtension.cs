@@ -27,8 +27,6 @@ public static class AddApplicationServicesExtension
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();
 
-        builder.Services.AddTransient<TrackingGroupsMapping>();
-
         builder.Services.AddOptions<GroupMappingsOptions>()
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();

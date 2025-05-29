@@ -15,9 +15,9 @@ internal class NewUserDto
 {
     public string Identity { get; }
     public UserPropertyDto[] Properties { get; }
-    public SignUpGroupChangesDto SignUpGroupChanges { get; }
+    public string[] SignUpGroupsToAdd { get; }
 
-    public NewUserDto(string identity, IEnumerable<UserPropertyDto> properties, SignUpGroupChangesDto signUpGroupChanges)
+    public NewUserDto(string identity, IEnumerable<UserPropertyDto> properties, string[] signUpGroupsToAdd)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
@@ -28,6 +28,6 @@ internal class NewUserDto
 
         Identity = identity;
         Properties = properties.ToArray();
-        SignUpGroupChanges = signUpGroupChanges;
+        SignUpGroupsToAdd = signUpGroupsToAdd;
     }
 }

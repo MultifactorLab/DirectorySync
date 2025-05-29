@@ -39,7 +39,7 @@ internal class MultifactorApi : IMultifactorApi
         var dtos = bucket.NewUsers
             .Select(x => new NewUserDto(x.Identity, 
             x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
-            new SignUpGroupChangesDto(x.SignUpGroupChanges.SignUpGroupsToAdd, x.SignUpGroupChanges.SignUpGroupsToRemove)));
+            x.SignUpGroupChanges.SignUpGroupsToAdd));
         var dto = new CreateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);
@@ -92,7 +92,8 @@ internal class MultifactorApi : IMultifactorApi
             .Select(x => new ModifiedUserDto(
                 x.Identity,
                 x.Properties.Select(s => new UserPropertyDto(s.Name, s.Value)),
-                new SignUpGroupChangesDto(x.SignUpGroupChanges.SignUpGroupsToAdd, x.SignUpGroupChanges.SignUpGroupsToRemove)));
+                x.SignUpGroupChanges.SignUpGroupsToAdd,
+                x.SignUpGroupChanges.SignUpGroupsToRemove));
         var dto = new UpdateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);

@@ -18,7 +18,6 @@ public interface IScanUsers
 internal class ScanUsers : IScanUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
-    private readonly TrackingGroupsMapping _trackingGroupsMapping;
     private readonly IGetReferenceGroup _getReferenceGroup;
     private readonly IApplicationStorage _storage;
     private readonly Creator _creator;
@@ -26,7 +25,6 @@ internal class ScanUsers : IScanUsers
     private readonly ILogger<ScanUsers> _logger;
 
     public ScanUsers(RequiredLdapAttributes requiredLdapAttributes,
-        TrackingGroupsMapping trackingGroupsMapping,
         IGetReferenceGroup getReferenceGroup,
         IApplicationStorage storage,
         Creator creator,
@@ -34,7 +32,6 @@ internal class ScanUsers : IScanUsers
         ILogger<ScanUsers> logger)
     {
         _requiredLdapAttributes = requiredLdapAttributes;
-        _trackingGroupsMapping = trackingGroupsMapping;
         _getReferenceGroup = getReferenceGroup;
         _storage = storage;
         _creator = creator;
@@ -76,9 +73,9 @@ internal class ScanUsers : IScanUsers
             _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
             return;
         }
-        var groupMappings = _trackingGroupsMapping.GetGroupsMapping();
+        
         _logger.LogDebug("Found new users: {New}", newDirectoryUsers.Length);
-        await _creator.CreateManyAsync(cachedGroup, newDirectoryUsers, groupMappings, token);
+        await _creator.CreateManyAsync(cachedGroup, newDirectoryUsers, token);
 
         var cacheGroupTimer = _timer.Start("Cache Group");
         _storage.UpdateGroup(cachedGroup);

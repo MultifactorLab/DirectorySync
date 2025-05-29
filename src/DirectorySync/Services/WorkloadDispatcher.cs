@@ -117,14 +117,17 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private async Task SyncUsers()
     {
         _logger.LogDebug("Start of user synchronization");
-                    
-        foreach (var guid in _syncOptions.CurrentValue.Groups)
+
+        var trackingGroups = _syncOptions.CurrentValue.Groups;
+
+
+        foreach (var guid in trackingGroups)
         {
             var timer = _timer.Start($"Group {guid} Sync: Total");
 
             try
             {
-                await _synchronizeUsers.ExecuteAsync(guid, _cts.Token);
+                await _synchronizeUsers.ExecuteAsync(guid, trackingGroups, _cts.Token);
             }
             catch (Exception ex)
             {
