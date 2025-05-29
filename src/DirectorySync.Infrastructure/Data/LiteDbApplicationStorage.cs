@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -32,11 +33,13 @@ internal class LiteDbApplicationStorage : IApplicationStorage
         return directoryGroup;
     }
 
-    public IEnumerable<CachedDirectoryGroup> GetAllGroups()
+    public IEnumerable<CachedDirectoryGroup> FindGroups(IEnumerable<DirectoryGuid> ids)
     {
         var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
 
-        var groups = collection.FindAll();
+        var idSet = new HashSet<Guid>(ids.Select(x => x.Value));
+        var groups = collection.Find(c => idSet.Contains(c.Id));
+
         if (groups is null)
         {
             return Enumerable.Empty<CachedDirectoryGroup>();

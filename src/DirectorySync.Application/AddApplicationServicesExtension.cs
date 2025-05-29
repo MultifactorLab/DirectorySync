@@ -1,8 +1,6 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Workloads;
-using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig.Dto;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -29,19 +27,12 @@ public static class AddApplicationServicesExtension
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();
 
-        builder.Services.AddOptions<GroupMappingsOptions>()
-            .Configure<IConfiguration>((options, config) =>
-            {
-                var dtos = config.GetSection("Sync:DirectoryGroupMappings").Get<GroupMappingsDto[]>();
+        builder.Services.AddTransient<TrackingGroupsMapping>();
 
-                options.DirectoryGroupMappings = dtos?
-                    .ToDictionary(
-                        x => x.DirectoryGroup,
-                        x => x.SignUpGroups,
-                        StringComparer.OrdinalIgnoreCase
-                    ) ?? new();
-            })
+        builder.Services.AddOptions<GroupMappingsOptions>()
+            .BindConfiguration("Sync")
             .ValidateDataAnnotations();
+
 
         builder.AddCodeTimer("Logging");
     }

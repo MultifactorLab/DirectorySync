@@ -80,7 +80,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
         SetData(config, initial);
         Remember(config);
-
+        
         OnReload();
         CloudInteractionLogger.Information("Cloud settings was changed");
     }
@@ -162,42 +162,22 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
     private void CheckGroups(CloudConfigDto config)
     {
-        var r = new Regex("^Sync:DirectoryGroupMappings:\\d$+");
+        var r = new Regex("^Sync:Groups:\\d$+");
         var currentKeys = Data.Keys
             .Where(x => r.IsMatch(x))
             .ToArray();
 
-        if (currentKeys.Length != config.DirectoryGroupMappings.Length)
+        var directoryGroups = config.DirectoryGroupMappings.Select(d => d.DirectoryGroup).ToArray();
+
+        var currentValues = Data
+            .Where(x => currentKeys.Contains(x.Key))
+            .Select(x => x.Value)
+            .OrderByDescending(x => x)
+            .ToArray();
+
+        if (currentValues.Any(x => !directoryGroups.Contains(x, StringComparer.OrdinalIgnoreCase)))
         {
             InconstistentEx();
-        }
-
-        for (int i = 0; i < currentKeys.Length; i++)
-        {
-            var key = currentKeys[i];
-            var index = int.Parse(key.Split(':')[2]);
-            var expected = config.DirectoryGroupMappings[index];
-
-            var directoryGroup = Data[key];
-
-            if (!string.Equals(directoryGroup, expected.DirectoryGroup, StringComparison.OrdinalIgnoreCase))
-            {
-                InconstistentEx();
-            }
-
-            var signUpGroups = new List<string>();
-            int j = 0;
-            while (Data.TryGetValue($"{key}:SignUpGroups:{j}", out var group))
-            {
-                signUpGroups.Add(group);
-                j++;
-            }
-
-            if (signUpGroups.Count != expected.SignUpGroups.Length ||
-                !signUpGroups.SequenceEqual(expected.SignUpGroups, StringComparer.OrdinalIgnoreCase))
-            {
-                InconstistentEx();
-            }
         }
     }
 

@@ -17,27 +17,25 @@ internal sealed class Updater
     private readonly IMultifactorApi _api;
     private readonly IApplicationStorage _storage;
     private readonly CodeTimer _codeTimer;
-    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
-    private readonly IOptionsMonitor<GroupMappingsOptions> _groupsMappingOptions;
     private readonly UserProcessingOptions _options;
+    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
 
     public Updater(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
-        IOptionsMonitor<GroupMappingsOptions> groupsMappingOptions)
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions)
     {
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
-        _attrMappingOptions = attrMappingOptions;
         _options = options.Value;
-        _groupsMappingOptions = groupsMappingOptions;
+        _attrMappingOptions = attrMappingOptions;
     }
 
     public async Task UpdateManyAsync(CachedDirectoryGroup group,
         ReferenceDirectoryUserUpdateModel[] modified,
+        Dictionary<DirectoryGuid, string[]> groupsMapping,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -50,8 +48,7 @@ internal sealed class Updater
 
         var options = _attrMappingOptions.CurrentValue;
 
-        _groupsMappingOptions.CurrentValue.DirectoryGroupMappings
-                    .TryGetValue(group.GroupGuid.Value.ToString(), out var groupsToRemove);
+        groupsMapping.TryGetValue(group.GroupGuid, out var groupsToRemove);
 
         var skip = 0;
         while (true)
@@ -59,15 +56,18 @@ internal sealed class Updater
             var bucket = new ModifiedUsersBucket();
             foreach (var member in modified.Skip(skip).Take(_options.UpdatingBatchSize))
             {
-                var cachedMember = group.Members.First(x => x.Id == member.Guid);
+                var cachedMember = group.Members.FirstOrDefault(x => x.Id == member.Guid);
 
-                var groupsChanges = member.IsUnlinkedFromGroup ?
-                    GetUserSignUpGroupChanges(member.UserGroupIds, groupsToRemove)
+                if (cachedMember != null)
+                {
+                    var groupsChanges = member.IsUnlinkedFromGroup ?
+                    GetUserSignUpGroupChanges(member.UserGroupIds, groupsToRemove, groupsMapping)
                     : new SignUpGroupChanges();
 
-                var user = bucket.Add(cachedMember.Id, cachedMember.Identity, groupsChanges);
+                    var user = bucket.Add(cachedMember.Id, cachedMember.Identity, groupsChanges);
 
-                SetProperties(options, member, user);
+                    SetProperties(options, member, user);
+                }
             }
 
             if (bucket.Count == 0)
@@ -84,7 +84,9 @@ internal sealed class Updater
         }
     }
 
-    private SignUpGroupChanges GetUserSignUpGroupChanges(ReadOnlyCollection<DirectoryGuid> userGroups, string[] groupsToRemove)
+    private SignUpGroupChanges GetUserSignUpGroupChanges(ReadOnlyCollection<DirectoryGuid> userGroups, 
+        string[] groupsToRemove,
+        Dictionary<DirectoryGuid, string[]> groupsMapping)
     {
         if (groupsToRemove.Length == 0 || userGroups.Count == 0)
         {
@@ -95,8 +97,7 @@ internal sealed class Updater
 
         foreach (var group in userGroups)
         {
-            if (_groupsMappingOptions.CurrentValue.DirectoryGroupMappings
-                    .TryGetValue(group.Value.ToString(), out var signUpGroups))
+            if (groupsMapping.TryGetValue(group, out var signUpGroups))
             {
                 userSignUpGroups.AddRange(signUpGroups);
             }

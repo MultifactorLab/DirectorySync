@@ -4,6 +4,7 @@ using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
+using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Options;
 
@@ -16,25 +17,23 @@ internal sealed class Creator
     private readonly CodeTimer _codeTimer;
     private readonly UserProcessingOptions _options;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
-    private readonly IOptionsMonitor<GroupMappingsOptions> _groupsMappingOptions;
 
     public Creator(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
-        IOptionsMonitor<GroupMappingsOptions> groupsMappingOptions)
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions)
     {
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
         _options = options.Value;
         _attrMappingOptions = attrMappingOptions;
-        _groupsMappingOptions = groupsMappingOptions;
     }
 
     public async Task CreateManyAsync(CachedDirectoryGroup group,
         ReferenceDirectoryUser[] created,
+        Dictionary<DirectoryGuid, string[]> groupMappings,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -47,8 +46,7 @@ internal sealed class Creator
 
         var options = _attrMappingOptions.CurrentValue;
 
-        _groupsMappingOptions.CurrentValue.DirectoryGroupMappings
-                    .TryGetValue(group.GroupGuid.Value.ToString(), out var groupsToAdd);
+        groupMappings.TryGetValue(group.GroupGuid, out var groupsToAdd);
 
         var groupsChanges = new SignUpGroupChanges()
         {

@@ -1,10 +1,9 @@
 ﻿using DirectorySync.Application.Extensions;
-using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+
 
 namespace DirectorySync.Application.Workloads;
 
@@ -19,30 +18,27 @@ public interface IScanUsers
 internal class ScanUsers : IScanUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
+    private readonly TrackingGroupsMapping _trackingGroupsMapping;
     private readonly IGetReferenceGroup _getReferenceGroup;
     private readonly IApplicationStorage _storage;
     private readonly Creator _creator;
-    private readonly IMultifactorApi _api;
     private readonly CodeTimer _timer;
-    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
     private readonly ILogger<ScanUsers> _logger;
 
     public ScanUsers(RequiredLdapAttributes requiredLdapAttributes,
+        TrackingGroupsMapping trackingGroupsMapping,
         IGetReferenceGroup getReferenceGroup,
         IApplicationStorage storage,
         Creator creator,
-        IMultifactorApi api,
         CodeTimer timer,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
         ILogger<ScanUsers> logger)
     {
         _requiredLdapAttributes = requiredLdapAttributes;
+        _trackingGroupsMapping = trackingGroupsMapping;
         _getReferenceGroup = getReferenceGroup;
         _storage = storage;
         _creator = creator;
-        _api = api;
         _timer = timer;
-        _attrMappingOptions = attrMappingOptions;
         _logger = logger;
     }
 
@@ -50,7 +46,7 @@ internal class ScanUsers : IScanUsers
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogInformation(ApplicationEvent.StartUserScanning, "Start users scanning for group {group}", groupGuid);
-        
+
         var names = _requiredLdapAttributes.GetNames().ToArray();
         if (names.Length == 0)
         {
@@ -80,9 +76,9 @@ internal class ScanUsers : IScanUsers
             _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete users scanning for group {group}", groupGuid);
             return;
         }
-
+        var groupMappings = _trackingGroupsMapping.GetGroupsMapping();
         _logger.LogDebug("Found new users: {New}", newDirectoryUsers.Length);
-        await _creator.CreateManyAsync(cachedGroup, newDirectoryUsers);
+        await _creator.CreateManyAsync(cachedGroup, newDirectoryUsers, groupMappings, token);
 
         var cacheGroupTimer = _timer.Start("Cache Group");
         _storage.UpdateGroup(cachedGroup);

@@ -19,6 +19,7 @@ public interface ISynchronizeUsers
 internal class SynchronizeUsers : ISynchronizeUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
+    private readonly TrackingGroupsMapping _trackingGroupsMapping;
     private readonly IGetReferenceGroup _getReferenceGroup;
     private readonly IGetReferenceUser _getReferenceUser;
     private readonly IApplicationStorage _storage;
@@ -28,6 +29,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
     private readonly ILogger<SynchronizeUsers> _logger;
 
     public SynchronizeUsers(RequiredLdapAttributes requiredLdapAttributes,
+        TrackingGroupsMapping trackingGroupsMapping,
         IGetReferenceGroup getReferenceGroup,
         IGetReferenceUser getReferenceUser,
         IApplicationStorage storage,
@@ -37,6 +39,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         ILogger<SynchronizeUsers> logger)
     {
         _requiredLdapAttributes = requiredLdapAttributes;
+        _trackingGroupsMapping = trackingGroupsMapping;
         _getReferenceGroup = getReferenceGroup;
         _getReferenceUser = getReferenceUser;
         _storage = storage;
@@ -67,6 +70,8 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
+        var groupMappings = _trackingGroupsMapping.GetGroupsMapping();
+
         var modifiedMembers = new List<ReferenceDirectoryUserUpdateModel>();
 
         if (ReferenceGroupHasDifferentCountOfMembers(referenceGroup, cachedGroup))
@@ -74,7 +79,8 @@ internal class SynchronizeUsers : ISynchronizeUsers
             _logger.LogDebug("Reference and cached groups are different");
             _logger.LogDebug("Searching for deleted members...");
 
-            var allGroups = _storage.GetAllGroups().ToArray();
+            var trackingGroups = groupMappings.Select(c => c.Key);
+            var allGroups = _storage.FindGroups(trackingGroups).ToArray();
             var memberGroupMap = BuildMemberGroupMap(allGroups, cachedGroup);
 
             var groupUnlinkedGuids = GetUnlinkedGuids(referenceGroup, cachedGroup, memberGroupMap);
@@ -96,7 +102,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         }
 
         _logger.LogDebug("Found modified users: {Modified}", modifiedMembers);
-        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers.ToArray(), token);
+        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers.ToArray(), groupMappings, token);
 
         var updateModifiedTimer = _codeTimer.Start("Update Cached Group: Modified Users");
         _storage.UpdateGroup(cachedGroup);

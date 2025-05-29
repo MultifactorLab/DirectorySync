@@ -1,8 +1,8 @@
-﻿
-namespace DirectorySync.Application.Integrations.Multifactor
+﻿using DirectorySync.Application.Integrations.Multifactor.Models;
+
+namespace DirectorySync.Application.Integrations.Multifactor;
+
+internal class GroupMappingsOptions
 {
-    internal class GroupMappingsOptions
-    {
-        public Dictionary<string, string[]> DirectoryGroupMappings { get; set; }
-    }
+    public GroupMapping[] DirectoryGroupMappings { get; set; }
 }
