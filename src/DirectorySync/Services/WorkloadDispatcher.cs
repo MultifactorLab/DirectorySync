@@ -47,7 +47,16 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
 
         var trackingGroups = _syncOptions.CurrentValue.Groups;
 
-        _synchronizeCloud.ExecuteAsync(trackingGroups, cancellationToken).Wait();
+        try
+        {
+            _logger.LogDebug("Start of cloud synchronization");
+            _synchronizeCloud.ExecuteAsync(trackingGroups, cancellationToken).Wait();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("End of cloud synchronization");
+        }
+        
 
         SetTimers(_syncOptions.CurrentValue);
         _task = Task.Run(ProcessWorkloads, _cts.Token);

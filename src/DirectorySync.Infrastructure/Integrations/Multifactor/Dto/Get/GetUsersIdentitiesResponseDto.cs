@@ -1,5 +1,4 @@
-﻿
-using DirectorySync.Application.Integrations.Multifactor.Enums;
+﻿using DirectorySync.Application.Integrations.Multifactor.Enums;
 
 namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Get;
 

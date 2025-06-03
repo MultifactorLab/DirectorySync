@@ -57,26 +57,24 @@ internal class SynchronizeCloud : ISynchronizeCloud
             return;
         }
 
-        _logger.LogDebug("Start of cloud synchronization");
-
-        var cloudIdentities = (await _multifactorApi.GetUsersIdentitesAsync());
+        var cloudIdentities = await _multifactorApi.GetUsersIdentitesAsync();
         _logger.LogDebug("Fetched {Count} identities from cloud with user name format {UserNameFormat}", 
             cloudIdentities.Identities.Count,
             cloudIdentities.UserNameFormat);
 
-        var requiredAttributes = _requiredLdapAttributes.GetNames().ToArray();
+        var requiredAttributes = _requiredLdapAttributes.GetNames();
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
 
         var referenceGroups = GetTrackingReferenceGroups(trackingGroups, requiredAttributes).ToArray();
         _logger.LogDebug("Retrieved {Count} reference groups for tracking", referenceGroups.Length);
 
-        if (!referenceGroups.Any())
+        if (referenceGroups.Length == 0)
         {
             _logger.LogWarning("No reference groups found for given tracking groups");
             return;
         }
-        var attrOptions = _attrMappingOptions.CurrentValue;
 
+        var attrOptions = _attrMappingOptions.CurrentValue;
         var memberGroupMap = ReferenceMembershipModel.BuildMemberGroupMap(referenceGroups, attrOptions, cloudIdentities.UserNameFormat);
 
         var deletedMembers = GetDeletedMembersIdentities(cloudIdentities.Identities, memberGroupMap).ToArray();
