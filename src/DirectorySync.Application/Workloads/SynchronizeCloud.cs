@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Models;
 using DirectorySync.Application.Ports;
@@ -82,18 +84,22 @@ internal class SynchronizeCloud : ISynchronizeCloud
 
         await HandleDeletedMembers(deletedMembers, cancellationToken);
     }
-
-    private IEnumerable<ReferenceDirectoryGroup> GetTrackingReferenceGroups(Guid[] trackingGroups, string[] requiredAttributes)
+    private IReadOnlyCollection<ReferenceDirectoryGroup> GetTrackingReferenceGroups(Guid[] trackingGroups, string[] requiredAttributes)
     {
-        foreach (var trackingGroup in trackingGroups)
+        var bag = new ConcurrentBag<ReferenceDirectoryGroup>();
+
+        Parallel.ForEach(trackingGroups, trackingGroup =>
         {
             var referenceGroup = _getReferenceGroup.Execute(new DirectoryGuid(trackingGroup), requiredAttributes);
             if (referenceGroup is null)
             {
                 throw new InvalidOperationException($"Reference group not found for tracking group {trackingGroup}");
             }
-            yield return referenceGroup;
-        }
+
+            bag.Add(referenceGroup);
+        });
+
+        return bag;
     }
 
     private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<MultifactorIdentity> cloudIdentities, ReferenceMembershipModel membership)
