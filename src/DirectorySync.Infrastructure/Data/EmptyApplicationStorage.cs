@@ -10,4 +10,6 @@ internal class EmptyApplicationStorage : IApplicationStorage
     public CachedDirectoryGroup? FindGroup(DirectoryGuid id) => default;
     public void InsertGroup(CachedDirectoryGroup group) { }
     public void UpdateGroup(CachedDirectoryGroup group) { }
+
+    public bool IsGroupCollectionExists() => false;
 }
