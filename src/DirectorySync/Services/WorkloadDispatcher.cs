@@ -11,6 +11,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private readonly OrderBoard _board;
     private readonly ISynchronizeUsers _synchronizeUsers;
     private readonly IScanUsers _scanUsers;
+    private readonly ISynchronizeCloud _synchronizeCloud;
     private readonly CodeTimer _timer;
     private readonly IOptionsMonitor<SyncOptions> _syncOptions;
     private readonly ILogger<WorkloadDispatcher> _logger;
@@ -24,12 +25,14 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         IOptionsMonitor<SyncOptions> syncOptions,
         ISynchronizeUsers synchronizeUsers,
         IScanUsers scanUsers,
+        ISynchronizeCloud synchronizeCloud,
         CodeTimer timer,
         ILogger<WorkloadDispatcher> logger)
     {
         _board = board;
         _synchronizeUsers = synchronizeUsers;
         _scanUsers = scanUsers;
+        _synchronizeCloud = synchronizeCloud;
         _timer = timer;
         _logger = logger;
         _syncOptions = syncOptions;
@@ -41,6 +44,10 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         {
             return Task.FromCanceled(cancellationToken);
         }
+
+        var trackingGroups = _syncOptions.CurrentValue.Groups;
+
+        _synchronizeCloud.ExecuteAsync(trackingGroups, cancellationToken).Wait();
 
         SetTimers(_syncOptions.CurrentValue);
         _task = Task.Run(ProcessWorkloads, _cts.Token);
@@ -119,7 +126,6 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         _logger.LogDebug("Start of user synchronization");
 
         var trackingGroups = _syncOptions.CurrentValue.Groups;
-
 
         foreach (var guid in trackingGroups)
         {

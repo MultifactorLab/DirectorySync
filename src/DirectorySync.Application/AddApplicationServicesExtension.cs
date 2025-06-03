@@ -20,6 +20,7 @@ public static class AddApplicationServicesExtension
 
         builder.Services.AddTransient<ISynchronizeUsers, SynchronizeUsers>();
         builder.Services.AddTransient<IScanUsers, ScanUsers>();
+        builder.Services.AddTransient<ISynchronizeCloud, SynchronizeCloud>();
 
         builder.Services.AddTransient<RequiredLdapAttributes>();
 

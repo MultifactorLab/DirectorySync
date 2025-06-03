@@ -71,6 +71,40 @@ internal class Deleter
         }
     }
 
+    public async Task DeleteManyAsync(string[] deletedIdentities,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(deletedIdentities);
+
+        if (deletedIdentities.Length == 0)
+        {
+            return;
+        }
+
+        var skip = 0;
+        while (true)
+        {
+            var bucket = new DeletedUsersBucket();
+            foreach (var identetyToDelete in deletedIdentities.Skip(skip).Take(_options.DeletingBatchSize))
+            {
+                bucket.Add(new DirectoryGuid(Guid.NewGuid()), identetyToDelete);
+            }
+
+            if (bucket.Count == 0)
+            {
+                break;
+            }
+
+            _logger.LogDebug("Trying to delete users: {Portion}", bucket.Count);
+
+            var deleteApiTimer = _codeTimer.Start("Api Request: Delete Users");
+            var res = await _api.DeleteManyAsync(bucket, ct);
+            deleteApiTimer.Stop();
+
+            skip += bucket.Count;
+        }
+    }
+
     private void UpdateCachedGroup(CachedDirectoryGroup group, IDeleteUsersOperationResult res)
     {
         foreach (var user in res.DeletedUsers)
