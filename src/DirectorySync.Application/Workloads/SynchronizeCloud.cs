@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Models;
 using DirectorySync.Application.Ports;
