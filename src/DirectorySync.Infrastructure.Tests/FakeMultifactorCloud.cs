@@ -14,6 +14,18 @@ internal static class FakeMultifactorCloud
     public static class ClientMock
     {
         /// <summary>
+        /// GET https://api.multifactor.dev/ds/users
+        /// </summary>
+        /// <returns></returns>
+        public static HttpClient Get_UsersIdentities(object? responseBody = null,
+            HttpStatusCode statusCode = HttpStatusCode.OK)
+        {
+            return GetHttpClientMock(handler =>
+            {
+                handler.SetupRequest(HttpMethod.Get, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
+            });
+        }
+        /// <summary>
         /// POST https://api.multifactor.dev/ds/users
         /// </summary>
         /// <returns></returns>
