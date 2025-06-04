@@ -54,7 +54,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogDebug("End of cloud synchronization");
+            _logger.LogError(ApplicationEvent.CloudSynchronizationServiceError, "End of cloud synchronization. Details: {0}", ex.Message);
         }
         
 

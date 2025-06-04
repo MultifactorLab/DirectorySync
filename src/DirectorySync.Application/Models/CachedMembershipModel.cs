@@ -6,19 +6,18 @@ namespace DirectorySync.Application.Models;
 
 internal class CachedMembershipModel
 {
-    public ReadOnlyDictionary<DirectoryGuid, List<DirectoryGuid>> MemborshipMap { get; private set; }
+    public ReadOnlyDictionary<DirectoryGuid, DirectoryGuid[]> MemborshipMap { get; private set; }
 
     public static CachedMembershipModel BuildMemberGroupMap(IEnumerable<CachedDirectoryGroup> groups)
     {
         var map = groups
             .SelectMany(g => g.Members.Select(m => (UserId: m.Id, GroupId: g.GroupGuid)))
             .GroupBy(x => x.UserId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.GroupId).ToList());
+            .ToDictionary(g => g.Key, g => g.Select(x => x.GroupId).ToArray());
 
         return new CachedMembershipModel()
         {
-            MemborshipMap = new ReadOnlyDictionary<DirectoryGuid, List<DirectoryGuid>>(map)
+            MemborshipMap = new ReadOnlyDictionary<DirectoryGuid, DirectoryGuid[]>(map)
         };
     }
 }
-

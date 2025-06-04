@@ -1,7 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Models;
+using DirectorySync.Application.Integrations.Multifactor.Enums;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -47,6 +48,7 @@ internal class SynchronizeCloud : ISynchronizeCloud
         if (trackingGroups is null || trackingGroups.Length == 0)
         {
             _logger.LogDebug("No tracking groups provided, skipping synchronization");
+            throw new ApplicationException("No tracking groups provided");
             return;
         }
 
@@ -58,7 +60,7 @@ internal class SynchronizeCloud : ISynchronizeCloud
             return;
         }
 
-        var cloudIdentities = await _multifactorApi.GetUsersIdentitesAsync();
+        var cloudIdentities = await _multifactorApi.GetUsersIdentitesAsync(cancellationToken);
         _logger.LogDebug("Fetched {Count} identities from cloud with user name format {UserNameFormat}", 
             cloudIdentities.Identities.Count,
             cloudIdentities.UserNameFormat);
@@ -76,17 +78,18 @@ internal class SynchronizeCloud : ISynchronizeCloud
         }
 
         var attrOptions = _attrMappingOptions.CurrentValue;
-        var memberGroupMap = ReferenceMembershipModel.BuildMemberGroupMap(referenceGroups, attrOptions, cloudIdentities.UserNameFormat);
+        var refIdentitiesMap = GetReferenceIdentitiesMap(referenceGroups, attrOptions, cloudIdentities.UserNameFormat);
 
-        var deletedMembers = GetDeletedMembersIdentities(cloudIdentities.Identities, memberGroupMap).ToArray();
+        var deletedMembers = GetDeletedMembersIdentities(cloudIdentities.Identities, refIdentitiesMap).ToArray();
         _logger.LogInformation("Identified {Count} deleted members to handle", deletedMembers.Length);
 
         await HandleDeletedMembers(deletedMembers, cancellationToken);
     }
+    
     private IReadOnlyCollection<ReferenceDirectoryGroup> GetTrackingReferenceGroups(Guid[] trackingGroups, string[] requiredAttributes)
     {
         var bag = new ConcurrentBag<ReferenceDirectoryGroup>();
-
+        
         Parallel.ForEach(trackingGroups, trackingGroup =>
         {
             var referenceGroup = _getReferenceGroup.Execute(new DirectoryGuid(trackingGroup), requiredAttributes);
@@ -101,15 +104,26 @@ internal class SynchronizeCloud : ISynchronizeCloud
         return bag;
     }
 
-    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<MultifactorIdentity> cloudIdentities, ReferenceMembershipModel membership)
+    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<MultifactorIdentity> cloudIdentities, HashSet<MultifactorIdentity> refIdentitiesMap)
     {
         foreach (var cloudIdentity in cloudIdentities)
         {
-            if (!membership.MemborshipMap.ContainsKey(cloudIdentity))
+            if (!refIdentitiesMap.Contains(cloudIdentity))
             {
                 yield return cloudIdentity;
             }
         }
+    }
+
+    private HashSet<MultifactorIdentity> GetReferenceIdentitiesMap(IEnumerable<ReferenceDirectoryGroup> groups,
+        LdapAttributeMappingOptions options,
+        UserNameFormat userNameFormat)
+    {
+        return groups
+            .SelectMany(g => g.Members
+            .Select(m => FormatIdentity(m.Attributes.GetSingleOrDefault(options.IdentityAttribute), userNameFormat))
+            .Where(x => !string.IsNullOrWhiteSpace(x)))
+            .ToHashSet();
     }
 
     private async Task HandleDeletedMembers(string[] deletedIdentites, CancellationToken cancellationToken = default)
@@ -123,5 +137,15 @@ internal class SynchronizeCloud : ISynchronizeCloud
         _logger.LogDebug("Found deleted users: {Deleted}", deletedIdentites.Length);
         await _deleter.DeleteManyAsync(deletedIdentites, cancellationToken);
         _logger.LogDebug("Deleted members are synchronized");
+    }
+
+    private static MultifactorIdentity FormatIdentity(string identity, UserNameFormat userNameFormat)
+    {
+        return userNameFormat switch
+        {
+            UserNameFormat.Identity => MultifactorIdentity.FromRawString(identity),
+            UserNameFormat.ActiveDirectory => MultifactorIdentity.FromLdapFormat(identity),
+            _ => throw new NotImplementedException(userNameFormat.ToString())
+        };
     }
 }

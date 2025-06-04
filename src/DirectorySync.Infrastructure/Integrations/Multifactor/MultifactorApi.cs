@@ -34,20 +34,19 @@ internal class MultifactorApi : IMultifactorApi
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
         var response = await adapter.GetAsync<GetUsersIdentitiesResponseDto>("ds/users");
-        var result = new GetUsersIdentitiesOperationResult();
+        GetUsersIdentitiesOperationResult result;
         if (!response.IsSuccessStatusCode)
         {
             LogUnseccessfulResponse(response);
-            return result;
+            return new GetUsersIdentitiesOperationResult();
         }
         if (response.Model is null)
         {
             _logger.LogWarning("Response model is null");
-            return result;
+            return new GetUsersIdentitiesOperationResult();
         }
-        result.Add(response.Model.Identities);
-        result.SetUserNameFormat(response.Model.UserNameFormat);
-        return result;
+        
+        return new GetUsersIdentitiesOperationResult(response.Model.Identities, response.Model.UserNameFormat);
     }
 
     public async Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken ct = default)

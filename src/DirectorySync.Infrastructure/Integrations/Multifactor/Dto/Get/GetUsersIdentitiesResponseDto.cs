@@ -6,6 +6,5 @@ internal class GetUsersIdentitiesResponseDto
 {
     public string[] Identities { get; init; } = [];
     public UserNameFormat UserNameFormat { get; init; } = UserNameFormat.ActiveDirectory;
-
 }
 

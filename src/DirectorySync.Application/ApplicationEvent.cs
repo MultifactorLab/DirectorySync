@@ -18,4 +18,9 @@ public static class ApplicationEvent
     public const ushort CompleteUsersSynchronization = 11003;
     public const ushort UserSynchronizationServiceError = 11050;
     public const ushort UserSynchronizationServiceStopping = 11999;
+    
+    public const ushort StartCloudSynchronizationService = 12002;
+    public const ushort CloudSynchronizationServiceStopped = 12003;
+    public const ushort CloudSynchronizationServiceError = 12003;
+    public const ushort CloudSynchronizationServiceStopping = 12999;
 }

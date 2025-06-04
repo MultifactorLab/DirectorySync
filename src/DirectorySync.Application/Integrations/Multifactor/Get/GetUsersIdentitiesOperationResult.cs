@@ -11,47 +11,17 @@ public interface IGetUsersIdentitiesOperationResult
 
 public class GetUsersIdentitiesOperationResult : IGetUsersIdentitiesOperationResult
 {
-    private readonly HashSet<MultifactorIdentity> _identites = new();
-    public ReadOnlyCollection<MultifactorIdentity> Identities => new(_identites.ToArray());
+    public ReadOnlyCollection<MultifactorIdentity> Identities { get; } = new(Array.Empty<MultifactorIdentity>());
+    public UserNameFormat UserNameFormat { get; } = UserNameFormat.ActiveDirectory;
 
-    private UserNameFormat _userNameFormat = UserNameFormat.ActiveDirectory;
-    public UserNameFormat UserNameFormat => _userNameFormat;
-
-    public GetUsersIdentitiesOperationResult Add(string identity)
+    public GetUsersIdentitiesOperationResult() { }
+    
+    public GetUsersIdentitiesOperationResult(IEnumerable<string> identities, UserNameFormat userNameFormat)
     {
-        var mfIdentity = FormatIdentity(identity, _userNameFormat);
-        _identites.Add(mfIdentity);
-        return this;
-    }
-
-    public GetUsersIdentitiesOperationResult Add(IEnumerable<string> identities)
-    {
-        var mfIdentities = identities
-            .Select(identity => FormatIdentity(identity, _userNameFormat))
-            .Where(mfIdentity => mfIdentity is not null);
-
-        foreach (var identity in mfIdentities)
-        {
-
-            _identites.Add(identity);
-        }
-
-        return this;
-    }
-
-    public GetUsersIdentitiesOperationResult SetUserNameFormat(UserNameFormat userNameFormat)
-    {
-        _userNameFormat = userNameFormat;
-        return this;
-    }
-
-    private MultifactorIdentity FormatIdentity(string identity, UserNameFormat userNameFormat)
-    {
-        return userNameFormat switch
-        {
-            UserNameFormat.Identity => MultifactorIdentity.FromRawString(identity),
-            UserNameFormat.ActiveDirectory => MultifactorIdentity.FromLdapFormat(identity),
-            _ => throw new NotImplementedException(userNameFormat.ToString())
-        };
+        ArgumentNullException.ThrowIfNull(identities);
+        ArgumentNullException.ThrowIfNull(userNameFormat);
+        
+        Identities = new ReadOnlyCollection<MultifactorIdentity>(identities.Select(c => new MultifactorIdentity(c)).ToArray());
+        UserNameFormat = userNameFormat;
     }
 }

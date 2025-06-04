@@ -76,7 +76,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
             var allGroups = _storage.FindGroups(trackingGroups.Select(c => new DirectoryGuid(c))).ToArray();
             var memberGroupMap = CachedMembershipModel.BuildMemberGroupMap(allGroups);
 
-            var groupUnlinkedGuids = GetUnlinkedGuids(referenceGroup, cachedGroup, memberGroupMap);
+            var groupUnlinkedGuids = GetUnlinkedMembersGuids(referenceGroup, cachedGroup, memberGroupMap);
 
             var groupUnlinkedMembers = GetUnlinkedMembers(groupUnlinkedGuids, names, memberGroupMap);
 
@@ -105,7 +105,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization for group {group}", groupGuid);
     }
 
-    private List<DirectoryGuid> GetUnlinkedGuids(ReferenceDirectoryGroup referenceGroup, CachedDirectoryGroup cachedGroup, CachedMembershipModel memberGroupMap)
+    private List<DirectoryGuid> GetUnlinkedMembersGuids(ReferenceDirectoryGroup referenceGroup, CachedDirectoryGroup cachedGroup, CachedMembershipModel memberGroupMap)
     {
         var result = new List<DirectoryGuid>();
 
@@ -171,9 +171,8 @@ internal class SynchronizeUsers : ISynchronizeUsers
         {
             var refUser = _getReferenceUser.Execute(memberGuid, names);
 
-            if (refUser != null)
+            if (refUser != null && memberGroupMap.MemborshipMap.TryGetValue(refUser.Guid, out var groupGuids))
             {
-                memberGroupMap.MemborshipMap.TryGetValue(refUser.Guid, out var groupGuids);
                 var modifiedMember = ReferenceDirectoryUserUpdateModel.FromEntity(refUser);
                 modifiedMember.SetUserGroups(groupGuids?.Select(g => new DirectoryGuid(g)).ToList() ?? new List<DirectoryGuid>());
                 modifiedMember.UnlinkFromGroup();
