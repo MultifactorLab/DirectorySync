@@ -35,7 +35,6 @@ internal class MultifactorApi : IMultifactorApi
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
         var response = await adapter.GetAsync<GetUsersIdentitiesResponseDto>("ds/users");
-        GetUsersIdentitiesOperationResult result;
         if (!response.IsSuccessStatusCode)
         {
             LogUnseccessfulResponse(response);
@@ -49,7 +48,7 @@ internal class MultifactorApi : IMultifactorApi
 
         var identites = response.Model.Identities.Select(i => new LdapIdentity(i));
 
-        return new GetUsersIdentitiesOperationResult(identites, response.Model.UserNameFormat);
+        return new GetUsersIdentitiesOperationResult(identites);
     }
 
     public async Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken ct = default)

@@ -59,9 +59,8 @@ internal class SynchronizeCloud : ISynchronizeCloud
         }
 
         var cloudIdentities = await _multifactorApi.GetUsersIdentitesAsync(cancellationToken);
-        _logger.LogDebug("Fetched {Count} identities from cloud with user name format {UserNameFormat}", 
-            cloudIdentities.Identities.Count,
-            cloudIdentities.UserNameFormat);
+        _logger.LogDebug("Fetched {Count} identities from cloud", 
+            cloudIdentities.Identities.Count);
 
         var requiredAttributes = _requiredLdapAttributes.GetNames();
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
