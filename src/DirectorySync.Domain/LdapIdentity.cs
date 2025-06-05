@@ -27,7 +27,7 @@ public class LdapIdentity : ValueObject
 
     public override string ToString() => Value;
 
-    public static string Normalize(string identity)
+    private static string Normalize(string identity)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
