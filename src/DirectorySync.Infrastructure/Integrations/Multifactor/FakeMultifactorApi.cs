@@ -60,6 +60,10 @@ internal class FakeMultifactorApi : IMultifactorApi
 
     public Task<IGetUsersIdentitiesOperationResult> GetUsersIdentitesAsync(CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("Sending request to API: GetUsersIdentites");
+        var users = new GetUsersIdentitiesOperationResult();
+
+        _logger.LogDebug("Got successful response from API");
+        return Task.FromResult<IGetUsersIdentitiesOperationResult>(new GetUsersIdentitiesOperationResult());
     }
 }

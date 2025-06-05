@@ -2,7 +2,6 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Integrations.Multifactor.Enums;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -48,8 +47,7 @@ internal class SynchronizeCloud : ISynchronizeCloud
         if (trackingGroups is null || trackingGroups.Length == 0)
         {
             _logger.LogDebug("No tracking groups provided, skipping synchronization");
-            throw new ApplicationException("No tracking groups provided");
-            return;
+            throw new InvalidOperationException("No tracking groups provided");
         }
 
         _logger.LogDebug("Tracking group GUIDs: {GroupGUIDs}", string.Join(", ", trackingGroups));
@@ -78,7 +76,7 @@ internal class SynchronizeCloud : ISynchronizeCloud
         }
 
         var attrOptions = _attrMappingOptions.CurrentValue;
-        var refIdentitiesMap = GetReferenceIdentitiesMap(referenceGroups, attrOptions, cloudIdentities.UserNameFormat);
+        var refIdentitiesMap = GetReferenceIdentitiesMap(referenceGroups, attrOptions);
 
         var deletedMembers = GetDeletedMembersIdentities(cloudIdentities.Identities, refIdentitiesMap).ToArray();
         _logger.LogInformation("Identified {Count} deleted members to handle", deletedMembers.Length);
@@ -93,10 +91,6 @@ internal class SynchronizeCloud : ISynchronizeCloud
         Parallel.ForEach(trackingGroups, trackingGroup =>
         {
             var referenceGroup = _getReferenceGroup.Execute(new DirectoryGuid(trackingGroup), requiredAttributes);
-            if (referenceGroup is null)
-            {
-                throw new InvalidOperationException($"Reference group not found for tracking group {trackingGroup}");
-            }
 
             bag.Add(referenceGroup);
         });
@@ -104,7 +98,7 @@ internal class SynchronizeCloud : ISynchronizeCloud
         return bag;
     }
 
-    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<MultifactorIdentity> cloudIdentities, HashSet<MultifactorIdentity> refIdentitiesMap)
+    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<LdapIdentity> cloudIdentities, HashSet<LdapIdentity> refIdentitiesMap)
     {
         foreach (var cloudIdentity in cloudIdentities)
         {
@@ -115,14 +109,14 @@ internal class SynchronizeCloud : ISynchronizeCloud
         }
     }
 
-    private HashSet<MultifactorIdentity> GetReferenceIdentitiesMap(IEnumerable<ReferenceDirectoryGroup> groups,
-        LdapAttributeMappingOptions options,
-        UserNameFormat userNameFormat)
+    private HashSet<LdapIdentity> GetReferenceIdentitiesMap(IEnumerable<ReferenceDirectoryGroup> groups,
+        LdapAttributeMappingOptions options)
     {
         return groups
             .SelectMany(g => g.Members
-            .Select(m => FormatIdentity(m.Attributes.GetSingleOrDefault(options.IdentityAttribute), userNameFormat))
+            .Select(m => m.Attributes.GetSingleOrDefault(options.IdentityAttribute))
             .Where(x => !string.IsNullOrWhiteSpace(x)))
+            .Select(x => new LdapIdentity(x!))
             .ToHashSet();
     }
 
@@ -139,13 +133,5 @@ internal class SynchronizeCloud : ISynchronizeCloud
         _logger.LogDebug("Deleted members are synchronized");
     }
 
-    private static MultifactorIdentity FormatIdentity(string identity, UserNameFormat userNameFormat)
-    {
-        return userNameFormat switch
-        {
-            UserNameFormat.Identity => MultifactorIdentity.FromRawString(identity),
-            UserNameFormat.ActiveDirectory => MultifactorIdentity.FromLdapFormat(identity),
-            _ => throw new NotImplementedException(userNameFormat.ToString())
-        };
-    }
+    
 }

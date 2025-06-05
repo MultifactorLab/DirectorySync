@@ -5,23 +5,21 @@ using DirectorySync.Domain;
 namespace DirectorySync.Application.Integrations.Multifactor.Get;
 public interface IGetUsersIdentitiesOperationResult
 {
-    ReadOnlyCollection<MultifactorIdentity> Identities { get; }
+    ReadOnlyCollection<LdapIdentity> Identities { get; }
     UserNameFormat UserNameFormat { get; }
 }
 
 public class GetUsersIdentitiesOperationResult : IGetUsersIdentitiesOperationResult
 {
-    public ReadOnlyCollection<MultifactorIdentity> Identities { get; } = new(Array.Empty<MultifactorIdentity>());
-    public UserNameFormat UserNameFormat { get; } = UserNameFormat.ActiveDirectory;
+    public ReadOnlyCollection<LdapIdentity> Identities { get; } = Array.Empty<LdapIdentity>().AsReadOnly();
 
-    public GetUsersIdentitiesOperationResult() { }
-    
-    public GetUsersIdentitiesOperationResult(IEnumerable<string> identities, UserNameFormat userNameFormat)
+    public UserNameFormat UserNameFormat { get; }
+
+    public GetUsersIdentitiesOperationResult(IEnumerable<LdapIdentity> identities, UserNameFormat userNameFormat)
     {
-        ArgumentNullException.ThrowIfNull(identities);
-        ArgumentNullException.ThrowIfNull(userNameFormat);
-        
-        Identities = new ReadOnlyCollection<MultifactorIdentity>(identities.Select(c => new MultifactorIdentity(c)).ToArray());
+        Identities = identities.ToArray().AsReadOnly();
         UserNameFormat = userNameFormat;
     }
+
+    public GetUsersIdentitiesOperationResult() { }
 }

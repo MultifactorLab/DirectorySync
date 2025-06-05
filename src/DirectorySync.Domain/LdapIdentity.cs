@@ -1,19 +1,21 @@
 namespace DirectorySync.Domain;
 
-public class MultifactorIdentity : ValueObject
+public class LdapIdentity : ValueObject
 {
     public string Value { get; }
+    private string _normalizedValue { get; }
     
-    public MultifactorIdentity(string identity)
+    public LdapIdentity(string identity)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(identity));
         }
         Value = identity;
+        _normalizedValue = Normalize(identity);
     }
 
-    public static implicit operator string(MultifactorIdentity identity)
+    public static implicit operator string(LdapIdentity identity)
     {
         if (identity is null)
         {
@@ -25,17 +27,7 @@ public class MultifactorIdentity : ValueObject
 
     public override string ToString() => Value;
 
-    public static MultifactorIdentity FromRawString(string identity)
-    {
-        if (string.IsNullOrWhiteSpace(identity))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(identity));
-        }
-
-        return new(identity.Trim().ToLower());
-    }
-
-    public static MultifactorIdentity FromLdapFormat(string identity)
+    public static string Normalize(string identity)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
@@ -44,25 +36,23 @@ public class MultifactorIdentity : ValueObject
 
         var lower = identity.Trim().ToLower();
 
-        // netbios
         var index = lower.IndexOf("\\", StringComparison.Ordinal);
         if (index > 0)
         {
-            return new(lower[(index + 1)..]);
+            return lower[(index + 1)..];
         }
 
-        // upn
         index = lower.IndexOf("@", StringComparison.Ordinal);
         if (index > 0)
         {
-            return new(lower[..index]);
+            return lower[..index];
         }
 
-         return new(lower);
+         return lower;
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
-        yield return Value;
+        yield return _normalizedValue;
     }
 }

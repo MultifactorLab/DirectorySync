@@ -4,6 +4,7 @@ using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Get;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Domain;
 using DirectorySync.Infrastructure.Common.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
@@ -45,8 +46,10 @@ internal class MultifactorApi : IMultifactorApi
             _logger.LogWarning("Response model is null");
             return new GetUsersIdentitiesOperationResult();
         }
-        
-        return new GetUsersIdentitiesOperationResult(response.Model.Identities, response.Model.UserNameFormat);
+
+        var identites = response.Model.Identities.Select(i => new LdapIdentity(i));
+
+        return new GetUsersIdentitiesOperationResult(identites, response.Model.UserNameFormat);
     }
 
     public async Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken ct = default)

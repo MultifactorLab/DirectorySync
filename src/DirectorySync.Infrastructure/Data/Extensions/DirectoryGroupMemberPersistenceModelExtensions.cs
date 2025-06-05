@@ -11,7 +11,7 @@ internal static class DirectoryGroupMemberPersistenceModelExtensions
         ArgumentNullException.ThrowIfNull(model);
         
         var guid = new DirectoryGuid(model.Guid);
-        var identity = new MultifactorIdentity(model.Identity);
+        var identity = new LdapIdentity(model.Identity);
         var hash = new AttributesHash(model.Hash);
         return new CachedDirectoryGroupMember(guid, identity, hash);
     }
