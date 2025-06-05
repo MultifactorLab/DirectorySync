@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Ports;
@@ -86,12 +87,28 @@ internal class SynchronizeCloud : ISynchronizeCloud
     private IReadOnlyCollection<ReferenceDirectoryGroup> GetTrackingReferenceGroups(Guid[] trackingGroups, string[] requiredAttributes)
     {
         var bag = new ConcurrentBag<ReferenceDirectoryGroup>();
-        
-        Parallel.ForEach(trackingGroups, trackingGroup =>
-        {
-            var referenceGroup = _getReferenceGroup.Execute(new DirectoryGuid(trackingGroup), requiredAttributes);
 
-            bag.Add(referenceGroup);
+        // Limit the number of concurrent threads to avoid overwhelming the LDAP server.
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
+
+        Parallel.ForEach(trackingGroups,
+            parallelOptions,
+            trackingGroup =>
+        {
+            try
+            {
+                var referenceGroup = _getReferenceGroup.Execute(new DirectoryGuid(trackingGroup), requiredAttributes);
+
+                bag.Add(referenceGroup);
+            }
+            catch (GroupNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Group not found: {Guid}", trackingGroup);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error for group {Guid}", trackingGroup);
+            }
         });
 
         return bag;
