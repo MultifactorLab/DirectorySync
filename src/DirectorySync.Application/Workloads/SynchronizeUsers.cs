@@ -113,7 +113,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
 
         foreach (var deletedMemberGuid in deletedFromGroup)
         {
-            if (memberGroupMap.MemborshipMap.ContainsKey(deletedMemberGuid))
+            if (memberGroupMap.MembershipMap.ContainsKey(deletedMemberGuid))
             {
                 result.Add(deletedMemberGuid);
             }
@@ -171,7 +171,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         {
             var refUser = _getReferenceUser.Execute(memberGuid, names);
 
-            if (refUser != null && memberGroupMap.MemborshipMap.TryGetValue(refUser.Guid, out var groupGuids))
+            if (refUser != null && memberGroupMap.MembershipMap.TryGetValue(refUser.Guid, out var groupGuids))
             {
                 var modifiedMember = ReferenceDirectoryUserUpdateModel.FromEntity(refUser);
                 modifiedMember.SetUserGroups(groupGuids?.Select(g => new DirectoryGuid(g)).ToList() ?? new List<DirectoryGuid>());

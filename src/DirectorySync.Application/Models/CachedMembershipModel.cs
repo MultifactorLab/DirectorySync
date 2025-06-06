@@ -6,7 +6,7 @@ namespace DirectorySync.Application.Models;
 
 internal class CachedMembershipModel
 {
-    public ReadOnlyDictionary<DirectoryGuid, DirectoryGuid[]> MemborshipMap { get; private set; }
+    public ReadOnlyDictionary<DirectoryGuid, DirectoryGuid[]> MembershipMap { get; private set; }
 
     public static CachedMembershipModel BuildMemberGroupMap(IEnumerable<CachedDirectoryGroup> groups)
     {
@@ -17,7 +17,7 @@ internal class CachedMembershipModel
 
         return new CachedMembershipModel()
         {
-            MemborshipMap = new ReadOnlyDictionary<DirectoryGuid, DirectoryGuid[]>(map)
+            MembershipMap = new ReadOnlyDictionary<DirectoryGuid, DirectoryGuid[]>(map)
         };
     }
 }
