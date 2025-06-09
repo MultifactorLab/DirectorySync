@@ -11,6 +11,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private readonly OrderBoard _board;
     private readonly ISynchronizeUsers _synchronizeUsers;
     private readonly IScanUsers _scanUsers;
+    private readonly ISynchronizeCloud _synchronizeCloud;
     private readonly CodeTimer _timer;
     private readonly IOptionsMonitor<SyncOptions> _syncOptions;
     private readonly ILogger<WorkloadDispatcher> _logger;
@@ -24,12 +25,14 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         IOptionsMonitor<SyncOptions> syncOptions,
         ISynchronizeUsers synchronizeUsers,
         IScanUsers scanUsers,
+        ISynchronizeCloud synchronizeCloud,
         CodeTimer timer,
         ILogger<WorkloadDispatcher> logger)
     {
         _board = board;
         _synchronizeUsers = synchronizeUsers;
         _scanUsers = scanUsers;
+        _synchronizeCloud = synchronizeCloud;
         _timer = timer;
         _logger = logger;
         _syncOptions = syncOptions;
@@ -41,6 +44,19 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         {
             return Task.FromCanceled(cancellationToken);
         }
+
+        var trackingGroups = _syncOptions.CurrentValue.Groups;
+
+        try
+        {
+            _logger.LogDebug("Start of cloud synchronization");
+            _synchronizeCloud.ExecuteAsync(trackingGroups, cancellationToken).Wait();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ApplicationEvent.CloudSynchronizationServiceError, "End of cloud synchronization. Details: {0}", ex.Message);
+        }
+        
 
         SetTimers(_syncOptions.CurrentValue);
         _task = Task.Run(ProcessWorkloads, _cts.Token);
@@ -96,7 +112,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
                     {
                         _board.Done(WorkloadKind.Scan);
                         break;
-                    }
+                    } 
 
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await ScanUsers();
@@ -117,14 +133,16 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private async Task SyncUsers()
     {
         _logger.LogDebug("Start of user synchronization");
-                    
-        foreach (var guid in _syncOptions.CurrentValue.Groups)
+
+        var trackingGroups = _syncOptions.CurrentValue.Groups;
+
+        foreach (var guid in trackingGroups)
         {
             var timer = _timer.Start($"Group {guid} Sync: Total");
 
             try
             {
-                await _synchronizeUsers.ExecuteAsync(guid, _cts.Token);
+                await _synchronizeUsers.ExecuteAsync(guid, trackingGroups, _cts.Token);
             }
             catch (Exception ex)
             {

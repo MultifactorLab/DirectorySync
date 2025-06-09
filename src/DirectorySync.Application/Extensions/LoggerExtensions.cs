@@ -21,12 +21,12 @@ public static class LoggerExtensions
         return logger.BeginScope(GetState("LdapUserGuid", ldapUserGuid));
     }
     
-    public static IDisposable? EnrichWithMultifactorUser(this ILogger logger, MultifactorIdentity userId)
+    public static IDisposable? EnrichWithLdapUser(this ILogger logger, LdapIdentity userId)
     {
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(userId);
 
-        return logger.BeginScope(GetState("MultifactorUserId", userId));
+        return logger.BeginScope(GetState("LdapUserId", userId.Value));
     }
 
     private static Dictionary<string, object> GetState(string name, string value)

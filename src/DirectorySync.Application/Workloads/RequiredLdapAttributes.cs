@@ -1,4 +1,3 @@
-using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Integrations.Multifactor;
 using Microsoft.Extensions.Options;
 
@@ -29,7 +28,7 @@ internal class RequiredLdapAttributes
         }
     }
 
-    public IEnumerable<string> Map(LdapAttributeMappingOptions options)
+    private IEnumerable<string> Map(LdapAttributeMappingOptions options)
     {
         yield return options.IdentityAttribute;
 

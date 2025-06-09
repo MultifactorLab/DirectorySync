@@ -22,5 +22,10 @@ internal static partial class LdapFilters
         // Active Directory only.
         return $"(&(objectClass=user)(memberof:1.2.840.113556.1.4.1941:={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
     }
+
+    public static string FindEntryByGuid(DirectoryGuid guid)
+    {
+        return $"(objectGUID={guid.OctetString})";
+    }
 }
 

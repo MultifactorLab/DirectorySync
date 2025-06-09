@@ -30,6 +30,7 @@ namespace DirectorySync.Infrastructure.Integrations.Ldap.Extensions
             builder.Services.AddTransient<LdapConnectionFactory>();
             builder.Services.AddTransient<BaseDnResolver>();
             builder.Services.AddTransient<IGetReferenceGroup, GetRefGroupWithDirectoryServicesProtocols>();
+            builder.Services.AddTransient<IGetReferenceUser, GetRefUserWithDirectoryServicesProtocols>();
         }
     }
 }

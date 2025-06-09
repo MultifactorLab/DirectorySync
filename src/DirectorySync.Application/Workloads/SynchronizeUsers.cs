@@ -1,5 +1,6 @@
 using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Models;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
@@ -12,13 +13,14 @@ namespace DirectorySync.Application.Workloads;
 /// </summary>
 public interface ISynchronizeUsers
 {
-    Task ExecuteAsync(Guid groupGuid, CancellationToken token = default);
+    Task ExecuteAsync(Guid groupGuid, Guid[] trackingGroups, CancellationToken token = default);
 }
 
 internal class SynchronizeUsers : ISynchronizeUsers
 {
     private readonly RequiredLdapAttributes _requiredLdapAttributes;
     private readonly IGetReferenceGroup _getReferenceGroup;
+    private readonly IGetReferenceUser _getReferenceUser;
     private readonly IApplicationStorage _storage;
     private readonly Deleter _deleter;
     private readonly Updater _updater;
@@ -27,6 +29,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
 
     public SynchronizeUsers(RequiredLdapAttributes requiredLdapAttributes,
         IGetReferenceGroup getReferenceGroup,
+        IGetReferenceUser getReferenceUser,
         IApplicationStorage storage,
         Deleter deleter,
         Updater updater,
@@ -35,18 +38,19 @@ internal class SynchronizeUsers : ISynchronizeUsers
     {
         _requiredLdapAttributes = requiredLdapAttributes;
         _getReferenceGroup = getReferenceGroup;
+        _getReferenceUser = getReferenceUser;
         _storage = storage;
         _deleter = deleter;
         _updater = updater;
         _codeTimer = codeTimer;
         _logger = logger;
     }
-    
-    public async Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
+
+    public async Task ExecuteAsync(Guid groupGuid, Guid[] trackingGroups, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogInformation(ApplicationEvent.StartUserSynchronization, "Start users synchronization for group {group}", groupGuid);
-        
+
         var names = _requiredLdapAttributes.GetNames().ToArray();
         _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", names));
 
@@ -54,7 +58,7 @@ internal class SynchronizeUsers : ISynchronizeUsers
         var referenceGroup = _getReferenceGroup.Execute(groupGuid, names);
         getGroupTimer.Stop();
         _logger.LogDebug("Reference group found: {Group:l}", referenceGroup);
-        
+
         var cachedGroup = _storage.FindGroup(referenceGroup.Guid);
         if (cachedGroup is null)
         {
@@ -63,44 +67,86 @@ internal class SynchronizeUsers : ISynchronizeUsers
             return;
         }
 
+        var modifiedMembers = new List<ReferenceDirectoryUserUpdateModel>();
+
         if (ReferenceGroupHasDifferentCountOfMembers(referenceGroup, cachedGroup))
         {
             _logger.LogDebug("Reference and cached groups are different");
             _logger.LogDebug("Searching for deleted members...");
-            
-            var deleted = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
-            if (deleted.Length == 0)
-            {
-                _logger.LogDebug("Deleted members was not found");
-            }
-            else
-            {
-                _logger.LogDebug("Found deleted users: {Deleted}", deleted.Length);
+            var allGroups = _storage.FindGroups(trackingGroups.Select(c => new DirectoryGuid(c))).ToArray();
+            var memberGroupMap = CachedMembershipModel.BuildMemberGroupMap(allGroups);
 
-                await _deleter.DeleteManyAsync(cachedGroup, deleted, token);
+            var groupUnlinkedGuids = GetUnlinkedMembersGuids(referenceGroup, cachedGroup, memberGroupMap);
 
-                _logger.LogDebug("Deleted members are synchronized");
-            }
+            var groupUnlinkedMembers = GetUnlinkedMembers(groupUnlinkedGuids, names, memberGroupMap);
+
+            await HandleDeletedMembers(cachedGroup, referenceGroup, groupUnlinkedMembers, token);
+
+            modifiedMembers.AddRange(groupUnlinkedMembers);
         }
 
-        _logger.LogDebug("Searching for existed but modified members...");
-        var modifiedMembers = MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup).ToArray();
-        if (modifiedMembers.Length == 0)
+        modifiedMembers.AddRange(GetModifiedMembers(referenceGroup, cachedGroup));
+
+        if (modifiedMembers.Count == 0)
         {
             _logger.LogDebug("Modified members was not found");
             _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization for group {group}", groupGuid);
             return;
         }
 
-        _logger.LogDebug("Found modified users: {Modified}", modifiedMembers.Length);
-        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers, token);
+        _logger.LogDebug("Found modified users: {Modified}", modifiedMembers);
+        await _updater.UpdateManyAsync(cachedGroup, modifiedMembers.ToArray(), token);
 
         var updateModifiedTimer = _codeTimer.Start("Update Cached Group: Modified Users");
         _storage.UpdateGroup(cachedGroup);
         updateModifiedTimer.Stop();
         _logger.LogDebug("Modified members are synchronized");
-        
+
         _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization for group {group}", groupGuid);
+    }
+
+    private List<DirectoryGuid> GetUnlinkedMembersGuids(ReferenceDirectoryGroup referenceGroup, CachedDirectoryGroup cachedGroup, CachedMembershipModel memberGroupMap)
+    {
+        var result = new List<DirectoryGuid>();
+
+        var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
+
+        foreach (var deletedMemberGuid in deletedFromGroup)
+        {
+            if (memberGroupMap.MembershipMap.ContainsKey(deletedMemberGuid))
+            {
+                result.Add(deletedMemberGuid);
+            }
+        }
+
+        return result;
+    }
+
+    private async Task HandleDeletedMembers(CachedDirectoryGroup cachedGroup, ReferenceDirectoryGroup referenceGroup, IEnumerable<ReferenceDirectoryUserUpdateModel> groupUnlinkedMembers, CancellationToken token)
+    {
+        var deletedFromGroup = GetDeletedMemberGuids(referenceGroup, cachedGroup).ToArray();
+        var deletedMembers = deletedFromGroup
+            .Intersect(groupUnlinkedMembers
+                .Where(u => u.UserGroupIds.Count <= 1)
+                .Select(u => u.Guid))
+            .ToArray();
+
+        if (deletedMembers.Length == 0)
+        {
+            _logger.LogDebug("Deleted members was not found");
+            return;
+        }
+
+        _logger.LogDebug("Found deleted users: {Deleted}", deletedMembers.Length);
+        await _deleter.DeleteManyAsync(cachedGroup, deletedMembers, token);
+        _logger.LogDebug("Deleted members are synchronized");
+    }
+
+    private List<ReferenceDirectoryUserUpdateModel> GetModifiedMembers(ReferenceDirectoryGroup referenceGroup, CachedDirectoryGroup cachedGroup)
+    {
+        return MemberChangeDetector.GetModifiedMembers(referenceGroup, cachedGroup)
+            .Select(ReferenceDirectoryUserUpdateModel.FromEntity)
+            .ToList();
     }
 
     private static bool ReferenceGroupHasDifferentCountOfMembers(ReferenceDirectoryGroup refGroup, CachedDirectoryGroup cachedGroup)
@@ -109,11 +155,29 @@ internal class SynchronizeUsers : ISynchronizeUsers
         return referenceMembersHash != cachedGroup.Hash;
     }
 
-    private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup, 
+    private static IEnumerable<DirectoryGuid> GetDeletedMemberGuids(ReferenceDirectoryGroup referenceGroup,
         CachedDirectoryGroup cachedGroup)
     {
         var refMemberGuids = referenceGroup.Members.Select(x => x.Guid);
         var cachedMemberGuids = cachedGroup.Members.Select(x => x.Id);
         return cachedMemberGuids.Except(refMemberGuids);
+    }
+
+    private IEnumerable<ReferenceDirectoryUserUpdateModel> GetUnlinkedMembers(IEnumerable<DirectoryGuid> groupUnlinkedMembers,
+        string[] names,
+        CachedMembershipModel memberGroupMap)
+    {
+        foreach (var memberGuid in groupUnlinkedMembers)
+        {
+            var refUser = _getReferenceUser.Execute(memberGuid, names);
+
+            if (refUser != null && memberGroupMap.MembershipMap.TryGetValue(refUser.Guid, out var groupGuids))
+            {
+                var modifiedMember = ReferenceDirectoryUserUpdateModel.FromEntity(refUser);
+                modifiedMember.SetUserGroups(groupGuids?.Select(g => new DirectoryGuid(g)).ToList() ?? new List<DirectoryGuid>());
+                modifiedMember.UnlinkFromGroup();
+                yield return modifiedMember;
+            }
+        }
     }
 }

@@ -14,10 +14,10 @@ internal class CreateUsersDto
 internal class NewUserDto
 {
     public string Identity { get; }
-
     public UserPropertyDto[] Properties { get; }
+    public string[] SignUpGroupsToAdd { get; }
 
-    public NewUserDto(string identity, IEnumerable<UserPropertyDto> properties)
+    public NewUserDto(string identity, IEnumerable<UserPropertyDto> properties, string[] signUpGroupsToAdd)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
@@ -28,5 +28,6 @@ internal class NewUserDto
 
         Identity = identity;
         Properties = properties.ToArray();
+        SignUpGroupsToAdd = signUpGroupsToAdd;
     }
 }

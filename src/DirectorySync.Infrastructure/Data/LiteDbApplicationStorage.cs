@@ -14,6 +14,11 @@ internal class LiteDbApplicationStorage : IApplicationStorage
     {
         _connection = connection;
     }
+
+    public bool IsGroupCollectionExists()
+    {
+        return _connection.Database.CollectionExists(nameof(DirectoryGroupPersistenceModel));
+    }
     
     public CachedDirectoryGroup? FindGroup(DirectoryGuid guid)
     {
@@ -29,6 +34,22 @@ internal class LiteDbApplicationStorage : IApplicationStorage
 
         var directoryGroup = group.ToDomainModel();
         return directoryGroup;
+    }
+
+    public IEnumerable<CachedDirectoryGroup> FindGroups(IEnumerable<DirectoryGuid> ids)
+    {
+        var collection = _connection.Database.GetCollection<DirectoryGroupPersistenceModel>();
+
+        var idSet = new HashSet<Guid>(ids.Select(x => x.Value));
+        var groups = collection.Find(c => idSet.Contains(c.Id));
+
+        if (groups is null)
+        {
+            return Enumerable.Empty<CachedDirectoryGroup>();
+        }
+
+        var directoryGroups = groups.Select(c => c.ToDomainModel());
+        return directoryGroups;
     }
 
     public void InsertGroup(CachedDirectoryGroup group)

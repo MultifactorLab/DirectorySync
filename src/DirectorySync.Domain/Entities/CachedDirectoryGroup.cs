@@ -4,6 +4,7 @@ namespace DirectorySync.Domain.Entities;
 
 public class CachedDirectoryGroup : CachedDirectoryObject
 {
+    public DirectoryGuid GroupGuid { get; set; }
     public EntriesHash Hash { get; private set; }
 
     private readonly List<CachedDirectoryGroupMember> _members;
@@ -14,7 +15,10 @@ public class CachedDirectoryGroup : CachedDirectoryObject
         EntriesHash hash)
     : base(guid)
     {
+        ArgumentNullException.ThrowIfNull(guid);
         ArgumentNullException.ThrowIfNull(members);
+
+        GroupGuid = guid;
         _members = members.ToList();
         Hash = hash ?? throw new ArgumentNullException(nameof(hash));
     }

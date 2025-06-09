@@ -1,8 +1,10 @@
 ﻿using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
+using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
+using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Options;
 
@@ -15,18 +17,21 @@ internal sealed class Creator
     private readonly CodeTimer _codeTimer;
     private readonly UserProcessingOptions _options;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
+    private readonly IOptionsMonitor<GroupMappingsOptions> _groupMappingOptions;
 
     public Creator(IMultifactorApi api,
         IApplicationStorage storage,
         CodeTimer codeTimer,
         IOptions<UserProcessingOptions> options,
-        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions)
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
+        IOptionsMonitor<GroupMappingsOptions> groupMappingOptions)
     {
         _api = api;
         _storage = storage;
         _codeTimer = codeTimer;
         _options = options.Value;
         _attrMappingOptions = attrMappingOptions;
+        _groupMappingOptions = groupMappingOptions;
     }
 
     public async Task CreateManyAsync(CachedDirectoryGroup group,
@@ -43,6 +48,19 @@ internal sealed class Creator
 
         var options = _attrMappingOptions.CurrentValue;
 
+        var groupsMappingOptions = _groupMappingOptions.CurrentValue.DirectoryGroupMappings
+            .ToDictionary(
+                kpv => new DirectoryGuid(Guid.Parse(kpv.DirectoryGroup)),
+                kpv => kpv.SignUpGroups.ToArray()
+            );
+
+        groupsMappingOptions.TryGetValue(group.GroupGuid, out var groupsToAdd);
+
+        var groupsChanges = new SignUpGroupChanges()
+        {
+            SignUpGroupsToAdd = groupsToAdd ?? Array.Empty<string>()
+        };
+
         var skip = 0;
         while (true)
         {
@@ -53,9 +71,9 @@ internal sealed class Creator
                 if (identity is null)
                 {
                     continue;
-                }
+                }                
 
-                var user = bucket.AddNewUser(refUser.Guid, identity);
+                var user = bucket.AddNewUser(refUser.Guid, identity, groupsChanges);
 
                 SetProperties(options, refUser, user);
             }

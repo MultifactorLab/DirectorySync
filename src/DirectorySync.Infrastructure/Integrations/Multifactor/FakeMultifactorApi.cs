@@ -1,6 +1,7 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
+using DirectorySync.Application.Integrations.Multifactor.Get;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
 using Microsoft.Extensions.Logging;
 
@@ -55,5 +56,14 @@ internal class FakeMultifactorApi : IMultifactorApi
         }
         _logger.LogDebug("Got successful response from API");
         return Task.FromResult<IDeleteUsersOperationResult>(users);
+    }
+
+    public Task<IGetUsersIdentitiesOperationResult> GetUsersIdentitesAsync(CancellationToken ct = default)
+    {
+        _logger.LogDebug("Sending request to API: GetUsersIdentites");
+        var users = new GetUsersIdentitiesOperationResult();
+
+        _logger.LogDebug("Got successful response from API");
+        return Task.FromResult<IGetUsersIdentitiesOperationResult>(new GetUsersIdentitiesOperationResult());
     }
 }

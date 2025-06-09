@@ -8,7 +8,7 @@ namespace DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConf
 {
     public sealed class CloudConfigApi
     {
-        const string _path = "ds/settings";
+        const string _path = "v2/ds/settings";
         private readonly HttpClientAdapter _adapter;
 
         public CloudConfigApi(HttpClient client)

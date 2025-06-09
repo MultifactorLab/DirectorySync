@@ -2,11 +2,14 @@
 using DirectorySync.Application.Integrations.Multifactor;
 using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
+using DirectorySync.Application.Integrations.Multifactor.Get;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Domain;
 using DirectorySync.Infrastructure.Common.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Delete;
+using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Get;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Update;
 using DirectorySync.Infrastructure.Shared.Http;
 using Microsoft.Extensions.Logging;
@@ -27,6 +30,27 @@ internal class MultifactorApi : IMultifactorApi
         _logger = logger;
     }
 
+    public async Task<IGetUsersIdentitiesOperationResult> GetUsersIdentitesAsync(CancellationToken ct = default)
+    {
+        var cli = _clientFactory.CreateClient(_clientName);
+        var adapter = new HttpClientAdapter(cli);
+        var response = await adapter.GetAsync<GetUsersIdentitiesResponseDto>("ds/users");
+        if (!response.IsSuccessStatusCode)
+        {
+            LogUnseccessfulResponse(response);
+            return new GetUsersIdentitiesOperationResult();
+        }
+        if (response.Model is null)
+        {
+            _logger.LogWarning("Response model is null");
+            return new GetUsersIdentitiesOperationResult();
+        }
+
+        var identites = response.Model.Identities.Select(i => new LdapIdentity(i));
+
+        return new GetUsersIdentitiesOperationResult(identites);
+    }
+
     public async Task<ICreateUsersOperationResult> CreateManyAsync(INewUsersBucket bucket, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(bucket);
@@ -37,12 +61,14 @@ internal class MultifactorApi : IMultifactorApi
         }
 
         var dtos = bucket.NewUsers
-            .Select(x => new NewUserDto(x.Identity, x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value))));
+            .Select(x => new NewUserDto(x.Identity, 
+            x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
+            x.SignUpGroupChanges.SignUpGroupsToAdd));
         var dto = new CreateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
-        var response = await adapter.PostAsync<CreateUsersResponseDto>("ds/users", dto);
+        var response = await adapter.PostAsync<CreateUsersResponseDto>("v2/ds/users", dto);
         var result = new CreateUsersOperationResult();
 
         if (!response.IsSuccessStatusCode)
@@ -87,13 +113,17 @@ internal class MultifactorApi : IMultifactorApi
         }
 
         var dtos = bucket.ModifiedUsers
-            .Select(x => new ModifiedUserDto(x.Identity, x.Properties.Select(s => new UserPropertyDto(s.Name, s.Value))));
+            .Select(x => new ModifiedUserDto(
+                x.Identity,
+                x.Properties.Select(s => new UserPropertyDto(s.Name, s.Value)),
+                x.SignUpGroupChanges.SignUpGroupsToAdd,
+                x.SignUpGroupChanges.SignUpGroupsToRemove));
         var dto = new UpdateUsersDto(dtos);
 
         var cli = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(cli);
 
-        var response = await adapter.PutAsync<UpdateUsersResponseDto>("ds/users", dto);
+        var response = await adapter.PutAsync<UpdateUsersResponseDto>("v2/ds/users", dto);
         var result = new UpdateUsersOperationResult();
         if (!response.IsSuccessStatusCode)
         {

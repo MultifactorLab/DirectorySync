@@ -12,7 +12,7 @@ internal class FakeSynchronizeUsers : ISynchronizeUsers
         _logger = logger;
     }
     
-    public Task ExecuteAsync(Guid groupGuid, CancellationToken token = default)
+    public Task ExecuteAsync(Guid groupGuid, Guid[] trackingGroups, CancellationToken token = default)
     {
         using var withGroup = _logger.EnrichWithGroup(groupGuid);
         _logger.LogDebug("Users synchronization started");

@@ -80,7 +80,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
 
         SetData(config, initial);
         Remember(config);
-
+        
         OnReload();
         CloudInteractionLogger.Information("Cloud settings was changed");
     }
@@ -96,8 +96,8 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         Data["Sync:SyncTimer"] = config.SyncTimer.ToString();
         Data["Sync:ScanTimer"] = config.ScanTimer.ToString();
 
-        SetCollection("Sync:Groups", config.DirectoryGroups);
-
+        SetCollection("Sync:DirectoryGroupMappings", config.DirectoryGroupMappings);
+        SetCollection("Sync:Groups", config.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
         Data[$"Sync:IncludeNestedGroups"] = "True";
 
         Data["Sync:IdentityAttribute"] = config.PropertyMapping.IdentityAttribute;
@@ -125,6 +125,26 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
         RemoveTheRestArrayItems(key, elements.Length);
     }
 
+    private void SetCollection(string key, GroupMappingsDto?[] elements)
+    {
+        for (int index = 0; index < elements.Length; index++)
+        {
+            var baseKey = $"{key}:{index}";
+            var mapping = elements[index];
+
+            Data[$"{baseKey}:DirectoryGroup"] = mapping.DirectoryGroup;
+
+            for (int signUpIndex = 0; signUpIndex < mapping.SignUpGroups.Length; signUpIndex++)
+            {
+                Data[$"{baseKey}:SignUpGroups:{signUpIndex}"] = mapping.SignUpGroups[signUpIndex];
+            }
+
+            RemoveTheRestArrayItems($"{baseKey}:SignUpGroups", mapping.SignUpGroups.Length);
+        }
+
+        RemoveTheRestArrayItems(key, elements.Length);
+    }
+
     private void RemoveTheRestArrayItems(string key, int startIndex)
     {
         while (true)
@@ -147,10 +167,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
             .Where(x => r.IsMatch(x))
             .ToArray();
 
-        if (currentKeys.Length != config.DirectoryGroups.Length)
-        {
-            InconstistentEx();
-        }
+        var directoryGroups = config.DirectoryGroupMappings.Select(d => d.DirectoryGroup).ToArray();
 
         var currentValues = Data
             .Where(x => currentKeys.Contains(x.Key))
@@ -158,7 +175,7 @@ internal class MultifactorCloudConfigurationSource : ConfigurationProvider, ICon
             .OrderByDescending(x => x)
             .ToArray();
 
-        if (currentValues.Any(x => !config.DirectoryGroups.Contains(x, StringComparer.OrdinalIgnoreCase)))
+        if (currentValues.Any(x => !directoryGroups.Contains(x, StringComparer.OrdinalIgnoreCase)))
         {
             InconstistentEx();
         }

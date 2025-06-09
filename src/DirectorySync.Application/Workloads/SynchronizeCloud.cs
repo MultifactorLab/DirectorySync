@@ -1,0 +1,153 @@
+﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
+using DirectorySync.Application.Exceptions;
+using DirectorySync.Application.Extensions;
+using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Ports;
+using DirectorySync.Domain;
+using DirectorySync.Domain.Entities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace DirectorySync.Application.Workloads;
+
+public interface ISynchronizeCloud
+{
+    Task ExecuteAsync(Guid[] trackingGroups, CancellationToken token = default);
+}
+
+internal class SynchronizeCloud : ISynchronizeCloud
+{
+    private readonly IApplicationStorage _storage;
+    private readonly IMultifactorApi _multifactorApi;
+    private readonly IGetReferenceGroup _getReferenceGroup;
+    private readonly RequiredLdapAttributes _requiredLdapAttributes;
+    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _attrMappingOptions;
+    private readonly Deleter _deleter;
+    private readonly ILogger<SynchronizeCloud> _logger;
+
+    public SynchronizeCloud(IApplicationStorage storage,
+        IMultifactorApi multifactorApi,
+        IGetReferenceGroup getReferenceGroup,
+        RequiredLdapAttributes requiredLdapAttributes,
+        IOptionsMonitor<LdapAttributeMappingOptions> attrMappingOptions,
+        Deleter deleter,
+        ILogger<SynchronizeCloud> logger)
+    {
+        _storage = storage;
+        _multifactorApi = multifactorApi;
+        _getReferenceGroup = getReferenceGroup;
+        _requiredLdapAttributes = requiredLdapAttributes;
+        _attrMappingOptions = attrMappingOptions;
+        _deleter = deleter;
+        _logger = logger;
+    }
+
+    public async Task ExecuteAsync(Guid[]? trackingGroups, CancellationToken cancellationToken = default)
+    {
+        if (trackingGroups is null || trackingGroups.Length == 0)
+        {
+            _logger.LogDebug("No tracking groups provided, skipping synchronization");
+            throw new InvalidOperationException("No tracking groups provided");
+        }
+
+        _logger.LogDebug("Tracking group GUIDs: {GroupGUIDs}", string.Join(", ", trackingGroups));
+
+        if (_storage.IsGroupCollectionExists())
+        {
+            _logger.LogDebug("Local storage already exists, skipping synchronization");
+            return;
+        }
+
+        var cloudIdentities = await _multifactorApi.GetUsersIdentitesAsync(cancellationToken);
+        _logger.LogDebug("Fetched {Count} identities from cloud", 
+            cloudIdentities.Identities.Count);
+
+        var requiredAttributes = _requiredLdapAttributes.GetNames();
+        _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
+
+        var referenceGroups = GetTrackingReferenceGroups(trackingGroups, requiredAttributes).ToArray();
+        _logger.LogDebug("Retrieved {Count} reference groups for tracking", referenceGroups.Length);
+
+        if (referenceGroups.Length == 0)
+        {
+            _logger.LogWarning("No reference groups found for given tracking groups");
+            return;
+        }
+
+        var attrOptions = _attrMappingOptions.CurrentValue;
+        var refIdentitiesMap = GetReferenceIdentitiesMap(referenceGroups, attrOptions);
+
+        var deletedMembers = GetDeletedMembersIdentities(cloudIdentities.Identities, refIdentitiesMap).ToArray();
+        _logger.LogInformation("Identified {Count} deleted members to handle", deletedMembers.Length);
+
+        await HandleDeletedMembers(deletedMembers, cancellationToken);
+    }
+    
+    private IReadOnlyCollection<ReferenceDirectoryGroup> GetTrackingReferenceGroups(Guid[] trackingGroups, string[] requiredAttributes)
+    {
+        var bag = new ConcurrentBag<ReferenceDirectoryGroup>();
+
+        // Limit the number of concurrent threads to avoid overwhelming the LDAP server.
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
+
+        Parallel.ForEach(trackingGroups,
+            parallelOptions,
+            trackingGroup =>
+        {
+            try
+            {
+                var referenceGroup = _getReferenceGroup.Execute(new DirectoryGuid(trackingGroup), requiredAttributes);
+
+                bag.Add(referenceGroup);
+            }
+            catch (GroupNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Group not found: {Guid}", trackingGroup);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error for group {Guid}", trackingGroup);
+            }
+        });
+
+        return bag;
+    }
+
+    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<LdapIdentity> cloudIdentities, HashSet<LdapIdentity> refIdentitiesMap)
+    {
+        foreach (var cloudIdentity in cloudIdentities)
+        {
+            if (!refIdentitiesMap.Contains(cloudIdentity))
+            {
+                yield return cloudIdentity;
+            }
+        }
+    }
+
+    private HashSet<LdapIdentity> GetReferenceIdentitiesMap(IEnumerable<ReferenceDirectoryGroup> groups,
+        LdapAttributeMappingOptions options)
+    {
+        return groups
+            .SelectMany(g => g.Members
+            .Select(m => m.Attributes.GetSingleOrDefault(options.IdentityAttribute))
+            .Where(x => !string.IsNullOrWhiteSpace(x)))
+            .Select(x => new LdapIdentity(x!))
+            .ToHashSet();
+    }
+
+    private async Task HandleDeletedMembers(string[] deletedIdentites, CancellationToken cancellationToken = default)
+    {
+        if (deletedIdentites.Length == 0)
+        {
+            _logger.LogDebug("Deleted members was not found");
+            return;
+        }
+
+        _logger.LogDebug("Found deleted users: {Deleted}", deletedIdentites.Length);
+        await _deleter.DeleteManyAsync(deletedIdentites, cancellationToken);
+        _logger.LogDebug("Deleted members are synchronized");
+    }
+
+    
+}
