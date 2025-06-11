@@ -1,7 +1,10 @@
 ﻿using System.Collections;
 using System.Text;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Domain;
+
+// TODO: вынести в app DTO
 
 public class LdapAttributeCollection : IEnumerable<LdapAttribute>
 {

@@ -1,5 +1,5 @@
 ﻿using DirectorySync.Application.Integrations.Multifactor.Models;
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Creating;

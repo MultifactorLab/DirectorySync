@@ -1,4 +1,5 @@
 using System.Text;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Domain.Entities;
 

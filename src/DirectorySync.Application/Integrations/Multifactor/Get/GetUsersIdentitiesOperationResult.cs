@@ -1,18 +1,18 @@
 ﻿using System.Collections.ObjectModel;
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Get;
 public interface IGetUsersIdentitiesOperationResult
 {
-    ReadOnlyCollection<LdapIdentity> Identities { get; }
+    ReadOnlyCollection<Identity> Identities { get; }
 }
 
 public class GetUsersIdentitiesOperationResult : IGetUsersIdentitiesOperationResult
 {
-    public ReadOnlyCollection<LdapIdentity> Identities { get; } = Array.Empty<LdapIdentity>().AsReadOnly();
+    public ReadOnlyCollection<Identity> Identities { get; } = Array.Empty<Identity>().AsReadOnly();
 
 
-    public GetUsersIdentitiesOperationResult(IEnumerable<LdapIdentity> identities)
+    public GetUsersIdentitiesOperationResult(IEnumerable<Identity> identities)
     {
         Identities = identities.ToArray().AsReadOnly();
     }

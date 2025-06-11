@@ -1,6 +1,9 @@
 using System.Text;
+using DirectorySync.Domain.Karnel;
 
-namespace DirectorySync.Domain;
+namespace DirectorySync.Domain.ValueObjects;
+
+/// TODO: Remove - вынести вынести в маппинг ldap DTO
 
 public class DirectoryGuid : ValueObject
 {

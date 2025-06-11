@@ -1,3 +1,5 @@
+using DirectorySync.Domain.ValueObjects;
+
 namespace DirectorySync.Domain.Entities;
 
 public abstract class CachedDirectoryObject

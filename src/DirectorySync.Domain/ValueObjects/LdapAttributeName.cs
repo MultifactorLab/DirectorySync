@@ -1,4 +1,8 @@
-namespace DirectorySync.Domain;
+using DirectorySync.Domain.Karnel;
+
+namespace DirectorySync.Domain.ValueObjects;
+
+// TODO: вынести в app
 
 /// <summary>
 /// Ldap attribute name.

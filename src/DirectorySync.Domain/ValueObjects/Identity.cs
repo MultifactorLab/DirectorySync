@@ -1,11 +1,13 @@
-namespace DirectorySync.Domain;
+using DirectorySync.Domain.Karnel;
 
-public class LdapIdentity : ValueObject
+namespace DirectorySync.Domain.ValueObjects;
+
+public class Identity : ValueObject
 {
     public string Value { get; }
     private string _normalizedValue { get; }
     
-    public LdapIdentity(string identity)
+    public Identity(string identity)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
@@ -15,7 +17,7 @@ public class LdapIdentity : ValueObject
         _normalizedValue = Normalize(identity);
     }
 
-    public static implicit operator string(LdapIdentity identity)
+    public static implicit operator string(Identity identity)
     {
         if (identity is null)
         {

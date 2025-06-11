@@ -1,4 +1,4 @@
-﻿using DirectorySync.Domain;
+﻿using DirectorySync.Domain.ValueObjects;
 using System.Collections.ObjectModel;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Deleting;

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Domain.Entities;
 

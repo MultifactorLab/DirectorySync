@@ -2,8 +2,8 @@ using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Models;
 using DirectorySync.Application.Ports;
-using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
+using DirectorySync.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Workloads;

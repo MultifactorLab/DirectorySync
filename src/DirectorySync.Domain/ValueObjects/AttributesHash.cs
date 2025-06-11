@@ -1,8 +1,9 @@
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using DirectorySync.Domain.Karnel;
 
-namespace DirectorySync.Domain;
+namespace DirectorySync.Domain.ValueObjects;
 
 /// <summary>
 /// Hash of the LDAP attribute names and its values.

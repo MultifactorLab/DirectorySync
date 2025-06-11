@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Application.Models;
 
