@@ -46,7 +46,7 @@ internal class MultifactorApi : IMultifactorApi
             return new GetUsersIdentitiesOperationResult();
         }
 
-        var identites = response.Model.Identities.Select(i => new LdapIdentity(i));
+        var identites = response.Model.Identities.Select(i => new Identity(i));
 
         return new GetUsersIdentitiesOperationResult(identites);
     }
