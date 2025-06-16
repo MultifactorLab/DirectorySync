@@ -1,4 +1,4 @@
-using DirectorySync.Domain.Entities;
+using DirectorySync.Application.Models.Entities;
 using DirectorySync.Infrastructure.Data.Models;
 
 namespace DirectorySync.Infrastructure.Data.Extensions;

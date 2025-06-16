@@ -22,8 +22,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DirectorySync.Domain\DirectorySync.Domain.csproj" />
       <ProjectReference Include="..\DirectorySync.Infrastructure.Shared\DirectorySync.Infrastructure.Shared.csproj" />
+      <ProjectReference Include="..\DirectorySync.Shared\DirectorySync.Shared.csproj" />
     </ItemGroup>
 
 </Project>

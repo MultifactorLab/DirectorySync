@@ -25,7 +25,7 @@
 
 // ReSharper disable NonReadonlyMemberInGetHashCode
 
-namespace DirectorySync.Domain.Karnel;
+namespace DirectorySync.Shared.Karnel;
 
 public abstract class ValueObject
 {

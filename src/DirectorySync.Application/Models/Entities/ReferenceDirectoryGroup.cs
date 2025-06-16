@@ -1,8 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Text;
-using DirectorySync.Domain.ValueObjects;
+using DirectorySync.Application.Models.ValueObjects;
 
-namespace DirectorySync.Domain.Entities;
+namespace DirectorySync.Application.Models.Entities;
 
 /// <summary>
 /// Group from LDAP. Acts as a point of truth.

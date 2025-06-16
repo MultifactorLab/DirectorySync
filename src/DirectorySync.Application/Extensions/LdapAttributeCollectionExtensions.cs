@@ -1,4 +1,4 @@
-﻿using DirectorySync.Domain;
+﻿using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Extensions;
 

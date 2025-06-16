@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using DirectorySync.Domain.ValueObjects;
+using DirectorySync.Application.Models.ValueObjects;
 
-namespace DirectorySync.Domain.Entities;
+namespace DirectorySync.Application.Models.Entities;
 
 public class CachedDirectoryGroup : CachedDirectoryObject
 {

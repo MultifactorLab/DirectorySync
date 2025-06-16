@@ -1,10 +1,7 @@
 using System.Text;
-using DirectorySync.Domain.Karnel;
+using DirectorySync.Shared.Karnel;
 
-namespace DirectorySync.Domain.ValueObjects;
-
-
-/// TODO: Remove - вынести вынести в app модель
+namespace DirectorySync.Application.Models.ValueObjects;
 
 /// <summary>
 /// LDAP attribute object.

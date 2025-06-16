@@ -1,5 +1,5 @@
-using DirectorySync.Domain;
-using DirectorySync.Domain.Entities;
+using DirectorySync.Application.Models.Entities;
+using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Infrastructure.Data.Models;
 
 namespace DirectorySync.Infrastructure.Data.Extensions;

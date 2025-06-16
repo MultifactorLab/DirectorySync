@@ -3,9 +3,9 @@ using System.Collections.ObjectModel;
 using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Integrations.Multifactor;
+using DirectorySync.Application.Models.Entities;
+using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports;
-using DirectorySync.Domain.Entities;
-using DirectorySync.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -114,7 +114,7 @@ internal class SynchronizeCloud : ISynchronizeCloud
         return bag;
     }
 
-    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<Identity> cloudIdentities, HashSet<Identity> refIdentitiesMap)
+    private IEnumerable<string> GetDeletedMembersIdentities(ReadOnlyCollection<LdapIdentity> cloudIdentities, HashSet<LdapIdentity> refIdentitiesMap)
     {
         foreach (var cloudIdentity in cloudIdentities)
         {
@@ -125,14 +125,14 @@ internal class SynchronizeCloud : ISynchronizeCloud
         }
     }
 
-    private HashSet<Identity> GetReferenceIdentitiesMap(IEnumerable<ReferenceDirectoryGroup> groups,
+    private HashSet<LdapIdentity> GetReferenceIdentitiesMap(IEnumerable<ReferenceDirectoryGroup> groups,
         LdapAttributeMappingOptions options)
     {
         return groups
             .SelectMany(g => g.Members
             .Select(m => m.Attributes.GetSingleOrDefault(options.IdentityAttribute))
             .Where(x => !string.IsNullOrWhiteSpace(x)))
-            .Select(x => new Identity(x!))
+            .Select(x => new LdapIdentity(x!))
             .ToHashSet();
     }
 

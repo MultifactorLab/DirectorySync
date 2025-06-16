@@ -1,5 +1,5 @@
 ﻿using System.DirectoryServices.Protocols;
-using DirectorySync.Domain.ValueObjects;
+using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Infrastructure.Integrations.Ldap;
 

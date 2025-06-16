@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
-using DirectorySync.Domain.Karnel;
+using DirectorySync.Shared.Karnel;
 
-namespace DirectorySync.Domain.ValueObjects;
+namespace DirectorySync.Application.Models.ValueObjects;
 
 public class EntriesHash : ValueObject
 {
@@ -32,19 +32,6 @@ public class EntriesHash : ValueObject
         ArgumentNullException.ThrowIfNull(guids);
 
         var ordered = guids.Select(x => x.Value).OrderDescending();
-        var joinedGuids = string.Join(';', ordered);
-        var bytes = Encoding.UTF8.GetBytes(joinedGuids);
-        var hash = SHA256.HashData(bytes);
-
-        var value = BitConverter.ToString(hash).Replace("-", string.Empty);
-        return new(value);
-    }
-
-    public static EntriesHash Create(IEnumerable<Guid> guids)
-    {
-        ArgumentNullException.ThrowIfNull(guids);
-
-        var ordered = guids.Select(x => x).OrderDescending();
         var joinedGuids = string.Join(';', ordered);
         var bytes = Encoding.UTF8.GetBytes(joinedGuids);
         var hash = SHA256.HashData(bytes);

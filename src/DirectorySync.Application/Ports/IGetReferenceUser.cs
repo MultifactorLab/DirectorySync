@@ -1,5 +1,5 @@
-﻿using DirectorySync.Domain.Entities;
-using DirectorySync.Domain.ValueObjects;
+﻿using DirectorySync.Application.Models.Entities;
+using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Ports
 {

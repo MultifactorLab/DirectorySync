@@ -1,7 +1,7 @@
 ﻿using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Models.Entities;
 using DirectorySync.Application.Ports;
-using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
 

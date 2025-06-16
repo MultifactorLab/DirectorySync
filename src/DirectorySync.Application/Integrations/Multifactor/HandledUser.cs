@@ -1,4 +1,4 @@
-﻿using DirectorySync.Domain.ValueObjects;
+﻿using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Integrations.Multifactor;
 
