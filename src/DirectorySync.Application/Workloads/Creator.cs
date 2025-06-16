@@ -4,7 +4,7 @@ using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Models;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Ports;
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 using DirectorySync.Domain.Entities;
 using Microsoft.Extensions.Options;
 

@@ -1,3 +1,5 @@
+using DirectorySync.Domain.ValueObjects;
+
 namespace DirectorySync.Domain.Tests;
 
 public class AttributesHashTests

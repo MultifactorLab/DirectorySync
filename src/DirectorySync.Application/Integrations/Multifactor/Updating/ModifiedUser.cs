@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using DirectorySync.Application.Integrations.Multifactor.Models;
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Application.Integrations.Multifactor.Updating;
 

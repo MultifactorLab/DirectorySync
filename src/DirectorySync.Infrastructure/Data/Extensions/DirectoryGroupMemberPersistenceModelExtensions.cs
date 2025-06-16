@@ -1,4 +1,4 @@
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 using DirectorySync.Domain.Entities;
 using DirectorySync.Infrastructure.Data.Models;
 
@@ -11,7 +11,7 @@ internal static class DirectoryGroupMemberPersistenceModelExtensions
         ArgumentNullException.ThrowIfNull(model);
         
         var guid = new DirectoryGuid(model.Guid);
-        var identity = new LdapIdentity(model.Identity);
+        var identity = new Identity(model.Identity);
         var hash = new AttributesHash(model.Hash);
         return new CachedDirectoryGroupMember(guid, identity, hash);
     }

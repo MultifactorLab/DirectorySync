@@ -3,6 +3,7 @@ using DirectorySync.Application.Exceptions;
 using DirectorySync.Application.Ports;
 using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
+using DirectorySync.Domain.ValueObjects;
 using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
 using LiteDB;
 using Microsoft.Extensions.Logging;

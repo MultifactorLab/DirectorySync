@@ -4,7 +4,7 @@ using DirectorySync.Application.Integrations.Multifactor.Creating;
 using DirectorySync.Application.Integrations.Multifactor.Deleting;
 using DirectorySync.Application.Integrations.Multifactor.Get;
 using DirectorySync.Application.Integrations.Multifactor.Updating;
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 using DirectorySync.Infrastructure.Common.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
 using DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
@@ -46,7 +46,7 @@ internal class MultifactorApi : IMultifactorApi
             return new GetUsersIdentitiesOperationResult();
         }
 
-        var identites = response.Model.Identities.Select(i => new LdapIdentity(i));
+        var identites = response.Model.Identities.Select(i => new Identity(i));
 
         return new GetUsersIdentitiesOperationResult(identites);
     }

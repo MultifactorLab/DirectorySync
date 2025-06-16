@@ -1,15 +1,18 @@
 ﻿using DirectorySync.Application.Ports;
-using DirectorySync.Domain;
 using DirectorySync.Domain.Entities;
+using DirectorySync.Domain.ValueObjects;
 
 namespace DirectorySync.Infrastructure.Data;
 
 internal class EmptyApplicationStorage : IApplicationStorage
 {
-    public IEnumerable<CachedDirectoryGroup> FindGroups(IEnumerable<DirectoryGuid> ids) => default;
     public CachedDirectoryGroup? FindGroup(DirectoryGuid id) => default;
-    public void InsertGroup(CachedDirectoryGroup group) { }
-    public void UpdateGroup(CachedDirectoryGroup group) { }
 
-    public bool IsGroupCollectionExists() => false;
+    public IEnumerable<CachedDirectoryGroup> FindGroups(IEnumerable<DirectoryGuid> ids) => default;
+
+    public void InsertGroup(CachedDirectoryGroup group) { }
+
+    public bool IsGroupCollectionExists() => default;
+
+    public void UpdateGroup(CachedDirectoryGroup group) { }
 }

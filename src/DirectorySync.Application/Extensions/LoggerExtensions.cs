@@ -1,4 +1,4 @@
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Application.Extensions;
@@ -21,7 +21,7 @@ public static class LoggerExtensions
         return logger.BeginScope(GetState("LdapUserGuid", ldapUserGuid));
     }
     
-    public static IDisposable? EnrichWithLdapUser(this ILogger logger, LdapIdentity userId)
+    public static IDisposable? EnrichWithLdapUser(this ILogger logger, Identity userId)
     {
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(userId);

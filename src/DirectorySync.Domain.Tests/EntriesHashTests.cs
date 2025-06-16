@@ -1,3 +1,5 @@
+using DirectorySync.Domain.ValueObjects;
+
 namespace DirectorySync.Domain.Tests;
 
 public class EntriesHashTests
@@ -20,7 +22,7 @@ public class EntriesHashTests
     [Fact]
     public void Create_ShouldReturnInstance()
     {
-        var instance = EntriesHash.Create([]);
+        var instance = EntriesHash.Create(Array.Empty<Guid>());
         Assert.NotNull(instance);
     }
     

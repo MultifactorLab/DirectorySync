@@ -1,4 +1,4 @@
-using DirectorySync.Domain;
+using DirectorySync.Domain.ValueObjects;
 using LiteDB;
 
 namespace DirectorySync.Infrastructure.Data.Models;
