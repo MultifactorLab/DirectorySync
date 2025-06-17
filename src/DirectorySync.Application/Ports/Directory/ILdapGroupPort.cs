@@ -7,7 +7,8 @@ namespace DirectorySync.Application.Ports.Directory
     public interface ILdapGroupPort
     {
         Task<GroupModel?> GetByGuidAsync(DirectoryGuid objectGuid);
-        Task<ReadOnlyCollection<GroupModel>> GetGroupMembersRecursiveAsync(IEnumerable<DirectoryGuid> groupGuid);
-        Task<ReadOnlyCollection<GroupModel>> GetGroupsChangedAfterAsync(long usnChanged);
+        Task<ReadOnlyCollection<GroupModel>?> GetByGuidAsync(IEnumerable<DirectoryGuid> objectGuids);
+        Task<ReadOnlyCollection<DirectoryGuid>> GetGroupMemberIdsRecursiveAsync(DirectoryGuid groupGuid);
+        Task<ReadOnlyCollection<GroupModel>> GetChangedAfterAsync(long usnChanged);
     }
 }
