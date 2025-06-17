@@ -1,0 +1,74 @@
+using System.Collections.ObjectModel;
+using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Application.Ports.Directory;
+using DirectorySync.Application.Ports.Repositories;
+using DirectorySync.Application.Services;
+using Microsoft.Extensions.Logging;
+
+namespace DirectorySync.Application.UseCases;
+
+public interface ISynchronizeUsersUseCase
+{
+    Task ExecuteAsync(CancellationToken token = default);
+}
+
+public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
+{
+    private readonly IMemberRepository _memberRepository;
+    private readonly ILdapMemberPort _memberPort;
+    private readonly IUserUpdater _userUpdater;
+    private readonly ILogger<SynchronizeGroupsUseCase> _logger;
+
+    public SynchronizeUsersUseCase(IMemberRepository memberRepository,
+        ILdapMemberPort memberPort,
+        IUserUpdater userUpdater,
+        ILogger<SynchronizeGroupsUseCase> logger)
+    {
+        _memberRepository = memberRepository;
+        _memberPort = memberPort;
+        _userUpdater = userUpdater;
+        _logger = logger;
+    }
+    
+    public async Task ExecuteAsync(CancellationToken token = default)
+    {
+        var cachedMembers = _memberRepository.FindAll();
+        if (cachedMembers.Count == 0)
+        {
+            return;
+        }
+        
+        var memberIds = cachedMembers.Select(m => m.Id).ToArray();
+        var freshEntries = await _memberPort.GetByGuidsAsync(memberIds);
+        
+        var referenceMemberMap = freshEntries.ToDictionary(x => x.Id);
+        
+        var changed = ProcessMembersChanges(cachedMembers, referenceMemberMap);
+        
+        var toUpdate = await _userUpdater.UpdateManyAsync(changed, token);
+    }
+
+    private ReadOnlyCollection<MemberModel> ProcessMembersChanges(IEnumerable<MemberModel> cachedMembers,
+        Dictionary<DirectoryGuid, MemberModel> referenceMemberMap)
+    {
+        var changed = new List<MemberModel>();
+
+        foreach (var cached in cachedMembers)
+        {
+            if (!referenceMemberMap.TryGetValue(cached.Id, out var referenceMember))
+            {
+                continue;
+            }
+
+            if (cached.AttributesHash != referenceMember.AttributesHash)
+            {
+                cached.SetNewAttributes(referenceMember.Attributes);
+                cached.MarkForUpdate();
+                changed.Add(cached);
+            }
+        }
+        
+        return changed.AsReadOnly();
+    }
+}

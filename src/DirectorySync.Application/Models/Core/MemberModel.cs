@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Models.Core
@@ -7,11 +8,20 @@ namespace DirectorySync.Application.Models.Core
     {
         public Identity Identity { get; }
         
-        public LdapAttributeCollection Attributes { get; }
+        public LdapAttributeCollection Attributes { get;  private set; }
         public AttributesHash AttributesHash { get; private set; }
+        
         
         private readonly List<DirectoryGuid> _groupIds = new();
         public ReadOnlyCollection<DirectoryGuid> GroupIds => _groupIds.AsReadOnly();
+        
+        public ChangeOperation Operation { get; private set; } = ChangeOperation.None;
+        
+        private readonly List<DirectoryGuid> _removedGroupIds = new();
+        public ReadOnlyCollection<DirectoryGuid> RemovedGroupIds => _removedGroupIds.AsReadOnly();
+        
+        private readonly List<DirectoryGuid> _addedGroupIds = new();
+        public ReadOnlyCollection<DirectoryGuid> AddedGroupIds => _addedGroupIds.AsReadOnly();
 
         private MemberModel(DirectoryGuid id,
             Identity identity,
@@ -48,6 +58,7 @@ namespace DirectorySync.Application.Models.Core
             }
 
             _groupIds.AddRange(groupIds);
+            _addedGroupIds.AddRange(groupIds);
         }
 
         public void RemoveGroups(IEnumerable<DirectoryGuid> groupIds)
@@ -55,15 +66,25 @@ namespace DirectorySync.Application.Models.Core
             ArgumentNullException.ThrowIfNull(groupIds);
 
             _groupIds.RemoveAll(x => groupIds.Contains(x));
+            _groupIds.AddRange(groupIds);
         }
 
-        public void UpdateHash(AttributesHash newHash)
+        public void SetNewAttributes(LdapAttributeCollection newAttributes)
         {
-            ArgumentNullException.ThrowIfNull(newHash);
+            ArgumentNullException.ThrowIfNull(newAttributes);
+            
+            var newHash = new AttributesHash(newAttributes);
+
             if (AttributesHash != newHash)
             {
+                Attributes = newAttributes;
                 AttributesHash = newHash;
             }
         }
+        
+        public void MarkForCreate() => Operation = ChangeOperation.Create;
+        public void MarkForUpdate() => Operation = ChangeOperation.Update;
+        public void MarkForDelete() => Operation = ChangeOperation.Delete;
+        public void ResetOperation() => Operation = ChangeOperation.None;
     }
 }
