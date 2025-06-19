@@ -24,6 +24,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     private readonly IUserCreator _userCreator;
     private readonly IUserUpdater _userUpdater;
     private readonly IUserDeleter _userDeleter;
+    private readonly ISyncSettingsOptions _syncSettingsOptions;
     private readonly ILogger<SynchronizeGroupsUseCase> _logger;
 
     public SynchronizeGroupsUseCase(IGroupDatabase groupDatabase,
@@ -45,6 +46,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         _userCreator = userCreator;
         _userUpdater = userUpdater;
         _userDeleter = userDeleter;
+        _syncSettingsOptions = syncSettingsOptions;
         _logger = logger;
     }
 
@@ -102,6 +104,8 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         HandleRemovedMembers(groupId, removedIds, memberMap);
         await HandleAddedMembers(groupId, addedIds, memberMap, token);
+
+        SetMembersGroupMapping(memberMap.Values);
     }
     
     private void HandleRemovedMembers(DirectoryGuid groupId,
@@ -150,6 +154,21 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
             {
                 member.MarkForUpdate();
             }
+        }
+    }
+
+    private void SetMembersGroupMapping(IEnumerable<MemberModel> members)
+    {
+        var syncSettings = _syncSettingsOptions.GetSyncSettings();
+        var groupMappingMap = syncSettings.DirectoryGroupMappings
+            .ToDictionary(
+                kpv => new DirectoryGuid(Guid.Parse(kpv.DirectoryGroup)),
+                kpv => kpv.SignUpGroups.ToArray()
+            );
+        
+        foreach (var member in members)
+        {
+            _userGroupsMapper.SetUserCloudGroupsChanges(member, groupMappingMap);
         }
     }
     
