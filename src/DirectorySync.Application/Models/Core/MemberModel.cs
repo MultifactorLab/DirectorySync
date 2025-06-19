@@ -21,6 +21,13 @@ namespace DirectorySync.Application.Models.Core
         
         public ReadOnlyCollection<DirectoryGuid> RemovedGroupIds => _removedGroupIds.AsReadOnly();
         public ReadOnlyCollection<DirectoryGuid> AddedGroupIds => _addedGroupIds.AsReadOnly();
+        
+        private readonly List<string> _removedCloudGroups = new();
+        private readonly List<string> _addedCloudGroups = new();
+        
+        public ReadOnlyCollection<string> RemovedCloudGroups => _removedCloudGroups.AsReadOnly();
+        public ReadOnlyCollection<string> AddedCloudGroups => _addedCloudGroups.AsReadOnly();
+        
 
         private MemberModel(DirectoryGuid id,
             Identity identity,
@@ -66,6 +73,20 @@ namespace DirectorySync.Application.Models.Core
 
             _groupIds.RemoveAll(x => groupIds.Contains(x));
             _removedGroupIds.AddRange(groupIds);
+        }
+
+        public void AddCloudGroups(IEnumerable<string> cloudGroups)
+        {
+            ArgumentNullException.ThrowIfNull(cloudGroups);
+            
+            _addedCloudGroups.AddRange(cloudGroups);
+        }
+
+        public void RemoveCloudGroups(IEnumerable<string> cloudGroups)
+        {
+            ArgumentNullException.ThrowIfNull(cloudGroups);
+            
+            _removedCloudGroups.AddRange(cloudGroups);
         }
 
         public void SetNewAttributes(LdapAttributeCollection newAttributes)

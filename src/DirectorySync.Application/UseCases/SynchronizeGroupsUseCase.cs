@@ -1,8 +1,9 @@
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Application.Ports.Directory;
-using DirectorySync.Application.Ports.Repositories;
+using DirectorySync.Application.Ports.Options;
 using DirectorySync.Application.Services;
 using Microsoft.Extensions.Logging;
 
@@ -15,28 +16,32 @@ public interface ISynchronizeGroupsUseCase
 
 public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 {
-    private readonly IGroupRepository _groupRepository;
-    private readonly IMemberRepository _memberRepository;
+    private readonly IGroupDatabase _groupDatabase;
+    private readonly IMemberDatabase _memberDatabase;
     private readonly ILdapGroupPort _groupPort;
     private readonly ILdapMemberPort _memberPort;
+    private readonly IUserGroupsMapper _userGroupsMapper;
     private readonly IUserCreator _userCreator;
     private readonly IUserUpdater _userUpdater;
     private readonly IUserDeleter _userDeleter;
     private readonly ILogger<SynchronizeGroupsUseCase> _logger;
 
-    public SynchronizeGroupsUseCase(IGroupRepository groupRepository,
-        IMemberRepository memberRepository,
+    public SynchronizeGroupsUseCase(IGroupDatabase groupDatabase,
+        IMemberDatabase memberDatabase,
         ILdapGroupPort groupPort,
         ILdapMemberPort memberPort,
+        IUserGroupsMapper userGroupsMapper,
         IUserCreator userCreator,
         IUserUpdater userUpdater,
         IUserDeleter userDeleter,
+        ISyncSettingsOptions syncSettingsOptions,
         ILogger<SynchronizeGroupsUseCase> logger)
     {
-        _groupRepository = groupRepository;
-        _memberRepository = memberRepository;
+        _groupDatabase = groupDatabase;
+        _memberDatabase = memberDatabase;
         _groupPort = groupPort;
         _memberPort = memberPort;
+        _userGroupsMapper = userGroupsMapper;
         _userCreator = userCreator;
         _userUpdater = userUpdater;
         _userDeleter = userDeleter;
@@ -53,9 +58,16 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
             await ProcessGroupChanges(groupId, memberMap, token);
         }
 
-        var toCreate = memberMap.Values.Where(m => m.Operation == ChangeOperation.Create).ToList();
-        var toUpdate = memberMap.Values.Where(m => m.Operation == ChangeOperation.Update).ToList();
-        var toDelete = memberMap.Values.Where(m => m.Operation == ChangeOperation.Delete).ToList();
+        var toCreate = memberMap.Values
+            .Where(m => m.Operation == ChangeOperation.Create)
+            .ToList();
+        var toUpdate = memberMap.Values
+            .Where(m => m.Operation == ChangeOperation.Update)
+            .ToList();
+        var toDelete = memberMap.Values
+            .Where(m => m.Operation == ChangeOperation.Delete)
+            .Select(m => m.Identity)
+            .ToList();
         
         await _userCreator.CreateManyAsync(toCreate, token);
         await _userUpdater.UpdateManyAsync(toUpdate, token);
@@ -72,12 +84,12 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
             return;
         }
 
-        var cachedGroup = _groupRepository.FindById(groupId);
+        var cachedGroup = _groupDatabase.FindById(groupId);
 
         if (cachedGroup is null)
         {
             cachedGroup = GroupModel.Create(referenceGroup.Id, []);
-            _groupRepository.Insert(cachedGroup);
+            _groupDatabase.Insert(cachedGroup);
         }
 
         if (cachedGroup.MembersHash == referenceGroup.MembersHash)
@@ -162,7 +174,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         if (notFoundInMap.Count > 0)
         {
-            var loaded = _memberRepository.FindById(notFoundInMap);
+            var loaded = _memberDatabase.FindById(notFoundInMap);
             foreach (var m in loaded)
             {
                 memberMap[m.Id] = m;

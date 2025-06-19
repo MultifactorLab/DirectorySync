@@ -1,9 +1,8 @@
-using DirectorySync.Application.Models;
+using DirectorySync.Application.Models.Options;
 
-namespace DirectorySync.Application.Ports.Cloud
+namespace DirectorySync.Application.Ports.Cloud;
+
+public interface ISyncSettingsCloudPort
 {
-    public interface ISyncSettingsCloudPort
-    {
-        Task<SyncSettings> GetConfigAsync();
-    }
+    Task<SyncSettings> GetConfigAsync();
 }

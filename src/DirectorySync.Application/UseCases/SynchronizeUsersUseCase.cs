@@ -1,8 +1,8 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Application.Ports.Directory;
-using DirectorySync.Application.Ports.Repositories;
 using DirectorySync.Application.Services;
 using Microsoft.Extensions.Logging;
 
@@ -15,17 +15,17 @@ public interface ISynchronizeUsersUseCase
 
 public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
 {
-    private readonly IMemberRepository _memberRepository;
+    private readonly IMemberDatabase _memberDatabase;
     private readonly ILdapMemberPort _memberPort;
     private readonly IUserUpdater _userUpdater;
     private readonly ILogger<SynchronizeGroupsUseCase> _logger;
 
-    public SynchronizeUsersUseCase(IMemberRepository memberRepository,
+    public SynchronizeUsersUseCase(IMemberDatabase memberDatabase,
         ILdapMemberPort memberPort,
         IUserUpdater userUpdater,
         ILogger<SynchronizeGroupsUseCase> logger)
     {
-        _memberRepository = memberRepository;
+        _memberDatabase = memberDatabase;
         _memberPort = memberPort;
         _userUpdater = userUpdater;
         _logger = logger;
@@ -33,7 +33,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
     
     public async Task ExecuteAsync(CancellationToken token = default)
     {
-        var cachedMembers = _memberRepository.FindAll();
+        var cachedMembers = _memberDatabase.FindAll();
         if (cachedMembers.Count == 0)
         {
             return;
