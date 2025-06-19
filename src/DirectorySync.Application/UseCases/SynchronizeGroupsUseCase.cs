@@ -11,7 +11,7 @@ namespace DirectorySync.Application.UseCases;
 
 public interface ISynchronizeGroupsUseCase
 {
-    Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken token = default);
+    Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default);
 }
 
 public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
@@ -51,13 +51,13 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     }
 
     public async Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids,
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         var memberMap = new Dictionary<DirectoryGuid, MemberModel>();
 
         foreach (var groupId in trackingGroupGuids)
         {
-            await ProcessGroupChanges(groupId, memberMap, token);
+            await ProcessGroupChanges(groupId, memberMap, cancellationToken);
         }
 
         var toCreate = memberMap.Values
@@ -71,14 +71,14 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
             .Select(m => m.Identity)
             .ToList();
         
-        await _userCreator.CreateManyAsync(toCreate, token);
-        await _userUpdater.UpdateManyAsync(toUpdate, token);
-        await _userDeleter.DeleteManyAsync(toDelete, token);
+        await _userCreator.CreateManyAsync(toCreate, cancellationToken);
+        await _userUpdater.UpdateManyAsync(toUpdate, cancellationToken);
+        await _userDeleter.DeleteManyAsync(toDelete, cancellationToken);
     }
     
     private async Task ProcessGroupChanges(DirectoryGuid groupId,
         Dictionary<DirectoryGuid, MemberModel> memberMap,
-        CancellationToken token)
+        CancellationToken cancellationToken)
     {
         var referenceGroup = await _groupPort.GetByGuidAsync(groupId);
         if (referenceGroup is null)
@@ -101,9 +101,9 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         var removedIds = cachedGroup.MemberIds.Except(referenceGroup.MemberIds).ToArray();
         var addedIds = referenceGroup.MemberIds.Except(cachedGroup.MemberIds).ToArray();
-
+        
         HandleRemovedMembers(groupId, removedIds, memberMap);
-        await HandleAddedMembers(groupId, addedIds, memberMap, token);
+        await HandleAddedMembers(groupId, addedIds, memberMap, cancellationToken);
 
         SetMembersGroupMapping(memberMap.Values);
     }
@@ -132,13 +132,15 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     private async Task HandleAddedMembers(DirectoryGuid groupId,
         IEnumerable<DirectoryGuid> addedIds,
         Dictionary<DirectoryGuid, MemberModel> memberMap,
-        CancellationToken token)
+        CancellationToken cancellationToken)
     {
         var existingMembers = FindOrLoadMembers(addedIds, memberMap);
         var existingIds = existingMembers.Select(m => m.Id).ToHashSet();
         var newIds = addedIds.Except(existingIds).ToArray();
 
-        var newMembers = await _memberPort.GetByGuidsAsync(newIds);
+        var requiredNames = _syncSettingsOptions.GetRequiredAttributeNames();
+        
+        var newMembers = await _memberPort.GetByGuidsAsync(newIds, requiredNames, cancellationToken);
         foreach (var entry in newMembers)
         {
             var member = MemberModel.Create(entry.Id, entry.Identity, entry.Attributes, []);
@@ -159,7 +161,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
     private void SetMembersGroupMapping(IEnumerable<MemberModel> members)
     {
-        var syncSettings = _syncSettingsOptions.GetSyncSettings();
+        var syncSettings = _syncSettingsOptions.Current;
         var groupMappingMap = syncSettings.DirectoryGroupMappings
             .ToDictionary(
                 kpv => new DirectoryGuid(Guid.Parse(kpv.DirectoryGroup)),

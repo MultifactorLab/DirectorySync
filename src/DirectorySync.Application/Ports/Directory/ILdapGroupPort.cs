@@ -6,6 +6,6 @@ namespace DirectorySync.Application.Ports.Directory;
 
 public interface ILdapGroupPort
 {
-    Task<GroupModel?> GetByGuidAsync(DirectoryGuid objectGuid);
-    Task<ReadOnlyCollection<GroupModel>?> GetByGuidAsync(IEnumerable<DirectoryGuid> objectGuids);
+    Task<GroupModel?> GetByGuidAsync(DirectoryGuid objectGuid, CancellationToken cancellationToken = default);
+    Task<ReadOnlyCollection<GroupModel>?> GetByGuidAsync(IEnumerable<DirectoryGuid> objectGuids, CancellationToken cancellationToken = default);
 }

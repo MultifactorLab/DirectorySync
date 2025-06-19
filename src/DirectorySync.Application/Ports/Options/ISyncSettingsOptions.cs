@@ -4,7 +4,8 @@ namespace DirectorySync.Application.Ports.Options;
 
 public interface ISyncSettingsOptions
 {
-    // DirectorySync.Application.Workloads.RequiredLdapAttributes
+    SyncSettings Current { get; }
+    
+    IDisposable OnChange(Action<SyncSettings> action);
     string[] GetRequiredAttributeNames();
-    SyncSettings GetSyncSettings();
 }
