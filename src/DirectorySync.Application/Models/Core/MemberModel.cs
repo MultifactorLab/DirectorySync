@@ -11,16 +11,15 @@ namespace DirectorySync.Application.Models.Core
         public LdapAttributeCollection Attributes { get;  private set; }
         public AttributesHash AttributesHash { get; private set; }
         
-        
         private readonly List<DirectoryGuid> _groupIds = new();
         public ReadOnlyCollection<DirectoryGuid> GroupIds => _groupIds.AsReadOnly();
         
         public ChangeOperation Operation { get; private set; } = ChangeOperation.None;
         
         private readonly List<DirectoryGuid> _removedGroupIds = new();
-        public ReadOnlyCollection<DirectoryGuid> RemovedGroupIds => _removedGroupIds.AsReadOnly();
-        
         private readonly List<DirectoryGuid> _addedGroupIds = new();
+        
+        public ReadOnlyCollection<DirectoryGuid> RemovedGroupIds => _removedGroupIds.AsReadOnly();
         public ReadOnlyCollection<DirectoryGuid> AddedGroupIds => _addedGroupIds.AsReadOnly();
 
         private MemberModel(DirectoryGuid id,
@@ -66,7 +65,7 @@ namespace DirectorySync.Application.Models.Core
             ArgumentNullException.ThrowIfNull(groupIds);
 
             _groupIds.RemoveAll(x => groupIds.Contains(x));
-            _groupIds.AddRange(groupIds);
+            _removedGroupIds.AddRange(groupIds);
         }
 
         public void SetNewAttributes(LdapAttributeCollection newAttributes)

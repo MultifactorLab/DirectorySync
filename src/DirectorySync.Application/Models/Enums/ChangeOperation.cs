@@ -1,10 +1,9 @@
-namespace DirectorySync.Application.Models.Enums
+namespace DirectorySync.Application.Models.Enums;
+
+public enum ChangeOperation
 {
-    public enum ChangeOperation
-    {
-        None,
-        Create,
-        Update,
-        Delete
-    }
+    None,
+    Create,
+    Update,
+    Delete
 }

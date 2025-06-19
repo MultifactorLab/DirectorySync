@@ -1,8 +1,8 @@
 using DirectorySync.Application.Models.ValueObjects;
 
-namespace DirectorySync.Application.Models.Core
-{
-    public abstract class BaseModel
+namespace DirectorySync.Application.Models.Core;
+
+public abstract class BaseModel
     {
         public DirectoryGuid Id { get; }
             
@@ -63,4 +63,3 @@ namespace DirectorySync.Application.Models.Core
             }
         }
     }
-}
