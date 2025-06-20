@@ -1,5 +1,6 @@
-﻿using DirectorySync.Application.Integrations.Multifactor;
-using DirectorySync.Application.Measuring;
+﻿using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Services;
+using DirectorySync.Application.UseCases;
 using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,25 +15,15 @@ public static class AddApplicationServicesExtension
             .BindConfiguration("UserProcessing")
             .ValidateDataAnnotations();
 
-        builder.Services.AddTransient<Creator>();
-        builder.Services.AddTransient<Updater>();
-        builder.Services.AddTransient<Deleter>();
-
-        builder.Services.AddTransient<ISynchronizeUsers, SynchronizeUsers>();
-        builder.Services.AddTransient<IScanUsers, ScanUsers>();
-        builder.Services.AddTransient<ISynchronizeCloud, SynchronizeCloud>();
-
-        builder.Services.AddTransient<RequiredLdapAttributes>();
-
-        builder.Services.AddOptions<LdapAttributeMappingOptions>()
-            .BindConfiguration("Sync")
-            .ValidateDataAnnotations();
-
-        builder.Services.AddOptions<GroupMappingsOptions>()
-            .BindConfiguration("Sync")
-            .ValidateDataAnnotations();
-
-
+        builder.Services.AddTransient<IUserCreator, UserCreator>();
+        builder.Services.AddTransient<IUserUpdater, UserUpdater>();
+        builder.Services.AddTransient<IUserDeleter, UserDeleter>();
+        
+        builder.Services.AddTransient<ISynchronizeUsersUseCase, SynchronizeUsersUseCase>();
+        builder.Services.AddTransient<ISynchronizeGroupsUseCase, SynchronizeGroupsUseCase>();
+        builder.Services.AddTransient<IInitialSynchronizeUsersUseCase, InitialSynchronizeUsersUseCase>();
+        builder.Services.AddTransient<ISynchronizeCloudSettingsUseCase, SynchronizeCloudSettingsUseCase>();
+        
         builder.AddCodeTimer("Logging");
     }
 }

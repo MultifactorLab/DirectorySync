@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DirectorySync.Application.Integrations.Multifactor;
+namespace DirectorySync.Application.Models.Options;
 
-internal class LdapAttributeMappingOptions
+public class LdapAttributeMappingOptions
 {
     [Required]
     public required string IdentityAttribute { get; init; }

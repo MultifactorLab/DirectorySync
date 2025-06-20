@@ -1,4 +1,5 @@
-﻿using DirectorySync.Services;
+﻿using DirectorySync.Application.Workloads;
+using DirectorySync.Services;
 
 namespace DirectorySync.Extensions;
 
@@ -10,8 +11,5 @@ internal static class HostApplicationBuilderExtensions
         
         builder.Services.AddSingleton<OrderBoard>();
         builder.Services.AddHostedService<WorkloadDispatcher>();
-        builder.Services.AddOptions<SyncOptions>()
-            .BindConfiguration("Sync")
-            .ValidateDataAnnotations();
     }
 }

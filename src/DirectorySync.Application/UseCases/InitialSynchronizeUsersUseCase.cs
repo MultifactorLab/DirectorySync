@@ -12,10 +12,10 @@ namespace DirectorySync.Application.UseCases;
 
 public interface IInitialSynchronizeUsersUseCase
 {
-    Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken token = default);
+    Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default);
 }
 
-public class InitialSynchronizeUsersUseCase
+public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 {
     private readonly ISystemDatabase _systemDatabase;
     private readonly ILdapGroupPort _ldapGroupPort;
@@ -42,9 +42,9 @@ public class InitialSynchronizeUsersUseCase
        _logger = logger;
     }
 
-    public async Task ExecuteAsync(ReadOnlyCollection<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default)
     {
-       if (trackingGroupGuids.Count == 0)
+       if (trackingGroupGuids.Count() == 0)
        {
            _logger.LogDebug("No tracking groups provided, skipping synchronization");
            throw new InvalidOperationException("No tracking groups provided");
@@ -78,7 +78,7 @@ public class InitialSynchronizeUsersUseCase
        await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), cancellationToken);
     } 
 
-    private async Task<HashSet<Identity>> GetTrackingReferenceMembers(ReadOnlyCollection<DirectoryGuid> trackingGroups,
+    private async Task<HashSet<Identity>> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
         string[] requiredAttributes,
         CancellationToken cancellationToken = default)
     {
