@@ -1,9 +1,11 @@
-﻿namespace DirectorySync.ConfigSources.SystemEnvironmentVariables;
+﻿using Microsoft.Extensions.Configuration;
+
+namespace DirectorySync.Infrastructure.ConfigurationSources.SystemEnvironmentVariables;
 
 /// <summary>
 /// Represents SYSTEM (Machine level) environment variables as an <see cref="IConfigurationSource"/>.
 /// </summary>
-internal sealed class SystemEnvironmentVariablesConfigurationSource : IConfigurationSource
+public sealed class SystemEnvironmentVariablesConfigurationSource : IConfigurationSource
 {
     private readonly string _prefix;
 

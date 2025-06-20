@@ -3,6 +3,7 @@
 internal enum WorkloadKind
 {
     Empty,
-    Synchronize,
-    Scan
+    SynchronizeUsers,
+    SynchronizeGroups,
+    SynchronizeSettings
 }

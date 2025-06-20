@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using DirectorySync.Application;
-using DirectorySync.ConfigSources.MultifactorCloud;
-using DirectorySync.ConfigSources.SystemEnvironmentVariables;
+using DirectorySync.Configuration;
 using DirectorySync.Extensions;
 using DirectorySync.Infrastructure;
 using DirectorySync.Infrastructure.Logging;
@@ -26,7 +25,7 @@ try
     });
 
 
-    builder.Configuration.AddSystemEnvironmentVariables("DIRECTORYSYNC_");
+    builder.Configuration.AddSystemEnvironmentVariablesSource("DIRECTORYSYNC_");
     builder.Configuration.AddEnvironmentVariables("DIRECTORYSYNC_");
 
 #if DEBUG
@@ -38,7 +37,7 @@ try
 
     builder.RegisterLogger(args);
 
-    builder.Configuration.AddMultifactorCloudConfiguration();
+    builder.Configuration.AddCloudConfigurationSource();
 
     builder.AddApplicationServices();
     builder.AddInfrastructureServices(args);

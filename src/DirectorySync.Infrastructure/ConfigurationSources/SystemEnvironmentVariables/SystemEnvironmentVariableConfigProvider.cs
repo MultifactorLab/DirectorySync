@@ -1,8 +1,9 @@
 ﻿using System.Collections;
+using Microsoft.Extensions.Configuration;
 
-namespace DirectorySync.ConfigSources.SystemEnvironmentVariables;
+namespace DirectorySync.Infrastructure.ConfigurationSources.SystemEnvironmentVariables;
 
-internal class SystemEnvironmentVariableConfigProvider : ConfigurationProvider
+public class SystemEnvironmentVariableConfigProvider : ConfigurationProvider
 {
     private readonly string _prefix;
     private readonly string _normalizedPrefix;

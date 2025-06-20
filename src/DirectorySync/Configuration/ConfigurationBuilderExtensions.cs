@@ -1,6 +1,9 @@
-﻿namespace DirectorySync.ConfigSources.SystemEnvironmentVariables;
+using DirectorySync.Infrastructure.ConfigurationSources.Cloud;
+using DirectorySync.Infrastructure.ConfigurationSources.SystemEnvironmentVariables;
 
-internal static class ExtendedEnvironmentVariablesExtensions
+namespace DirectorySync.Configuration;
+
+internal static class ConfigurationBuilderExtensions
 {
     /// <summary>
     /// Adds an <see cref="IConfigurationProvider"/> that reads configuration values from SYSTEM environment variables
@@ -9,7 +12,7 @@ internal static class ExtendedEnvironmentVariablesExtensions
     /// <param name="configurationBuilder">The <see cref="IConfigurationBuilder"/> to add to.</param>
     /// <param name="prefix">The prefix that SYSTEM (Machine level) environment variable names must start with. The prefix will be removed from the SYSTEM environment variable names.</param>
     /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-    public static IConfigurationBuilder AddSystemEnvironmentVariables(
+    public static void AddSystemEnvironmentVariablesSource(
         this IConfigurationBuilder configurationBuilder,
         string prefix)
     {
@@ -19,6 +22,11 @@ internal static class ExtendedEnvironmentVariablesExtensions
         }
 
         configurationBuilder.Add(new SystemEnvironmentVariablesConfigurationSource(prefix));
-        return configurationBuilder;
+    }
+    
+    public static void AddCloudConfigurationSource(this IConfigurationBuilder configurationBuilder)
+    {
+        var source = new CloudConfigurationSource();
+        configurationBuilder.Add(source);
     }
 }
