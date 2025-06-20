@@ -1,5 +1,4 @@
-﻿using DirectorySync.Application.Workloads;
-using DirectorySync.Services;
+﻿using DirectorySync.Services;
 
 namespace DirectorySync.Extensions;
 
