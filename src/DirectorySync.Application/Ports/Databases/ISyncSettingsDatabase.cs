@@ -4,6 +4,6 @@ namespace DirectorySync.Application.Ports.Databases;
 
 public interface ISyncSettingsDatabase
 {
-    SyncSettings GetSyncSettings();
+    SyncSettings? GetSyncSettings();
     void SaveSettings(SyncSettings syncSettings);
 }

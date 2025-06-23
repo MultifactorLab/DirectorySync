@@ -10,7 +10,7 @@ public class MemberPersistenceModel
     public Guid Id { get; private set; }
     public string Identity { get; private set; }
     public string Hash { get; private set; }
-    public Guid[] GroupIds { get; private set; }
+    public Guid[] GroupIds { get; private set; } = [];
 
     public MemberPersistenceModel(Guid id, 
         string identity,
@@ -32,6 +32,7 @@ public class MemberPersistenceModel
     
     public static MemberPersistenceModel FromDomainModel(MemberModel model)
     {
+        ArgumentNullException.ThrowIfNull(model, nameof(model));
         return new MemberPersistenceModel(model.Id.Value,
             model.Identity.Value,
             model.AttributesHash.Value,
@@ -40,6 +41,7 @@ public class MemberPersistenceModel
 
     public static MemberModel ToDomainModel(MemberPersistenceModel dbModel)
     {
+        ArgumentNullException.ThrowIfNull(dbModel, nameof(dbModel));
         return MemberModel.Create(dbModel.Id,
             new Identity(dbModel.Identity),
             new AttributesHash(dbModel.Hash),

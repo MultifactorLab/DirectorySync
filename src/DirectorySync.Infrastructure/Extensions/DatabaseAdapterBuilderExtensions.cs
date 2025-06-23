@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Infrastructure.Adapters.LiteDb;
-using DirectorySync.Infrastructure.Data;
+using DirectorySync.Infrastructure.Adapters.LiteDb.Configuration;
 using DirectorySync.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

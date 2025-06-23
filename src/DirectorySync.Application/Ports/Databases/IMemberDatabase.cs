@@ -8,7 +8,7 @@ public interface IMemberDatabase
 {
     ReadOnlyCollection<MemberModel> FindAll();
     ReadOnlyCollection<MemberModel> FindManyById(IEnumerable<DirectoryGuid> ids);
-    void InsertMany(IEnumerable<MemberModel> member);
+    void InsertMany(IEnumerable<MemberModel> members);
     void UpdateMany(IEnumerable<MemberModel> members);
-    void DeleteMany(IEnumerable<MemberModel> members);
+    void DeleteMany(IEnumerable<DirectoryGuid> members);
 }

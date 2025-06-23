@@ -101,7 +101,6 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
     
     private bool AreEqual(GroupMapping[] oldMappings, GroupMapping[] newMappings)
     {
-        // можно сделать более точную проверку — по хешу, json или поэлементно
         return oldMappings.Length == newMappings.Length &&
                oldMappings.All(o => newMappings.Any(n => n.DirectoryGroup == o.DirectoryGroup &&
                                                          n.SignUpGroups.OrderBy(x => x).SequenceEqual(o.SignUpGroups.OrderBy(x => x))));

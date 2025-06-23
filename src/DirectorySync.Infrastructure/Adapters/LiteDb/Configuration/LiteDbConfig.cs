@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DirectorySync.Infrastructure.Adapters.LiteDb;
+namespace DirectorySync.Infrastructure.Adapters.LiteDb.Configuration;
 
 public class LiteDbConfig
 {

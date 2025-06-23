@@ -10,7 +10,7 @@ public class GroupPersistenceModel
     public Guid Id { get; private set; }
     public string Hash { get; private set; }
     
-    public List<Guid> MemberIds { get; private set; }
+    public List<Guid> MemberIds { get; private set; } = new List<Guid>();
     
     public GroupPersistenceModel(Guid id,
         EntriesHash hash,
@@ -30,11 +30,13 @@ public class GroupPersistenceModel
 
     public static GroupPersistenceModel FromDomainModel(GroupModel model)
     {
+        ArgumentNullException.ThrowIfNull(model);
         return new GroupPersistenceModel(model.Id.Value, model.MembersHash, model.MemberIds.Select(id => id.Value));
     }
 
     public static GroupModel ToDomainModel(GroupPersistenceModel dbModel)
     {
+        ArgumentNullException.ThrowIfNull(dbModel);
         return GroupModel.Create(dbModel.Id, dbModel.MemberIds.Select(c => new DirectoryGuid(c)));
     }
 }

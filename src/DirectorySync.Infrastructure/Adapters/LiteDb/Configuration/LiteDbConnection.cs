@@ -1,7 +1,7 @@
 using LiteDB;
 using Microsoft.Extensions.Options;
 
-namespace DirectorySync.Infrastructure.Data;
+namespace DirectorySync.Infrastructure.Adapters.LiteDb.Configuration;
 
 public interface ILiteDbConnection
 {
