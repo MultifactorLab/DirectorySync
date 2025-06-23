@@ -44,12 +44,34 @@ public class MemberModel : BaseModel
         _groupIds = groupIds.ToList();
     }
 
+    private MemberModel(DirectoryGuid id,
+        Identity identity,
+        AttributesHash attributesHash,
+        IEnumerable<DirectoryGuid> groupIds) : base(id)
+    {
+        ArgumentNullException.ThrowIfNull(identity, nameof(identity));
+        ArgumentNullException.ThrowIfNull(attributesHash, nameof(attributesHash));
+        ArgumentNullException.ThrowIfNull(groupIds, nameof(groupIds));
+        
+        Identity = identity;
+        AttributesHash = attributesHash;
+        _groupIds = groupIds.ToList();
+    }
+
     public static MemberModel Create(Guid id,
         Identity identity,
         LdapAttributeCollection attributes,
         IEnumerable<DirectoryGuid> groupIds)
     {
         return new MemberModel(id, identity, attributes, groupIds);
+    }
+    
+    public static MemberModel Create(Guid id,
+        Identity identity,
+        AttributesHash attributesHash,
+        IEnumerable<DirectoryGuid> groupIds)
+    {
+        return new MemberModel(id, identity, attributesHash, groupIds);
     }
 
     public void AddGroups(IEnumerable<DirectoryGuid> groupIds)

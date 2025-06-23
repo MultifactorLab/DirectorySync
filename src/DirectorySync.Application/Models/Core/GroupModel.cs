@@ -27,8 +27,7 @@ public class GroupModel : BaseModel
         IEnumerable<DirectoryGuid> newMembers)
     {
         ArgumentNullException.ThrowIfNull(newMembers, nameof(newMembers));
-            
-        var hash = EntriesHash.Create(newMembers);
+        
         return new GroupModel(guid, newMembers);
     }
 
