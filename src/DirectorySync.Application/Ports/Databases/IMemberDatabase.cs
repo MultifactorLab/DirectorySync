@@ -7,9 +7,8 @@ namespace DirectorySync.Application.Ports.Databases;
 public interface IMemberDatabase
 {
     ReadOnlyCollection<MemberModel> FindAll();
-    ReadOnlyCollection<MemberModel> FindById(IEnumerable<DirectoryGuid> ids);
-    MemberModel? FindById(DirectoryGuid id);
-    void Insert(MemberModel group);
-    void Update(MemberModel group);
-    void Delete(MemberModel group);
+    ReadOnlyCollection<MemberModel> FindManyById(IEnumerable<DirectoryGuid> ids);
+    void InsertMany(IEnumerable<MemberModel> member);
+    void UpdateMany(IEnumerable<MemberModel> members);
+    void DeleteMany(IEnumerable<MemberModel> members);
 }

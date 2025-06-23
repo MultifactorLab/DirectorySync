@@ -24,6 +24,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     private readonly IUserCreator _userCreator;
     private readonly IUserUpdater _userUpdater;
     private readonly IUserDeleter _userDeleter;
+    private readonly IGroupUpdater _groupUpdater;
     private readonly ISyncSettingsOptions _syncSettingsOptions;
     private readonly ILogger<SynchronizeGroupsUseCase> _logger;
 
@@ -35,6 +36,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         IUserCreator userCreator,
         IUserUpdater userUpdater,
         IUserDeleter userDeleter,
+        IGroupUpdater groupUpdater,
         ISyncSettingsOptions syncSettingsOptions,
         ILogger<SynchronizeGroupsUseCase> logger)
     {
@@ -46,6 +48,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         _userCreator = userCreator;
         _userUpdater = userUpdater;
         _userDeleter = userDeleter;
+        _groupUpdater = groupUpdater;
         _syncSettingsOptions = syncSettingsOptions;
         _logger = logger;
     }
@@ -68,19 +71,20 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
             .ToList();
         var toDelete = memberMap.Values
             .Where(m => m.Operation == ChangeOperation.Delete)
-            .Select(m => m.Identity)
             .ToList();
         
-        await _userCreator.CreateManyAsync(toCreate, cancellationToken);
-        await _userUpdater.UpdateManyAsync(toUpdate, cancellationToken);
-        await _userDeleter.DeleteManyAsync(toDelete, cancellationToken);
+        var created = await _userCreator.CreateManyAsync(toCreate, cancellationToken);
+        var updated = await _userUpdater.UpdateManyAsync(toUpdate, cancellationToken);
+        var deleted = await _userDeleter.DeleteManyAsync(toDelete, cancellationToken);
+        
+        _groupUpdater.UpdateGroupsWithMembers(created.Concat(updated).Concat(deleted));
     }
     
     private async Task ProcessGroupChanges(DirectoryGuid groupId,
         Dictionary<DirectoryGuid, MemberModel> memberMap,
         CancellationToken cancellationToken)
     {
-        var referenceGroup = await _groupPort.GetByGuidAsync(groupId);
+        var referenceGroup = await _groupPort.GetByGuidAsync(groupId, cancellationToken);
         if (referenceGroup is null)
         {
             return;
@@ -170,7 +174,10 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         
         foreach (var member in members)
         {
-            _userGroupsMapper.SetUserCloudGroupsChanges(member, groupMappingMap);
+            var(toAdd, toRemove) = _userGroupsMapper.GetCloudGroupChanges(member, groupMappingMap);
+            
+            member.AddCloudGroups(toAdd);
+            member.RemoveCloudGroups(toRemove);
         }
     }
     
@@ -195,7 +202,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         if (notFoundInMap.Count > 0)
         {
-            var loaded = _memberDatabase.FindById(notFoundInMap);
+            var loaded = _memberDatabase.FindManyById(notFoundInMap);
             foreach (var m in loaded)
             {
                 memberMap[m.Id] = m;

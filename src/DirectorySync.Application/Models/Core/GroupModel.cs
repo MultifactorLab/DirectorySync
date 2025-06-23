@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Models.Core;
@@ -9,6 +10,8 @@ public class GroupModel : BaseModel
         
     private readonly List<DirectoryGuid> _memberIds = new();
     public ReadOnlyCollection<DirectoryGuid> MemberIds => _memberIds.AsReadOnly();
+    
+    public ChangeOperation Operation { get; private set; } = ChangeOperation.None;
         
     private GroupModel(DirectoryGuid id,
         IEnumerable<DirectoryGuid> members) : base(id)
@@ -56,6 +59,9 @@ public class GroupModel : BaseModel
     {
         MembersHash = EntriesHash.Create(_memberIds);
     }
+    
+    public void MarkForUpdate() => Operation = ChangeOperation.Update;
+    public void ResetOperation() => Operation = ChangeOperation.None;
 
     public override string ToString() => Id.ToString();
 }

@@ -111,15 +111,19 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
         }
     } 
     
-    private async Task HandleDeletedMembers(ReadOnlyCollection<Identity> toDelete, CancellationToken cancellationToken = default)
+    private async Task HandleDeletedMembers(ReadOnlyCollection<Identity> toDeleteIdentities, CancellationToken cancellationToken = default)
     {
-        if (toDelete.Count == 0)
+        if (toDeleteIdentities.Count == 0)
         {
             _logger.LogDebug("Deleted members was not found");
             return;
         }
+        
+        var toDelete = toDeleteIdentities
+            .Select(u => MemberModel.Create(Guid.NewGuid(), u, new LdapAttributeCollection([]), []))
+            .ToList();
 
-        _logger.LogDebug("Found deleted users: {Deleted}", toDelete.Count);
+        _logger.LogDebug("Found deleted users: {Deleted}", toDeleteIdentities.Count);
         await _userDeleter.DeleteManyAsync(toDelete, cancellationToken);
         _logger.LogDebug("Deleted members are synchronized");
         

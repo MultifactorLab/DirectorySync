@@ -6,69 +6,95 @@ namespace DirectorySync.Application.Services;
 
 public interface IUserGroupsMapper
 {
-    void SetUserCloudGroupsChanges(MemberModel member, Dictionary<DirectoryGuid, string[]> groupMappingOptions);
+    (string[] ToAdd, string[] ToRemove) GetCloudGroupChanges(MemberModel member, Dictionary<DirectoryGuid, string[]> groupMappingOptions);
+    (string[] ToAdd, string[] ToRemove) SetUserCloudGroupsDiff(MemberModel member, Dictionary<DirectoryGuid, string[]> oldMappings, Dictionary<DirectoryGuid, string[]> newMappings);
     HashSet<DirectoryGuid> GetChangedDirectoryGroups(GroupMapping[] oldMappings, GroupMapping[] newMappings);
 
 }
 
 public class UserGroupsMapper : IUserGroupsMapper
 {
-    public void SetUserCloudGroupsChanges(MemberModel member, Dictionary<DirectoryGuid, string[]> groupMappingOptions)
+    public (string[] ToAdd, string[] ToRemove) GetCloudGroupChanges(MemberModel member, Dictionary<DirectoryGuid, string[]> groupMappingOptions)
     {
+        ArgumentNullException.ThrowIfNull(member);
+        ArgumentNullException.ThrowIfNull(groupMappingOptions);
+        
+        var addedCloudGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var removedCloudGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
         foreach (var groupId in member.AddedGroupIds)
         {
             if (groupMappingOptions.TryGetValue(groupId, out var cloudGroups))
             {
-                member.AddCloudGroups(cloudGroups);
+                addedCloudGroups.UnionWith(cloudGroups);
             }
         }
 
         if (member.RemovedCloudGroups.Count > 0)
         {
-            var memberGroups = member.GroupIds.Concat(member.RemovedGroupIds);
-
-            var cloudGroupsToRemove = new List<string>();
-
             foreach (var groupId in member.RemovedGroupIds)
             {
                 if (groupMappingOptions.TryGetValue(groupId, out var cloudGroups))
                 {
-                    cloudGroupsToRemove.AddRange(cloudGroups);
+                    removedCloudGroups.UnionWith(cloudGroups);
                 }
             }
-            
-            var userSignUpGroups = new List<string>();
-
-            foreach (var group in memberGroups)
+        
+            var stillMappedCloudGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var groupId in member.GroupIds)
             {
-                if (groupMappingOptions.TryGetValue(group, out var signUpGroups))
+                if (groupMappingOptions.TryGetValue(groupId, out var cloudGroups))
                 {
-                    userSignUpGroups.AddRange(signUpGroups);
+                    stillMappedCloudGroups.UnionWith(cloudGroups);
                 }
             }
-
-            var remainingUserGroups = new List<string>(userSignUpGroups);
-
-            foreach (var groupToRemove in member.RemovedGroupIds)
-            {
-                var index = remainingUserGroups.IndexOf(groupToRemove);
-                if (index != -1)
-                {
-                    remainingUserGroups.RemoveAt(index);
-                }
-            }
-
-            var removedCloudGroups = cloudGroupsToRemove
-                .Where(group => !remainingUserGroups.Contains(group))
-                .Distinct()
-                .ToArray();
-
-             member.RemoveCloudGroups(removedCloudGroups);
+        
+            removedCloudGroups.ExceptWith(stillMappedCloudGroups);
         }
+        
+        return (addedCloudGroups.ToArray(), removedCloudGroups.ToArray());
     }
-    
+
+    public (string[] ToAdd, string[] ToRemove) SetUserCloudGroupsDiff(MemberModel member,
+        Dictionary<DirectoryGuid, string[]> oldMappings,
+        Dictionary<DirectoryGuid, string[]> newMappings)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        ArgumentNullException.ThrowIfNull(oldMappings);
+        ArgumentNullException.ThrowIfNull(newMappings);
+        
+        var allGroupIds = member.GroupIds
+            .Concat(member.AddedGroupIds)
+            .Concat(member.RemovedGroupIds)
+            .Distinct();
+
+        var oldCloudGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var newCloudGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var groupId in allGroupIds)
+        {
+            if (oldMappings.TryGetValue(groupId, out var oldGroups))
+            {
+                oldCloudGroups.UnionWith(oldGroups);
+            }
+
+            if (newMappings.TryGetValue(groupId, out var newGroups))
+            {
+                newCloudGroups.UnionWith(newGroups);
+            }
+        }
+        
+        var toAdd = newCloudGroups.Except(oldCloudGroups).ToArray();
+        var toRemove = oldCloudGroups.Except(newCloudGroups).ToArray();
+
+        return (toAdd, toRemove);
+    }
+
     public HashSet<DirectoryGuid> GetChangedDirectoryGroups(GroupMapping[] oldMappings, GroupMapping[] newMappings)
     {
+        ArgumentNullException.ThrowIfNull(oldMappings);
+        ArgumentNullException.ThrowIfNull(newMappings);
+        
         var changedGroups = new HashSet<DirectoryGuid>();
 
         var oldMap = oldMappings.ToDictionary(

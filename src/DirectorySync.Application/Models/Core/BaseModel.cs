@@ -3,63 +3,63 @@ using DirectorySync.Application.Models.ValueObjects;
 namespace DirectorySync.Application.Models.Core;
 
 public abstract class BaseModel
+{
+    public DirectoryGuid Id { get; }
+        
+    protected BaseModel(DirectoryGuid id)
     {
-        public DirectoryGuid Id { get; }
-            
-        protected BaseModel(DirectoryGuid id)
+        ArgumentNullException.ThrowIfNull(id);
+        
+        Id = id;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
         {
-            ArgumentNullException.ThrowIfNull(id);
-            
-            Id = id;
+            return false;
         }
-    
-        public override bool Equals(object? obj)
+        
+        var compareTo = obj as BaseModel;
+
+        if (ReferenceEquals(this, compareTo))
         {
-            if (obj is null)
-            {
-                return false;
-            }
-            
-            var compareTo = obj as BaseModel;
-    
-            if (ReferenceEquals(this, compareTo))
-            {
-                return true;
-            }
-    
-            if (ReferenceEquals(null, compareTo))
-            {
-                return false;
-            }
-    
-            return Id == compareTo.Id;
+            return true;
         }
-    
-        public static bool operator ==(BaseModel a, BaseModel b)
+
+        if (ReferenceEquals(null, compareTo))
         {
-            if (ReferenceEquals(a, null) && ReferenceEquals(b, null))
-            {
-                return true;
-            }
-    
-            if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
-            {
-                return false;
-            }
-    
-            return a.Equals(b);
+            return false;
         }
-    
-        public static bool operator !=(BaseModel a, BaseModel b)
+
+        return Id == compareTo.Id;
+    }
+
+    public static bool operator ==(BaseModel a, BaseModel b)
+    {
+        if (ReferenceEquals(a, null) && ReferenceEquals(b, null))
         {
-            return !(a == b);
+            return true;
         }
-    
-        public override int GetHashCode()
+
+        if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
         {
-            unchecked
-            {
-                return GetType().GetHashCode() * 907 + Id.GetHashCode();
-            }
+            return false;
+        }
+
+        return a.Equals(b);
+    }
+
+    public static bool operator !=(BaseModel a, BaseModel b)
+    {
+        return !(a == b);
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            return GetType().GetHashCode() * 907 + Id.GetHashCode();
         }
     }
+}

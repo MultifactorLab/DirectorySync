@@ -9,6 +9,5 @@ public interface IGroupDatabase
     ReadOnlyCollection<GroupModel> FindById(IEnumerable<DirectoryGuid> ids);
     GroupModel? FindById(DirectoryGuid id);
     void Insert(GroupModel group);
-    void Update(GroupModel group);
-    void Delete(GroupModel group);
+    void UpdateMany(IEnumerable<GroupModel> groups);
 }
