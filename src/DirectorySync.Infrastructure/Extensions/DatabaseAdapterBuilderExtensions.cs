@@ -1,15 +1,17 @@
-﻿using DirectorySync.Application.Ports;
+﻿using System.Runtime.InteropServices;
+using DirectorySync.Application.Ports.Databases;
+using DirectorySync.Infrastructure.Adapters.LiteDb;
+using DirectorySync.Infrastructure.Data;
 using DirectorySync.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Runtime.InteropServices;
 
-namespace DirectorySync.Infrastructure.Data.Extensions;
+namespace DirectorySync.Infrastructure.Extensions;
 
-internal static class AddLiteDbStorageExtension
+internal static class DatabaseAdapterBuilderExtensions
 {
-    public static void AddLiteDbStorage(this HostApplicationBuilder builder, params string[] args)
+    public static void AddLiteDbAdapter(this HostApplicationBuilder builder, params string[] args)
     {
         ArgumentNullException.ThrowIfNull(builder);
         
@@ -44,7 +46,9 @@ internal static class AddLiteDbStorageExtension
 
             return conn;
         }));
-        builder.Services.AddTransient<IApplicationStorage, LiteDbApplicationStorage>();
+        builder.Services.AddTransient<IMemberDatabase, MemberLiteDb>();
+        builder.Services.AddTransient<IGroupDatabase, GroupLiteDb>();
+        builder.Services.AddTransient<ISystemDatabase, SystemLiteDb>();
     }
 
     private static string GetLocalAppData()
