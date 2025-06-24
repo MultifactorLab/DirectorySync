@@ -1,6 +1,7 @@
-﻿using DirectorySync.Application.Models.Options;
+﻿using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.Options;
 
-namespace DirectorySync.Infrastructure.Dto.Cloud.SyncSettings;
+namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings;
 
 public class GroupMappingsDto
 {

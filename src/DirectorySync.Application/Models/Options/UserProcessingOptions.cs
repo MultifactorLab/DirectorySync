@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DirectorySync.Application.Workloads;
+namespace DirectorySync.Application.Models.Options;
 
 public class UserProcessingOptions
 {

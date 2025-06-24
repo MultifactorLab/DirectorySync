@@ -1,4 +1,4 @@
-namespace DirectorySync.Application.Models.Options;
+namespace DirectorySync.Application.Models.Core;
 
 public class GroupMapping
 {

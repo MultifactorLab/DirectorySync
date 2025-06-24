@@ -1,7 +1,7 @@
 ﻿using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Services;
 using DirectorySync.Application.UseCases;
-using DirectorySync.Application.Workloads;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

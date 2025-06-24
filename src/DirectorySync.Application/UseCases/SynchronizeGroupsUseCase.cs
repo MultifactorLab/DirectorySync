@@ -1,5 +1,6 @@
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Enums;
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Application.Ports.Directory;
@@ -145,12 +146,11 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         var requiredNames = _syncSettingsOptions.GetRequiredAttributeNames();
         
         var newMembers = await _memberPort.GetByGuidsAsync(newIds, requiredNames, cancellationToken);
-        foreach (var entry in newMembers)
+        foreach (var member in newMembers)
         {
-            var member = MemberModel.Create(entry.Id, entry.Identity, entry.Attributes, []);
             member.AddGroups([groupId]);
             member.MarkForCreate();
-            memberMap[entry.Id] = member;
+            memberMap[member.Id] = member;
         }
 
         foreach (var member in existingMembers)

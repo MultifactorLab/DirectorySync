@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Options;
 
-namespace DirectorySync.Infrastructure.Dto.Cloud.SyncSettings
+namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
 {
     public class PropsMappingDto
     {
@@ -16,17 +16,14 @@ namespace DirectorySync.Infrastructure.Dto.Cloud.SyncSettings
         public bool SendEnrollmentLink { get; set; }
         public TimeSpan EnrollmentLinkTtl { get; set; }
 
-        public static PropsMapping ToModel(PropsMappingDto dto)
+        public static LdapAttributeMappingOptions ToModel(PropsMappingDto dto)
         {
-            return new PropsMapping
+            return new LdapAttributeMappingOptions
             {
                 IdentityAttribute = dto.IdentityAttribute,
-                AdditionalAttributes = dto.AdditionalAttributes,
                 NameAttribute = dto.NameAttribute,
                 EmailAttributes = dto.EmailAttributes,
                 PhoneAttributes = dto.PhoneAttributes,
-                SendEnrollmentLink = dto.SendEnrollmentLink,
-                EnrollmentLinkTtl = dto.EnrollmentLinkTtl,
             };
         }
     }

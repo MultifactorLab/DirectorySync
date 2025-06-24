@@ -1,3 +1,4 @@
+using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.ConfigurationProviders;
@@ -45,14 +46,14 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         SetCollection("Sync:TrackingGroups", settings.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
         Data[$"Sync:IncludeNestedGroups"] = "True";
 
-        Data["Sync:IdentityAttribute"] = settings.PropertyMapping.IdentityAttribute;
-        Data["Sync:NameAttribute"] = settings.PropertyMapping.NameAttribute;
+        Data["Sync:PropertyMapping:IdentityAttribute"] = settings.PropertyMapping.IdentityAttribute;
+        Data["Sync:PropertyMapping:NameAttribute"] = settings.PropertyMapping.NameAttribute;
 
-        Data["Sync:SendEnrollmentLink"] = settings.PropertyMapping.SendEnrollmentLink.ToString();
-        Data["Sync:EnrollmentLinkTtl"] = settings.PropertyMapping.EnrollmentLinkTtl.ToString();
+        Data["Sync:SendEnrollmentLink"] = settings.SendEnrollmentLink.ToString();
+        Data["Sync:EnrollmentLinkTtl"] = settings.EnrollmentLinkTtl.ToString();
 
-        SetCollection("Sync:EmailAttributes", settings.PropertyMapping.EmailAttributes);
-        SetCollection("Sync:PhoneAttributes", settings.PropertyMapping.PhoneAttributes);
+        SetCollection("Sync:PropertyMapping:EmailAttributes", settings.PropertyMapping.EmailAttributes);
+        SetCollection("Sync:PropertyMapping:PhoneAttributes", settings.PropertyMapping.PhoneAttributes);
 
         Data["Ldap:Timeout"] = settings.TimeoutAd.ToString();
         

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
@@ -51,13 +52,14 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
         
         var referenceMemberMap = freshEntries.ToDictionary(x => x.Id);
         
-        var changed = ProcessMembersChanges(cachedMembers, referenceMemberMap);
+        var changed = ProcessMembersChanges(cachedMembers, referenceMemberMap, _syncSettingsOptions.Current.PropertyMapping);
         
         var toUpdate = await _userUpdater.UpdateManyAsync(changed, cancellationToken);
     }
 
     private ReadOnlyCollection<MemberModel> ProcessMembersChanges(IEnumerable<MemberModel> cachedMembers,
-        Dictionary<DirectoryGuid, MemberModel> referenceMemberMap)
+        Dictionary<DirectoryGuid, MemberModel> referenceMemberMap,
+        LdapAttributeMappingOptions mappingOptions)
     {
         var changed = new List<MemberModel>();
 
@@ -70,7 +72,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
 
             if (cached.AttributesHash != referenceMember.AttributesHash)
             {
-                cached.SetNewAttributes(referenceMember.Attributes);
+                cached.SetProperties(referenceMember.Properties, referenceMember.AttributesHash);
                 cached.MarkForUpdate();
                 changed.Add(cached);
             }

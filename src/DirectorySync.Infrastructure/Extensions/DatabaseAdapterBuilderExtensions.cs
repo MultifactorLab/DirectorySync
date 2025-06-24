@@ -48,6 +48,7 @@ internal static class DatabaseAdapterBuilderExtensions
         }));
         builder.Services.AddTransient<IMemberDatabase, MemberLiteDb>();
         builder.Services.AddTransient<IGroupDatabase, GroupLiteDb>();
+        builder.Services.AddTransient<ISyncSettingsDatabase, SyncSettingsLiteDb>();
         builder.Services.AddTransient<ISystemDatabase, SystemLiteDb>();
     }
 

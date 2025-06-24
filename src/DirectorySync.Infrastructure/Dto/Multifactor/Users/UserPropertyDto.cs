@@ -1,6 +1,6 @@
-﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto;
+namespace DirectorySync.Infrastructure.Dto.Multifactor.Users;
 
-public class UserPropertyDto
+internal class UserPropertyDto
 {
     public string Property { get; }
 

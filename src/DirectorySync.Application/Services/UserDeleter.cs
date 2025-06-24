@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
-using DirectorySync.Application.Workloads;
 
 namespace DirectorySync.Application.Services;
 
@@ -59,7 +59,7 @@ public class UserDeleter : IUserDeleter
             var res = await _userCloudPort.DeleteManyAsync(bucket, cancellationToken);
             timer.Stop();
             
-            _memberDatabase.DeleteMany(res);
+            _memberDatabase.DeleteMany(res.Select(x => x.Id));
             
             skip += bucket.Length;
             

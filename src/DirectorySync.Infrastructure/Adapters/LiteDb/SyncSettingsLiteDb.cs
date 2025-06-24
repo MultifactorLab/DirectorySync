@@ -1,3 +1,4 @@
+using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Infrastructure.Adapters.LiteDb.Configuration;

@@ -1,3 +1,4 @@
+using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Infrastructure.Adapters.Multifactor;

@@ -1,5 +1,4 @@
 using DirectorySync.Application.Models.ValueObjects;
-using DirectorySync.Infrastructure.Dto.Cloud.SyncSettings;
 
 namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
 {
@@ -18,9 +17,9 @@ namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
         public PropsMappingDto PropertyMapping { get; set; } = new PropsMappingDto();
 
 
-        public static Application.Models.Options.SyncSettings ToModel(CloudConfigDto dto)
+        public static Application.Models.Core.SyncSettings ToModel(CloudConfigDto dto)
         {
-            return new Application.Models.Options.SyncSettings
+            return new Application.Models.Core.SyncSettings
             {
                 Enabled = dto.Enabled,
                 CloudConfigRefreshTimer = dto.CloudConfigRefreshTimer,
@@ -30,7 +29,9 @@ namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
                 TrackingGroups = dto.DirectoryGroupMappings.Select(d => new DirectoryGuid(Guid.Parse(d.DirectoryGroup))).ToArray(),
                 DirectoryGroupMappings = dto.DirectoryGroupMappings.Select(GroupMappingsDto.ToModel).ToArray(),
                 IncludeNestedGroups = dto.IncludeNestedGroups,
-                PropertyMapping = PropsMappingDto.ToModel(dto.PropertyMapping)
+                PropertyMapping = PropsMappingDto.ToModel(dto.PropertyMapping),
+                SendEnrollmentLink = dto.PropertyMapping.SendEnrollmentLink,
+                EnrollmentLinkTtl = dto.PropertyMapping.EnrollmentLinkTtl
             };
         }
     }

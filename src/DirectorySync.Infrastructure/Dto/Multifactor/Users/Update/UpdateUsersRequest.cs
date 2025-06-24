@@ -1,13 +1,25 @@
-﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Update;
+using DirectorySync.Application.Models.Core;
 
-internal class UpdateUsersDto
+namespace DirectorySync.Infrastructure.Dto.Multifactor.Users.Update;
+
+internal class UpdateUsersRequest
 {
     public ModifiedUserDto[] ModifiedUsers { get; }
 
-    public UpdateUsersDto(IEnumerable<ModifiedUserDto> users)
+    public UpdateUsersRequest(IEnumerable<ModifiedUserDto> users)
     {
         ArgumentNullException.ThrowIfNull(users);
         ModifiedUsers = users.ToArray();
+    }
+    
+    internal static UpdateUsersRequest FromDomainModels(IEnumerable<MemberModel> domainModels)
+    {
+        ArgumentNullException.ThrowIfNull(domainModels);
+
+        return new UpdateUsersRequest(domainModels.Select(x => new ModifiedUserDto(x.Identity,
+            x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
+            x.AddedCloudGroups.ToArray(),
+            x.RemovedCloudGroups.ToArray())));
     }
 }
 

@@ -1,6 +1,6 @@
+using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
-using DirectorySync.Infrastructure.Dto.Cloud.SyncSettings;
 using DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings;
 using DirectorySync.Infrastructure.Shared.Http;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;

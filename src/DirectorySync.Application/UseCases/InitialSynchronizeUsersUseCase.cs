@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
@@ -75,7 +76,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 
        var toDelete = GetDeletedMembersIdentities(cloudIdentities, refIdentitiesMap);
        
-       await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), cancellationToken);
+       await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), _syncSettingsOptions.Current.PropertyMapping, cancellationToken);
     } 
 
     private async Task<HashSet<Identity>> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
@@ -111,7 +112,9 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
         }
     } 
     
-    private async Task HandleDeletedMembers(ReadOnlyCollection<Identity> toDeleteIdentities, CancellationToken cancellationToken = default)
+    private async Task HandleDeletedMembers(ReadOnlyCollection<Identity> toDeleteIdentities,
+        LdapAttributeMappingOptions mappingOptions,
+        CancellationToken cancellationToken = default)
     {
         if (toDeleteIdentities.Count == 0)
         {
@@ -120,7 +123,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
         }
         
         var toDelete = toDeleteIdentities
-            .Select(u => MemberModel.Create(Guid.NewGuid(), u, new LdapAttributeCollection([]), []))
+            .Select(u => MemberModel.Create(Guid.NewGuid(), u, []))
             .ToList();
 
         _logger.LogDebug("Found deleted users: {Deleted}", toDeleteIdentities.Count);

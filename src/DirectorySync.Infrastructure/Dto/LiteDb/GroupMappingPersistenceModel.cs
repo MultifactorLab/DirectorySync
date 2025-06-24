@@ -1,3 +1,4 @@
+using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 
 namespace DirectorySync.Infrastructure.Dto.LiteDb;

@@ -1,13 +1,24 @@
-﻿namespace DirectorySync.Infrastructure.Integrations.Multifactor.Dto.Create;
+using DirectorySync.Application.Models.Core;
 
-internal class CreateUsersDto
+namespace DirectorySync.Infrastructure.Dto.Multifactor.Users.Create;
+
+internal class CreateUsersRequest
 {
     public NewUserDto[] NewUsers { get; }
 
-    public CreateUsersDto(IEnumerable<NewUserDto> users)
+    public CreateUsersRequest(IEnumerable<NewUserDto> users)
     {
         ArgumentNullException.ThrowIfNull(users);
         NewUsers = users.ToArray();
+    }
+
+    internal static CreateUsersRequest FromDomainModels(IEnumerable<MemberModel> domainModels)
+    {
+        ArgumentNullException.ThrowIfNull(domainModels);
+
+        return new CreateUsersRequest(domainModels.Select(x => new NewUserDto(x.Identity,
+            x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
+            x.AddedCloudGroups.ToArray())));
     }
 }
 

@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Models.Enums;
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Models.Core;
@@ -7,9 +9,10 @@ namespace DirectorySync.Application.Models.Core;
 public class MemberModel : BaseModel
 {
     public Identity Identity { get; }
-    
-    public LdapAttributeCollection Attributes { get;  private set; }
     public AttributesHash AttributesHash { get; private set; }
+    
+    private readonly HashSet<MemberProperty> _memberProperties = new HashSet<MemberProperty>();
+    public ReadOnlyCollection<MemberProperty> Properties { get;  private set; }
     
     private readonly List<DirectoryGuid> _groupIds = new();
     public ReadOnlyCollection<DirectoryGuid> GroupIds => _groupIds.AsReadOnly();
@@ -31,16 +34,12 @@ public class MemberModel : BaseModel
 
     private MemberModel(DirectoryGuid id,
         Identity identity,
-        LdapAttributeCollection attributes,
         IEnumerable<DirectoryGuid> groupIds) : base(id)
     {
         ArgumentNullException.ThrowIfNull(identity, nameof(identity));
-        ArgumentNullException.ThrowIfNull(attributes, nameof(attributes));
         ArgumentNullException.ThrowIfNull(groupIds, nameof(groupIds));
         
         Identity = identity;
-        Attributes = attributes;
-        AttributesHash = new AttributesHash(attributes);
         _groupIds = groupIds.ToList();
     }
 
@@ -60,10 +59,11 @@ public class MemberModel : BaseModel
 
     public static MemberModel Create(Guid id,
         Identity identity,
-        LdapAttributeCollection attributes,
         IEnumerable<DirectoryGuid> groupIds)
     {
-        return new MemberModel(id, identity, attributes, groupIds);
+        
+        
+        return new MemberModel(id, identity, groupIds);
     }
     
     public static MemberModel Create(Guid id,
@@ -111,17 +111,56 @@ public class MemberModel : BaseModel
         _removedCloudGroups.AddRange(cloudGroups);
     }
 
-    public void SetNewAttributes(LdapAttributeCollection newAttributes)
+    public void SetProperties(IEnumerable<MemberProperty> newProperties, AttributesHash newHash)
+    {
+        ArgumentNullException.ThrowIfNull(newProperties);
+
+        if (AttributesHash == newHash)
+        {
+            return;
+        }
+        
+        _memberProperties.Clear();
+        foreach (var property in newProperties)
+        {
+            _memberProperties.Add(property);
+        }
+        AttributesHash = newHash;
+    }
+
+    public void SetProperties(LdapAttributeCollection newAttributes, LdapAttributeMappingOptions options)
     {
         ArgumentNullException.ThrowIfNull(newAttributes);
         
         var newHash = new AttributesHash(newAttributes);
 
-        if (AttributesHash != newHash)
+        if (AttributesHash == newHash)
         {
-            Attributes = newAttributes;
-            AttributesHash = newHash;
+            return;
         }
+        
+        if (!string.IsNullOrWhiteSpace(options.NameAttribute))
+        {
+            var name = newAttributes.GetFirstOrDefault(options.NameAttribute);
+            if (name is not null)
+            {
+                _memberProperties.Add(new MemberProperty(MemberPropertyOptions.AdditionalProperties.NameProperty, name));
+            }
+        }
+
+        var email = newAttributes.GetFirstOrDefault(options.EmailAttributes);
+        if (email is not null)
+        {
+            _memberProperties.Add(new MemberProperty(MemberPropertyOptions.AdditionalProperties.EmailProperty, email));
+        }
+
+        var phone = newAttributes.GetFirstOrDefault(options.PhoneAttributes);
+        if (phone is not null)
+        {
+            _memberProperties.Add(new MemberProperty(MemberPropertyOptions.AdditionalProperties.PhoneProperty, phone));
+        }
+        
+        AttributesHash = newHash;
     }
     
     public void MarkForCreate() => Operation = ChangeOperation.Create;

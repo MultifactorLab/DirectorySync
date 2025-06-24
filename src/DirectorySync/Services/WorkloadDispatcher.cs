@@ -1,9 +1,9 @@
 ﻿using DirectorySync.Application;
 using DirectorySync.Application.Measuring;
+using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.UseCases;
-using DirectorySync.Application.Workloads;
 using DirectorySync.Infrastructure;
 using DirectorySync.Infrastructure.ConfigurationSources.Cloud;
 using Microsoft.Extensions.Options;
