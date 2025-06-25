@@ -10,7 +10,7 @@ public class SyncSettings
     public TimeSpan ScanTimer { get; set; } = TimeSpan.FromMinutes(15);
     public TimeSpan TimeoutAd { get; set; }
 
-    public DirectoryGuid[] TrackingGroups { get; set; } = [];
+    public Guid[] TrackingGroups { get; set; } = [];
     
     public GroupMapping[] DirectoryGroupMappings { get; set; } = [];
     public bool IncludeNestedGroups { get; set; } = true;

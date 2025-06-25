@@ -30,7 +30,7 @@ public class UserGroupsMapper : IUserGroupsMapper
             }
         }
 
-        if (member.RemovedCloudGroups.Count > 0)
+        if (member.RemovedGroupIds.Count > 0)
         {
             foreach (var groupId in member.RemovedGroupIds)
             {

@@ -1,5 +1,3 @@
-using DirectorySync.Application.Models.ValueObjects;
-
 namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
 {
     public class CloudConfigDto
@@ -26,7 +24,7 @@ namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
                 SyncTimer = dto.SyncTimer,
                 ScanTimer = dto.ScanTimer,
                 TimeoutAd = dto.TimeoutAD,
-                TrackingGroups = dto.DirectoryGroupMappings.Select(d => new DirectoryGuid(Guid.Parse(d.DirectoryGroup))).ToArray(),
+                TrackingGroups = dto.DirectoryGroupMappings.Select(d => Guid.Parse(d.DirectoryGroup)).ToArray(),
                 DirectoryGroupMappings = dto.DirectoryGroupMappings.Select(GroupMappingsDto.ToModel).ToArray(),
                 IncludeNestedGroups = dto.IncludeNestedGroups,
                 PropertyMapping = PropsMappingDto.ToModel(dto.PropertyMapping),

@@ -1,7 +1,7 @@
 ﻿using DirectorySync.Application;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Models.Core;
-using DirectorySync.Application.Models.Options;
+using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.UseCases;
 using DirectorySync.Infrastructure;
@@ -172,9 +172,9 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     {
         _logger.LogDebug("Start of user scanning");
         
-        var trackingGroups = _syncSettings.CurrentValue.TrackingGroups;
+        var trackingGroups = _syncSettings.CurrentValue.TrackingGroups.Select(c => new DirectoryGuid(c));
         
-        var timer = _timer.Start($"Groups {String.Join(", ", trackingGroups.Select(c => c.Value))}");
+        var timer = _timer.Start($"Groups {String.Join(", ", trackingGroups)}");
                     
         try
         {
@@ -239,8 +239,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         {
             _logger.LogError(ApplicationEvent.CloudSettingSynchronizationServiceError, "End of initial cloud users synchronization. Details: {0}", ex.Message);
         }
-        
-        var trackingGroups = _syncSettings.CurrentValue.TrackingGroups;
+        var trackingGroups = _syncSettings.CurrentValue.TrackingGroups.Select(c => new DirectoryGuid(c));
 
         try
         {

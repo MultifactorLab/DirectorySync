@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.ConfigurationProviders;
 using DirectorySync.Application.Ports.Databases;
@@ -57,8 +56,15 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
         }
         
         provider.Load();
-        var newSyncSettings = _syncSettingsDatabase.GetSyncSettings();
-        
+        var newSyncSettings = _syncSettingsOptions.Current;
+
+        if (currentSyncSettings is null)
+        {
+            _logger.LogInformation("Cloud settings synchronized");
+            _syncSettingsDatabase.SaveSettings(newSyncSettings);
+            return;
+        }
+
         if (AreEqual(currentSyncSettings.DirectoryGroupMappings, newSyncSettings.DirectoryGroupMappings))
         {
             _logger.LogInformation("DirectoryGroupMappings did not change");

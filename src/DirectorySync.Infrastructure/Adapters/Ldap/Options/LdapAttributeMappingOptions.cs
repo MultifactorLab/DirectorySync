@@ -1,11 +1,8 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace DirectorySync.Application.Models.Options;
 
 public class LdapAttributeMappingOptions
 {
-    [Required]
-    public required string IdentityAttribute { get; init; }
+    public string IdentityAttribute { get; init; }
     
     public string? NameAttribute { get; init; }
 

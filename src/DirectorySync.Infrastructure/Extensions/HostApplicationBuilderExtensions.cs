@@ -1,15 +1,8 @@
 using DirectorySync.Application.Models.Core;
-using DirectorySync.Application.Models.Options;
-using DirectorySync.Application.Ports.Cloud;
-using DirectorySync.Infrastructure.Adapters.Multifactor;
-using DirectorySync.Infrastructure.Configurations;
-using DirectorySync.Infrastructure.Http;
-using DirectorySync.Infrastructure.Shared.Http;
+using DirectorySync.Application.Ports.Options;
+using DirectorySync.Infrastructure.Adapters.Options;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using Polly;
 
 namespace DirectorySync.Infrastructure.Extensions;
 
@@ -20,6 +13,8 @@ public static class HostApplicationBuilderExtensions
         builder.Services.AddOptions<SyncSettings>()
             .BindConfiguration("Sync")
             .ValidateDataAnnotations();
+
+        builder.Services.AddTransient<ISyncSettingsOptions, SyncSettingsOptions>();
     }
     
 }

@@ -5,6 +5,7 @@ using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Infrastructure.Adapters.LiteDb.Configuration;
 using DirectorySync.Infrastructure.Dto.LiteDb;
 using LiteDB;
+using Microsoft.VisualBasic;
 
 namespace DirectorySync.Infrastructure.Adapters.LiteDb;
 
@@ -43,7 +44,7 @@ public class MemberLiteDb : IMemberDatabase
         }
 
         var dbMembers = _collection.Query()
-            .Where(Query.In(nameof(MemberPersistenceModel.Id), idSet))
+            .Where(Query.In("_id", idSet))
             .ToList();
 
         if (dbMembers is null)

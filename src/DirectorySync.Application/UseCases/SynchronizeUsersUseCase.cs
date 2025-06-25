@@ -1,8 +1,6 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
-using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Application.Ports.Options;

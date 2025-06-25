@@ -1,7 +1,5 @@
 using System.Collections.ObjectModel;
-using DirectorySync.Application.Extensions;
 using DirectorySync.Application.Models.Enums;
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Models.Core;
@@ -12,7 +10,7 @@ public class MemberModel : BaseModel
     public AttributesHash AttributesHash { get; private set; }
     
     private readonly HashSet<MemberProperty> _memberProperties = new HashSet<MemberProperty>();
-    public ReadOnlyCollection<MemberProperty> Properties { get;  private set; }
+    public ReadOnlyCollection<MemberProperty> Properties => new(_memberProperties.ToArray());
     
     private readonly List<DirectoryGuid> _groupIds = new();
     public ReadOnlyCollection<DirectoryGuid> GroupIds => _groupIds.AsReadOnly();

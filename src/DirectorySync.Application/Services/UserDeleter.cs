@@ -2,9 +2,9 @@ using System.Collections.ObjectModel;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
-using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
+using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Services;
 
@@ -22,12 +22,12 @@ public class UserDeleter : IUserDeleter
 
     public UserDeleter(IUserCloudPort userCloudPort,
         IMemberDatabase memberDatabase,
-        UserProcessingOptions userProcessingOptions,
+        IOptions<UserProcessingOptions> userProcessingOptions,
         CodeTimer codeTimer)
     {
         _userCloudPort = userCloudPort;
         _memberDatabase = memberDatabase;
-        _userProcessingOptions = userProcessingOptions;
+        _userProcessingOptions = userProcessingOptions.Value;
         _codeTimer = codeTimer;
     }
         

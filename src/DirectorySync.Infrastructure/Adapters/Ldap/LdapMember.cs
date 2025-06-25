@@ -17,18 +17,18 @@ internal sealed class LdapMember : ILdapMemberPort
 {
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly LdapOptions _ldapOptions;
-    private readonly LdapAttributeMappingOptions _ldapAttributeMappingOptions;
+    private readonly IOptionsMonitor<LdapAttributeMappingOptions> _ldapAttributeMappingOptions;
     private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<LdapMember> _logger;
 
-    internal LdapMember(LdapConnectionFactory connectionFactory,
+    public LdapMember(LdapConnectionFactory connectionFactory,
         IOptions<LdapOptions> ldapOptions,
-        IOptions<LdapAttributeMappingOptions> ldapAttributeMappingOptions,
+        IOptionsMonitor<LdapAttributeMappingOptions> ldapAttributeMappingOptions,
         BaseDnResolver baseDnResolver,
         ILogger<LdapMember> logger)
     {
         _ldapOptions = ldapOptions.Value;
-        _ldapAttributeMappingOptions = ldapAttributeMappingOptions.Value;
+        _ldapAttributeMappingOptions = ldapAttributeMappingOptions;
         _connectionFactory = connectionFactory;
         _baseDnResolver = baseDnResolver;
         _logger = logger;
@@ -61,7 +61,7 @@ internal sealed class LdapMember : ILdapMemberPort
         var attributes = new LdapAttributeCollection(map);
         
         var identity = attributes.GetSingleOrDefault(LdapPropertyOptions.IdentityProperty);
-        var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions);
+        var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
         
         return MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []);
     }
@@ -97,8 +97,8 @@ internal sealed class LdapMember : ILdapMemberPort
             var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
             var attributes = new LdapAttributeCollection(map);
         
-            var identity = attributes.GetSingleOrDefault(LdapPropertyOptions.IdentityProperty);
-            var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions);
+            var identity = attributes.GetSingleOrDefault(_ldapAttributeMappingOptions.CurrentValue.IdentityAttribute);
+            var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
             
             models.Add(MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []));
         }

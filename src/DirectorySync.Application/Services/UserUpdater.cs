@@ -4,6 +4,7 @@ using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
+using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Services;
 
@@ -16,16 +17,18 @@ public class UserUpdater : IUserUpdater
 {
     private readonly IUserCloudPort _userCloudPort;
     private readonly IMemberDatabase _memberDatabase;
-    private UserProcessingOptions _userProcessingOptions;
-    private CodeTimer _codeTimer;
+    private readonly UserProcessingOptions _userProcessingOptions;
+    private readonly CodeTimer _codeTimer;
 
     public UserUpdater(IUserCloudPort userCloudPort,
         IMemberDatabase memberDatabase,
-        UserProcessingOptions userProcessingOptions,
+        IOptions<UserProcessingOptions> userProcessingOptions,
         CodeTimer codeTimer)
     {
         _userCloudPort = userCloudPort;
-        _userProcessingOptions = userProcessingOptions;
+        _userProcessingOptions = userProcessingOptions.Value;
+        _codeTimer = codeTimer;
+        _memberDatabase = memberDatabase;
     }
 
     public async Task<ReadOnlyCollection<MemberModel>> UpdateManyAsync(IEnumerable<MemberModel> updUsers, CancellationToken token = default)

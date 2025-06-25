@@ -3,7 +3,6 @@ using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
-using DirectorySync.Infrastructure.Integrations.Ldap;
 using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
 using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +26,7 @@ public static class DirectoryAdapterBuilderExtensions
             .ValidateDataAnnotations();
         
         builder.Services.AddOptions<LdapAttributeMappingOptions>()
-            .BindConfiguration("Sync.PropertyMapping")
+            .BindConfiguration("Sync:PropertyMapping")
             .ValidateDataAnnotations();
 
         builder.Services.AddTransient(prov =>

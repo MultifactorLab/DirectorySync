@@ -1,30 +1,31 @@
 using DirectorySync.Application.Models.Core;
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings;
 using DirectorySync.Infrastructure.Shared.Http;
 using DirectorySync.Infrastructure.Shared.Integrations.Multifactor.CloudConfig;
+using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.Adapters.Multifactor;
 
 public class MultifactorSyncSettingsApi : ISyncSettingsCloudPort
 {
-    const string _path = "v2/ds/settings";
-    private readonly HttpClientAdapter _adapter;
+    private const string _clientName = "MultifactorApi";
 
-    public MultifactorSyncSettingsApi(HttpClient client)
+    private readonly IHttpClientFactory _clientFactory;
+    private readonly ILogger<MultifactorUsersApi> _logger;
+
+    public MultifactorSyncSettingsApi(IHttpClientFactory clientFactory,
+       ILogger<MultifactorUsersApi> logger)
     {
-        if (client is null)
-        {
-            throw new ArgumentNullException(nameof(client));
-        }
-
-        _adapter = new HttpClientAdapter(client);
-    }        
+        _clientFactory = clientFactory;
+        _logger = logger;
+    }
 
     public async Task<SyncSettings> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        var response = await _adapter.GetAsync<CloudConfigDto>(_path);
+        var client = _clientFactory.CreateClient(_clientName);
+        var adapter = new HttpClientAdapter(client);
+        var response = await adapter.GetAsync<CloudConfigDto>("v2/ds/settings");
         if (!response.IsSuccessStatusCode)
         {
             throw new PullCloudConfigException("Failed to pull settings from Multifactor Cloud", response);

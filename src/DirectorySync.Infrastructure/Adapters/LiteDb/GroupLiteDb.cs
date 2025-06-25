@@ -23,7 +23,7 @@ public class GroupLiteDb : IGroupDatabase
         
         var idSet = ids.Select(x => new BsonValue(x.Value)).ToArray();
         var dbGroups = _collection.Query()
-            .Where(Query.In(nameof(MemberPersistenceModel.Id), idSet))
+            .Where(Query.In("_id", idSet))
             .ToList();
 
         if (dbGroups is null)
