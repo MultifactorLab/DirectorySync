@@ -1,5 +1,8 @@
+using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap;
+using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
+using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
 using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
 using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
@@ -19,8 +22,12 @@ public static class DirectoryAdapterBuilderExtensions
             .BindConfiguration("Ldap")
             .ValidateDataAnnotations();            
             
-        builder.Services.AddOptions<RequestOptions>()
+        builder.Services.AddOptions<LdapRequestOptions>()
             .BindConfiguration("Sync")
+            .ValidateDataAnnotations();
+        
+        builder.Services.AddOptions<LdapAttributeMappingOptions>()
+            .BindConfiguration("Sync.PropertyMapping")
             .ValidateDataAnnotations();
 
         builder.Services.AddTransient(prov =>

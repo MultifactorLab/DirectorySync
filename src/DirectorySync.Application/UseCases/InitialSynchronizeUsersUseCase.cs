@@ -76,14 +76,14 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 
        var toDelete = GetDeletedMembersIdentities(cloudIdentities, refIdentitiesMap);
        
-       await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), _syncSettingsOptions.Current.PropertyMapping, cancellationToken);
+       await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), cancellationToken);
     } 
 
     private async Task<HashSet<Identity>> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
         string[] requiredAttributes,
         CancellationToken cancellationToken = default)
     {
-       var referenceGroups = await _ldapGroupPort.GetByGuidAsync(trackingGroups);
+       var referenceGroups = _ldapGroupPort.GetByGuidAsync(trackingGroups);
        
        if (referenceGroups is null || referenceGroups.Count == 0)
        {
@@ -95,7 +95,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 
        foreach (var referenceGroup in referenceGroups)
        {
-           members.AddRange(await _ldapMemberPort.GetByGuidsAsync(referenceGroup.MemberIds, requiredAttributes, cancellationToken));
+           members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes, cancellationToken));
        }
        
        return members.Select(m => m.Identity).ToHashSet(); 
@@ -113,7 +113,6 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
     } 
     
     private async Task HandleDeletedMembers(ReadOnlyCollection<Identity> toDeleteIdentities,
-        LdapAttributeMappingOptions mappingOptions,
         CancellationToken cancellationToken = default)
     {
         if (toDeleteIdentities.Count == 0)

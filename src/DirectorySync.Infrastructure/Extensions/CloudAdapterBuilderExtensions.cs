@@ -47,5 +47,6 @@ internal static class CloudAdapterBuilderExtensions
             });
 
         builder.Services.AddSingleton<ISyncSettingsCloudPort, MultifactorSyncSettingsApi>();
+        builder.Services.AddSingleton<IUserCloudPort, MultifactorUsersApi>();
     }
 }

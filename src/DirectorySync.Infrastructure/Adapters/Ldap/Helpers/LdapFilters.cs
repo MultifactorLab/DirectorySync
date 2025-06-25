@@ -2,7 +2,7 @@
 
 namespace DirectorySync.Infrastructure.Integrations.Ldap;
 
-internal static partial class LdapFilters
+internal static class LdapFilters
 {
     public static string FindGroupByGuid(DirectoryGuid guid)
     {
@@ -26,6 +26,20 @@ internal static partial class LdapFilters
     public static string FindEntryByGuid(DirectoryGuid guid)
     {
         return $"(objectGUID={guid.OctetString})";
+    }
+    
+    public static string FindEntriesByGuids(IEnumerable<DirectoryGuid> guids)
+    {
+        var filters = guids
+            .Select(guid => $"(objectGUID={guid.OctetString})")
+            .ToArray();
+
+        if (filters.Length == 1)
+        {
+            return filters[0];
+        }
+
+        return $"(|{string.Join(string.Empty, filters)})";
     }
 }
 

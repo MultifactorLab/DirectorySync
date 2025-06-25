@@ -48,18 +48,17 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
         var requiredNames = _syncSettingsOptions.GetRequiredAttributeNames();
         
         var memberIds = cachedMembers.Select(m => m.Id).ToArray();
-        var freshEntries = await _memberPort.GetByGuidsAsync(memberIds, requiredNames, cancellationToken);
+        var freshEntries = _memberPort.GetByGuids(memberIds, requiredNames, cancellationToken);
         
         var referenceMemberMap = freshEntries.ToDictionary(x => x.Id);
         
-        var changed = ProcessMembersChanges(cachedMembers, referenceMemberMap, _syncSettingsOptions.Current.PropertyMapping);
+        var changed = ProcessMembersChanges(cachedMembers, referenceMemberMap);
         
         var toUpdate = await _userUpdater.UpdateManyAsync(changed, cancellationToken);
     }
 
     private ReadOnlyCollection<MemberModel> ProcessMembersChanges(IEnumerable<MemberModel> cachedMembers,
-        Dictionary<DirectoryGuid, MemberModel> referenceMemberMap,
-        LdapAttributeMappingOptions mappingOptions)
+        Dictionary<DirectoryGuid, MemberModel> referenceMemberMap)
     {
         var changed = new List<MemberModel>();
 

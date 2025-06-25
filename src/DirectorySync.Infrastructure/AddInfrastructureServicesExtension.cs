@@ -1,16 +1,15 @@
 ﻿using DirectorySync.Infrastructure.Extensions;
 using Microsoft.Extensions.Hosting;
 
-namespace DirectorySync.Infrastructure
+namespace DirectorySync.Infrastructure;
+
+public static class AddInfrastructureServicesExtension
 {
-    public static class AddInfrastructureServicesExtension
+    public static void AddInfrastructureServices(this HostApplicationBuilder builder, params string[] args)
     {
-        public static void AddInfrastructureServices(this HostApplicationBuilder builder, params string[] args)
-        {
-            ArgumentNullException.ThrowIfNull(builder);
-            builder.AddMultifactorAdapter();
-            builder.AddLiteDbAdapter();
-            builder.AddSyncOptions();
-        }
+        ArgumentNullException.ThrowIfNull(builder);
+        builder.AddMultifactorAdapter();
+        builder.AddLiteDbAdapter();
+        builder.AddSyncOptions();
     }
 }

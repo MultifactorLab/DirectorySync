@@ -61,8 +61,6 @@ public class MemberModel : BaseModel
         Identity identity,
         IEnumerable<DirectoryGuid> groupIds)
     {
-        
-        
         return new MemberModel(id, identity, groupIds);
     }
     
@@ -72,6 +70,17 @@ public class MemberModel : BaseModel
         IEnumerable<DirectoryGuid> groupIds)
     {
         return new MemberModel(id, identity, attributesHash, groupIds);
+    }
+
+    public static MemberModel Create(Guid id,
+        Identity identity,
+        IEnumerable<MemberProperty> memberProperties,
+        AttributesHash attributesHash,
+        IEnumerable<DirectoryGuid> groupIds)
+    {
+        var member = new MemberModel(id, identity, groupIds);
+        member.SetProperties(memberProperties, attributesHash);
+        return member;
     }
 
     public void AddGroups(IEnumerable<DirectoryGuid> groupIds)
@@ -125,41 +134,6 @@ public class MemberModel : BaseModel
         {
             _memberProperties.Add(property);
         }
-        AttributesHash = newHash;
-    }
-
-    public void SetProperties(LdapAttributeCollection newAttributes, LdapAttributeMappingOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(newAttributes);
-        
-        var newHash = new AttributesHash(newAttributes);
-
-        if (AttributesHash == newHash)
-        {
-            return;
-        }
-        
-        if (!string.IsNullOrWhiteSpace(options.NameAttribute))
-        {
-            var name = newAttributes.GetFirstOrDefault(options.NameAttribute);
-            if (name is not null)
-            {
-                _memberProperties.Add(new MemberProperty(MemberPropertyOptions.AdditionalProperties.NameProperty, name));
-            }
-        }
-
-        var email = newAttributes.GetFirstOrDefault(options.EmailAttributes);
-        if (email is not null)
-        {
-            _memberProperties.Add(new MemberProperty(MemberPropertyOptions.AdditionalProperties.EmailProperty, email));
-        }
-
-        var phone = newAttributes.GetFirstOrDefault(options.PhoneAttributes);
-        if (phone is not null)
-        {
-            _memberProperties.Add(new MemberProperty(MemberPropertyOptions.AdditionalProperties.PhoneProperty, phone));
-        }
-        
         AttributesHash = newHash;
     }
     

@@ -1,10 +1,10 @@
 ﻿using System.DirectoryServices.Protocols;
+using DirectorySync.Infrastructure.Integrations.Ldap;
 using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
 using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
-using LiteDB;
 using Microsoft.Extensions.Logging;
 
-namespace DirectorySync.Infrastructure.Integrations.Ldap;
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 
 internal sealed class BaseDnResolver
 {

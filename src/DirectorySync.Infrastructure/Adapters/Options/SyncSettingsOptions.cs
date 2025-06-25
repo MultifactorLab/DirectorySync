@@ -1,5 +1,4 @@
 using DirectorySync.Application.Models.Core;
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Options;
 using Microsoft.Extensions.Options;
 
@@ -34,7 +33,7 @@ namespace DirectorySync.Infrastructure.Adapters.Options
             }
         }
         
-        private IEnumerable<string> Map(LdapAttributeMappingOptions options)
+        private IEnumerable<string> Map(PropsMapping options)
         {
             yield return options.IdentityAttribute;
 

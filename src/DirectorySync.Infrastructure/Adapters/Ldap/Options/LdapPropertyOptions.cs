@@ -1,6 +1,6 @@
 namespace DirectorySync.Application.Models.Options;
 
-public static class MemberPropertyOptions
+public static class LdapPropertyOptions
 {
     public const string IdentityProperty = "Identity";
 

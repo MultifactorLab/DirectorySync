@@ -85,7 +85,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         Dictionary<DirectoryGuid, MemberModel> memberMap,
         CancellationToken cancellationToken)
     {
-        var referenceGroup = await _groupPort.GetByGuidAsync(groupId, cancellationToken);
+        var referenceGroup = _groupPort.GetByGuidAsync(groupId);
         if (referenceGroup is null)
         {
             return;
@@ -145,7 +145,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         var requiredNames = _syncSettingsOptions.GetRequiredAttributeNames();
         
-        var newMembers = await _memberPort.GetByGuidsAsync(newIds, requiredNames, cancellationToken);
+        var newMembers = _memberPort.GetByGuids(newIds, requiredNames, cancellationToken);
         foreach (var member in newMembers)
         {
             member.AddGroups([groupId]);

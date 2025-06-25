@@ -1,4 +1,3 @@
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Models.Core;
@@ -16,7 +15,7 @@ public class SyncSettings
     public GroupMapping[] DirectoryGroupMappings { get; set; } = [];
     public bool IncludeNestedGroups { get; set; } = true;
 
-    public LdapAttributeMappingOptions PropertyMapping { get; set; }
+    public PropsMapping PropertyMapping { get; set; } = new PropsMapping();
     
     public bool SendEnrollmentLink { get; set; }
     public TimeSpan EnrollmentLinkTtl { get; set; }

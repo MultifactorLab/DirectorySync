@@ -1,5 +1,5 @@
 using System.Collections.ObjectModel;
-using DirectorySync.Application.Models.Options;
+using DirectorySync.Application.Models.Core;
 
 namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
 {
@@ -16,9 +16,9 @@ namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
         public bool SendEnrollmentLink { get; set; }
         public TimeSpan EnrollmentLinkTtl { get; set; }
 
-        public static LdapAttributeMappingOptions ToModel(PropsMappingDto dto)
+        public static PropsMapping ToModel(PropsMappingDto dto)
         {
-            return new LdapAttributeMappingOptions
+            return new PropsMapping
             {
                 IdentityAttribute = dto.IdentityAttribute,
                 NameAttribute = dto.NameAttribute,
