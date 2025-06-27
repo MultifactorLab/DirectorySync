@@ -59,7 +59,9 @@ public class UserCreator : IUserCreator
             var res = await _userCloudPort.CreateManyAsync(bucket, cancellationToken);
             timer.Stop();
             
+            timer = _codeTimer.Start("Update Cached Group: Created Users");
             _memberDatabase.InsertMany(res);
+            timer.Stop();
             
             addedMembers.AddRange(res);
             

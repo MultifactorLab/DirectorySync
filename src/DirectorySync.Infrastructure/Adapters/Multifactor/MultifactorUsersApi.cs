@@ -57,6 +57,7 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = CreateUsersRequest.FromDomainModels(newUsers);
         
+        _logger.LogDebug("Creating users. Payload:{@Users:l}", dto.NewUsers);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.PostAsync<CreateUsersResponse>("v2/ds/users", dto);
@@ -98,6 +99,7 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = UpdateUsersRequest.FromDomainModels(updUsers);
         
+        _logger.LogDebug("Updating users. Payload:{@Users:l}", dto.ModifiedUsers);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.PutAsync<UpdateUsersResponse>("v2/ds/users", dto);
@@ -139,6 +141,7 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = DeleteUsersRequest.FromDomainModels(delUsers);
         
+        _logger.LogDebug("Deleating users. Payload:{Users:l}", dto.Identities);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.DeleteAsync<DeleteUsersResponse>("v2/ds/users", dto);
@@ -170,7 +173,6 @@ public class MultifactorUsersApi : IUserCloudPort
     private void LogUnseccessfulResponse(HttpClientResponse response)
     {
         var options = new JsonSerializerOptions()
-        
         {
             PropertyNameCaseInsensitive = true,
         };

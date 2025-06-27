@@ -4,6 +4,7 @@ using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Application.Services;
@@ -19,15 +20,18 @@ public class UserUpdater : IUserUpdater
     private readonly IMemberDatabase _memberDatabase;
     private readonly UserProcessingOptions _userProcessingOptions;
     private readonly CodeTimer _codeTimer;
+    private readonly ILogger<UserUpdater> _logger;
 
     public UserUpdater(IUserCloudPort userCloudPort,
         IMemberDatabase memberDatabase,
         IOptions<UserProcessingOptions> userProcessingOptions,
+        ILogger<UserUpdater> logger,
         CodeTimer codeTimer)
     {
         _userCloudPort = userCloudPort;
         _userProcessingOptions = userProcessingOptions.Value;
         _codeTimer = codeTimer;
+        _logger = logger;
         _memberDatabase = memberDatabase;
     }
 
@@ -59,7 +63,9 @@ public class UserUpdater : IUserUpdater
             var res = await _userCloudPort.UpdateManyAsync(bucket, token);
             timer.Stop();
             
+            timer = _codeTimer.Start("Update Cached Group: Modified Users");
             _memberDatabase.UpdateMany(res);
+            timer.Stop();
             
             updatedMembers.AddRange(res);
             

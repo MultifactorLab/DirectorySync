@@ -65,7 +65,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
        var requiredAttributes = _syncSettingsOptions.GetRequiredAttributeNames();
        _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
 
-       var refIdentitiesMap = await GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes, cancellationToken);
+       var refIdentitiesMap = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes, cancellationToken);
        
        if (refIdentitiesMap.Count == 0)
        {
@@ -73,12 +73,16 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
            return;
        }
 
-       var toDelete = GetDeletedMembersIdentities(cloudIdentities, refIdentitiesMap);
+       var toDelete = GetDeletedMembersIdentities(cloudIdentities, refIdentitiesMap)
+           .ToList()
+           .AsReadOnly();
+       
+       _logger.LogInformation("Identified {Count} deleted members to handle", toDelete.Count);
        
        await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), cancellationToken);
     } 
 
-    private async Task<HashSet<Identity>> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
+    private HashSet<Identity> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
         string[] requiredAttributes,
         CancellationToken cancellationToken = default)
     {

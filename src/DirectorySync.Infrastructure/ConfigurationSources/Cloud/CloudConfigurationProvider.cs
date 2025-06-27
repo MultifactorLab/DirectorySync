@@ -40,6 +40,8 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         Data["Sync:Enabled"] = settings.Enabled.ToString();
         Data["Sync:SyncTimer"] = settings.SyncTimer.ToString();
         Data["Sync:ScanTimer"] = settings.ScanTimer.ToString();
+        Data["Sync:CloudConfigRefreshTimer"] = settings.CloudConfigRefreshTimer.ToString();
+        
 
         SetCollection("Sync:DirectoryGroupMappings", settings.DirectoryGroupMappings);
         SetCollection("Sync:TrackingGroups", settings.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());

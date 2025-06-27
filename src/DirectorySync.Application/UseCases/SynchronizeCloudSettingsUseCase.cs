@@ -96,6 +96,8 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
 
         _syncSettingsDatabase.SaveSettings(newSyncSettings);
         _memberDatabase.InsertMany(affectedMembers);
+        
+        _logger.LogInformation(ApplicationEvent.CompleteCloudSettingSynchronization, "Complete cloud settings synchronization");
     }
 
     private ReadOnlyCollection<MemberModel> GetAffectedMembers(IEnumerable<DirectoryGuid> affectedGroupIds)

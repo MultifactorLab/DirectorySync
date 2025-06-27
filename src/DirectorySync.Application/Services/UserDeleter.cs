@@ -59,7 +59,9 @@ public class UserDeleter : IUserDeleter
             var res = await _userCloudPort.DeleteManyAsync(bucket, cancellationToken);
             timer.Stop();
             
+            timer = _codeTimer.Start("Update Cached Group: Deleted Users");
             _memberDatabase.DeleteMany(res.Select(x => x.Id));
+            timer.Stop();
             
             skip += bucket.Length;
             
