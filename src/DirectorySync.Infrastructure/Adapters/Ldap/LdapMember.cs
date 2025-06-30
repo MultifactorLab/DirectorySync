@@ -33,38 +33,6 @@ internal sealed class LdapMember : ILdapMemberPort
         _baseDnResolver = baseDnResolver;
         _logger = logger;
     }
-    
-    public MemberModel? GetByGuid(
-    DirectoryGuid objectGuid, 
-    string[] requiredAttributes,
-    CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(objectGuid);
-        ArgumentNullException.ThrowIfNull(requiredAttributes);
-
-        using var connection = _connectionFactory.CreateConnection();
-
-        var filter = LdapFilters.FindEntryByGuid(objectGuid);
-        _logger.LogDebug("Searching member by GUID with filter '{Filter}'", filter);
-
-        var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
-        var entries = Find(filter, attributesToLoad, connection);
-        var entry = entries.FirstOrDefault();
-
-        if (entry == null)
-        {
-            return null;
-        }
-
-        var guid = GetObjectGuid(entry);
-        var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
-        var attributes = new LdapAttributeCollection(map);
-        
-        var identity = attributes.GetSingleOrDefault(LdapPropertyOptions.IdentityProperty);
-        var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
-        
-        return MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []);
-    }
 
     public ReadOnlyCollection<MemberModel> GetByGuids(
         IEnumerable<DirectoryGuid> objectGuids, 
@@ -85,7 +53,12 @@ internal sealed class LdapMember : ILdapMemberPort
         // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
         // поэтому формируем фильтр с OR-условиями.
         var filter = LdapFilters.FindEntriesByGuids(guidList);
-        _logger.LogDebug("Searching members by GUIDs with filter '{Filter}'", filter);
+        
+        var logText = GetFilterLogText(guidList);
+        _logger.LogDebug("Searching {GuidCount} members by GUIDs: {GuidsPreview}. Filter length: {FilterLength}",
+            guidList.Count(),
+            logText,
+            filter.Length);
 
         var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
         var entries = Find(filter, attributesToLoad, connection);
@@ -105,7 +78,6 @@ internal sealed class LdapMember : ILdapMemberPort
 
         return new ReadOnlyCollection<MemberModel>(models);
     }
-
     
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
     {
@@ -203,5 +175,17 @@ internal sealed class LdapMember : ILdapMemberPort
         }
         
         return properties.AsReadOnly();
+    }
+
+    private string GetFilterLogText(List<DirectoryGuid?> guidList)
+    {
+        var previewGuids = guidList.Take(3).Select(g => g.ToString()).ToArray();
+        var previewText = string.Join(", ", previewGuids);
+        if (guidList.Count() > 3)
+        {
+            previewText += $", ... +{guidList.Count() - 3} more";
+        }
+        
+        return previewText;
     }
 }

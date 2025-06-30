@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.ConfigurationProviders;
 using DirectorySync.Application.Ports.Databases;
@@ -21,6 +22,9 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
     private readonly IMemberDatabase _memberDatabase;
     private readonly IGroupDatabase _groupDatabase;
     private readonly IUserGroupsMapper _userGroupsMapper;
+    private readonly IUserUpdater _userUpdater;
+    private readonly IUserDeleter _userDeleter;
+    private readonly IGroupUpdater _groupUpdater;
     private readonly ILogger<SynchronizeCloudSettingsUseCase> _logger;
 
     public SynchronizeCloudSettingsUseCase(ISyncSettingsOptions syncSettingsOptions,
@@ -28,6 +32,9 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
         IMemberDatabase memberDatabase,
         IGroupDatabase groupDatabase,
         IUserGroupsMapper userGroupsMapper,
+        IUserUpdater userUpdater,
+        IUserDeleter userDeleter,
+        IGroupUpdater groupUpdater,
         ILogger<SynchronizeCloudSettingsUseCase> logger)
     {
         _syncSettingsOptions = syncSettingsOptions;
@@ -35,6 +42,9 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
         _memberDatabase = memberDatabase;
         _groupDatabase = groupDatabase;
         _userGroupsMapper = userGroupsMapper;
+        _userUpdater = userUpdater;
+        _userDeleter = userDeleter;
+        _groupUpdater = groupUpdater;
         _logger = logger;
     }
 
@@ -44,16 +54,9 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
     {
         _logger.LogInformation("Start cloud settings synchronization");
 
-        SyncSettings currentSyncSettings;
+        SyncSettings? currentSyncSettings;
         
-        if (isInit)
-        {
-            currentSyncSettings = _syncSettingsDatabase.GetSyncSettings();
-        }
-        else
-        {
-            currentSyncSettings = _syncSettingsOptions.Current;
-        }
+        currentSyncSettings = isInit ? _syncSettingsDatabase.GetSyncSettings() : _syncSettingsOptions.Current;
         
         provider.Load();
         var newSyncSettings = _syncSettingsOptions.Current;
@@ -86,21 +89,53 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
                 kpv => kpv.SignUpGroups.ToArray()
             );
 
+        var groupsToRemove = oldMap.Select(c => c.Key).Except(newMap.Select(c => c.Key));
+        
         foreach (var member in affectedMembers)
         {
+            member.RemoveGroups(groupsToRemove);
+            
             var(toAdd, toRemove) = _userGroupsMapper.SetUserCloudGroupsDiff(member, oldMap, newMap);
             
             member.AddCloudGroups(toAdd);
             member.RemoveCloudGroups(toRemove);
+
+            if (member.GroupIds.Count == 0)
+            {
+                member.MarkForDelete();
+            }
+            else if (member.AddedCloudGroups.Count > 0 || member.RemovedCloudGroups.Count > 0)
+            {
+                member.MarkForUpdate();
+            }
+        }
+        
+        var toUpdate = affectedMembers
+            .Where(m => m.Operation == ChangeOperation.Update)
+            .ToList();
+        var toDelete = affectedMembers
+            .Where(m => m.Operation == ChangeOperation.Delete)
+            .ToList();
+        
+        ReadOnlyCollection<MemberModel> updated = ReadOnlyCollection<MemberModel>.Empty;
+        ReadOnlyCollection<MemberModel> deleted = ReadOnlyCollection<MemberModel>.Empty;
+        
+        if (toUpdate.Count != 0)
+        {
+            updated = await _userUpdater.UpdateManyAsync(toUpdate, cancellationToken);
         }
 
-        _syncSettingsDatabase.SaveSettings(newSyncSettings);
-        _memberDatabase.UpdateMany(affectedMembers);
+        if (toDelete.Count != 0)
+        {
+            deleted = await _userDeleter.DeleteManyAsync(toDelete, cancellationToken);
+        }
         
-        var groupsToRemove = oldMap.Select(c => c.Key).Except(newMap.Select(c => c.Key));
-
+        _memberDatabase.UpdateMany(affectedMembers);
+        _groupUpdater.UpdateGroupsWithMembers(updated.Concat(deleted));
+        
         _groupDatabase.DeleteMany(groupsToRemove);
         
+        _syncSettingsDatabase.SaveSettings(newSyncSettings);
         _logger.LogInformation(ApplicationEvent.CompleteCloudSettingSynchronization, "Complete cloud settings synchronization");
     }
 

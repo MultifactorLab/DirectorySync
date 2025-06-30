@@ -9,10 +9,10 @@ namespace DirectorySync.Infrastructure.Adapters.Options
         private readonly object _locker = new();
         private string[] _requiredLdapAttributes = [];
         
-        public SyncSettings Current => _monitor.CurrentValue;
-        private readonly IOptionsMonitor<SyncSettings> _monitor;
+        public SyncSettings? Current => _monitor.CurrentValue;
+        private readonly IOptionsMonitor<SyncSettings?> _monitor;
 
-        public SyncSettingsOptions(IOptionsMonitor<SyncSettings> monitor)
+        public SyncSettingsOptions(IOptionsMonitor<SyncSettings?> monitor)
         {
             _monitor = monitor;
             _requiredLdapAttributes = Map(monitor.CurrentValue.PropertyMapping).ToArray();

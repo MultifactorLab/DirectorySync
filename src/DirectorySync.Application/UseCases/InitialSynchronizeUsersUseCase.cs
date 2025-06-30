@@ -58,7 +58,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
            return;
        }
 
-       var cloudIdentities = await _userCloudPort.GetUsersIdentitesAsync(cancellationToken);
+       var cloudIdentities = await _userCloudPort.GetUsersIdentitiesAsync(cancellationToken);
        _logger.LogDebug("Fetched {Count} identities from cloud",
            cloudIdentities.Count);
 

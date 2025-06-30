@@ -27,7 +27,7 @@ public class MultifactorUsersApi : IUserCloudPort
         _logger = logger;
     }
     
-    public async Task<ReadOnlyCollection<Identity>> GetUsersIdentitesAsync(CancellationToken ct = default)
+    public async Task<ReadOnlyCollection<Identity>> GetUsersIdentitiesAsync(CancellationToken ct = default)
     {
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
@@ -144,7 +144,7 @@ public class MultifactorUsersApi : IUserCloudPort
         _logger.LogDebug("Deleating users. Payload:{Users:l}", dto.Identities);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
-        var response = await adapter.DeleteAsync<DeleteUsersResponse>("v2/ds/users", dto);
+        var response = await adapter.DeleteAsync<DeleteUsersResponse>("ds/users", dto);
     
         if (!response.IsSuccessStatusCode)
         {

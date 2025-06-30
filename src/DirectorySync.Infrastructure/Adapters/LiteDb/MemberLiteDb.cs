@@ -80,6 +80,6 @@ public class MemberLiteDb : IMemberDatabase
         
         var idSet = ids.Select(x => new BsonValue(x.Value)).ToArray();
         
-        _collection.DeleteMany(Query.In(nameof(MemberPersistenceModel.Id), idSet));
+        _collection.DeleteMany(Query.In("_id", idSet));
     }
 }

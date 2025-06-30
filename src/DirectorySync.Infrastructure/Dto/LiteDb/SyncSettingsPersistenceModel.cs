@@ -12,7 +12,7 @@ namespace DirectorySync.Infrastructure.Dto.LiteDb
         
         public GroupMappingPersistenceModel[] GroupMapping { get; set; } = [];
 
-        public static SyncSettingsPersistenceModel FromDomainModel(SyncSettings model)
+        public static SyncSettingsPersistenceModel FromDomainModel(SyncSettings? model)
         {
             ArgumentNullException.ThrowIfNull(model);
 

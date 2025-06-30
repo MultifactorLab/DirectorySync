@@ -61,10 +61,10 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
         
         var memberIds = cachedMembers.Select(m => m.Id).ToArray();
         
-        var getUsersTimer = _codeTimer.Start("Get Reference Members");
+        var getUsersTimer = _codeTimer.Start("Get directory users");
         var freshEntries = _memberPort.GetByGuids(memberIds, requiredNames, cancellationToken);
         getUsersTimer.Stop();
-        _logger.LogDebug("Reference users found: {@Users}", freshEntries);
+        _logger.LogDebug("Directory users found: {Users}", freshEntries.Count);
         
         var referenceMemberMap = freshEntries.ToDictionary(x => x.Id);
         

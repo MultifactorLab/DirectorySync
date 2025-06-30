@@ -63,16 +63,18 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
     
     private void SetCollection(string key, string?[] elements)
     {
+        ResetCollection(key);
+        
         for (int index = 0; index < elements.Length; index++)
         {
             Data[$"{key}:{index}"] = elements[index];
         }
-
-        RemoveTheRestArrayItems(key, elements.Length);
     }
 
     private void SetCollection(string key, GroupMapping?[] elements)
     {
+        ResetCollection(key);
+        
         for (int index = 0; index < elements.Length; index++)
         {
             var baseKey = $"{key}:{index}";
@@ -84,11 +86,7 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
             {
                 Data[$"{baseKey}:SignUpGroups:{signUpIndex}"] = mapping.SignUpGroups[signUpIndex];
             }
-
-            RemoveTheRestArrayItems($"{baseKey}:SignUpGroups", mapping.SignUpGroups.Length);
         }
-
-        RemoveTheRestArrayItems(key, elements.Length);
     }
 
     private void RemoveTheRestArrayItems(string key, int startIndex)
@@ -103,6 +101,15 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
 
             Data.Remove(k);
             startIndex++;
+        }
+    }
+    
+    private void ResetCollection(string prefix)
+    {
+        var keysToRemove = Data.Keys.Where(k => k.StartsWith(prefix)).ToList();
+        foreach (var k in keysToRemove)
+        {
+            Data.Remove(k);
         }
     }
 }

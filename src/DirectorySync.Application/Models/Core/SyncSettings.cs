@@ -1,5 +1,3 @@
-using DirectorySync.Application.Models.ValueObjects;
-
 namespace DirectorySync.Application.Models.Core;
 
 public class SyncSettings
