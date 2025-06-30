@@ -95,7 +95,11 @@ public class SynchronizeCloudSettingsUseCase : ISynchronizeCloudSettingsUseCase
         }
 
         _syncSettingsDatabase.SaveSettings(newSyncSettings);
-        _memberDatabase.InsertMany(affectedMembers);
+        _memberDatabase.UpdateMany(affectedMembers);
+        
+        var groupsToRemove = oldMap.Select(c => c.Key).Except(newMap.Select(c => c.Key));
+
+        _groupDatabase.DeleteMany(groupsToRemove);
         
         _logger.LogInformation(ApplicationEvent.CompleteCloudSettingSynchronization, "Complete cloud settings synchronization");
     }

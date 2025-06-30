@@ -10,4 +10,5 @@ public interface IGroupDatabase
     GroupModel? FindById(DirectoryGuid id);
     void Insert(GroupModel group);
     void UpdateMany(IEnumerable<GroupModel> groups);
+    void DeleteMany(IEnumerable<DirectoryGuid> ids);
 }

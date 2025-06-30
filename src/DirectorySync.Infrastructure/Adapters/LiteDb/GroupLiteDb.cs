@@ -71,4 +71,13 @@ public class GroupLiteDb : IGroupDatabase
         
         _collection.Update(dbModels);
     }
+
+    public void DeleteMany(IEnumerable<DirectoryGuid> ids)
+    {
+        ArgumentNullException.ThrowIfNull(ids, nameof(ids));
+        
+        var idSet = ids.Select(x => new BsonValue(x.Value)).ToArray();
+        
+        _collection.DeleteMany(Query.In("_id", idSet));
+    }
 }

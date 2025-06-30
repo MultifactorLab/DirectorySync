@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
 
@@ -62,5 +63,27 @@ public class GroupModel : BaseModel
     public void MarkForUpdate() => Operation = ChangeOperation.Update;
     public void ResetOperation() => Operation = ChangeOperation.None;
 
-    public override string ToString() => Id.ToString();
+    public override string ToString()
+    {
+        var sb = new StringBuilder($"group: {Id}{Environment.NewLine}");
+        sb.Append($"Members: {MemberIds.Count}");
+        
+        if (MemberIds.Count == 0)
+        {
+            return sb.ToString();
+        }
+        
+        sb.AppendLine();
+        foreach (var memberId in MemberIds.Take(10))
+        {
+            sb.AppendLine($"  member: {memberId.Value}");
+        }
+
+        if (MemberIds.Count > 10)
+        {
+            sb.AppendLine($"  ...and {MemberIds.Count - 10} more members");
+        }
+        
+        return sb.ToString();
+    }
 }
