@@ -182,7 +182,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ApplicationEvent.UserScanningServiceError, ex, "Error occured while  synchronizing groups. Details: {0}", ex.Message);
+            _logger.LogError(ApplicationEvent.SynchronizeGrpousServiceError, ex, "Error occured while  synchronizing groups. Details: {0}", ex.Message);
         }
             
         timer.Stop();
@@ -263,7 +263,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         
         if (_syncGroupsTimer is IAsyncDisposable syncGroupsTimer)
         {
-            _logger.LogInformation(ApplicationEvent.UserScanningServiceStopping, "SCAN is now stopping");
+            _logger.LogInformation(ApplicationEvent.SynchronizeGrpousServiceStopping, "SCAN is now stopping");
             await syncGroupsTimer.DisposeAsync();
         }
         _syncGroupsTimer = null;

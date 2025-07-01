@@ -62,7 +62,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     public async Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(ApplicationEvent.StartUserScanning, "Start synchronization for groups: {group}", trackingGroupGuids);
+        _logger.LogInformation(ApplicationEvent.StartGrpousSynchronizing, "Start synchronization for groups: {group}", trackingGroupGuids);
         
         var memberMap = new Dictionary<DirectoryGuid, MemberModel>();
 
@@ -103,7 +103,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         
         _groupUpdater.UpdateGroupsWithMembers(created.Concat(updated).Concat(deleted));
         
-        _logger.LogInformation(ApplicationEvent.CompleteUserScanning, "Complete groups synchronization");
+        _logger.LogInformation(ApplicationEvent.CompleteGrpousSynchronizing, "Complete groups synchronization");
     }
     
     private void ProcessGroupChanges(DirectoryGuid groupId,
