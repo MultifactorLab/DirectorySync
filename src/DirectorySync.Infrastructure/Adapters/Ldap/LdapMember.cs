@@ -6,27 +6,35 @@ using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
+using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
-using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Multifactor.Core.Ldap;
+using Multifactor.Core.Ldap.Connection;
+using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
+using Multifactor.Core.Ldap.Schema;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap;
 
 internal sealed class LdapMember : ILdapMemberPort
 {
     private readonly LdapConnectionFactory _connectionFactory;
+    private readonly LdapSchemaLoader _ldapSchemaLoader;
     private readonly LdapOptions _ldapOptions;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _ldapAttributeMappingOptions;
     private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<LdapMember> _logger;
 
     public LdapMember(LdapConnectionFactory connectionFactory,
+        LdapSchemaLoader ldapSchemaLoader,
         IOptions<LdapOptions> ldapOptions,
         IOptionsMonitor<LdapAttributeMappingOptions> ldapAttributeMappingOptions,
         BaseDnResolver baseDnResolver,
         ILogger<LdapMember> logger)
     {
+        _connectionFactory = connectionFactory;
+        _ldapSchemaLoader = ldapSchemaLoader;
         _ldapOptions = ldapOptions.Value;
         _ldapAttributeMappingOptions = ldapAttributeMappingOptions;
         _connectionFactory = connectionFactory;
@@ -48,7 +56,13 @@ internal sealed class LdapMember : ILdapMemberPort
             return new ReadOnlyCollection<MemberModel>(new List<MemberModel>());
         }
 
-        using var connection = _connectionFactory.CreateConnection();
+        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
+            AuthType.Basic,
+            _ldapOptions.Username,
+            _ldapOptions.Password,
+            _ldapOptions.Timeout);
+
+        using var connection = _connectionFactory.CreateConnection(options);
 
         // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
         // поэтому формируем фильтр с OR-условиями.
@@ -92,7 +106,7 @@ internal sealed class LdapMember : ILdapMemberPort
 
     private IEnumerable<SearchResultEntry> Find(string filter,
         string[] requiredAttributes,
-        LdapConnection conn)
+        ILdapConnection conn)
     {
         var baseDn = _baseDnResolver.GetBaseDn();
         var searchRequest = new SearchRequest(baseDn,

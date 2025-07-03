@@ -3,11 +3,10 @@ using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
-using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
-using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
+using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
+using Multifactor.Core.Ldap.Schema;
 
 namespace DirectorySync.Infrastructure.Extensions;
 
@@ -27,15 +26,20 @@ public static class DirectoryAdapterBuilderExtensions
         
         builder.Services.AddOptions<LdapAttributeMappingOptions>()
             .BindConfiguration("Sync:PropertyMapping")
-            .ValidateDataAnnotations();
+        .ValidateDataAnnotations();
 
-        builder.Services.AddTransient(prov =>
+        builder.Services.AddSingleton(prov =>
         {
-            var options = prov.GetRequiredService<IOptions<LdapOptions>>().Value;
-            return new LdapConnectionString(options.Path);
+            return LdapConnectionFactory.Create();
         });
 
-        builder.Services.AddTransient<LdapConnectionFactory>();
+        builder.Services.AddSingleton(prov =>
+        {
+            var factory = prov.GetRequiredService<LdapConnectionFactory>();
+
+            return new LdapSchemaLoader(factory);
+        });
+
         builder.Services.AddTransient<BaseDnResolver>();
         builder.Services.AddTransient<ILdapGroupPort, LdapGroup>();
         builder.Services.AddTransient<ILdapMemberPort, LdapMember>();

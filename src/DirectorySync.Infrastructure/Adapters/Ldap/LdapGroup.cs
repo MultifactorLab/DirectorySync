@@ -6,9 +6,12 @@ using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
-using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Multifactor.Core.Ldap;
+using Multifactor.Core.Ldap.Connection;
+using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
+using Multifactor.Core.Ldap.Schema;
 using SearchOption = System.DirectoryServices.Protocols.SearchOption;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap;
@@ -16,18 +19,21 @@ namespace DirectorySync.Infrastructure.Adapters.Ldap;
 internal sealed class LdapGroup : ILdapGroupPort
 {
     private readonly LdapConnectionFactory _connectionFactory;
+    private readonly LdapSchemaLoader _ldapSchemaLoader;
     private readonly LdapOptions _ldapOptions;
     private readonly LdapRequestOptions _requestOptions;
     private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<LdapGroup> _logger;
 
     public LdapGroup(LdapConnectionFactory connectionFactory,
+        LdapSchemaLoader ldapSchemaLoader,
         IOptions<LdapOptions> ldapOptions,
         IOptions<LdapRequestOptions> requestOptions,
         BaseDnResolver baseDnResolver,
         ILogger<LdapGroup> logger)
     {
         _connectionFactory = connectionFactory;
+        _ldapSchemaLoader = ldapSchemaLoader;
         _ldapOptions = ldapOptions.Value;
         _requestOptions = requestOptions.Value;
         _baseDnResolver = baseDnResolver;
@@ -38,9 +44,17 @@ internal sealed class LdapGroup : ILdapGroupPort
     {
         ArgumentNullException.ThrowIfNull(objectGuid);
 
-        using var connection = _connectionFactory.CreateConnection();
+        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
+            AuthType.Basic,
+            _ldapOptions.Username,
+            _ldapOptions.Password,
+            _ldapOptions.Timeout);
+        
+        var schema = _ldapSchemaLoader.Load(options);
 
-        var groupDn = FindGroupDn(objectGuid, connection);
+        using var connection = _connectionFactory.CreateConnection(options);
+
+        var groupDn = FindGroupDn(objectGuid, connection, schema);
         if (groupDn is null)
         {
             return null;
@@ -64,13 +78,21 @@ internal sealed class LdapGroup : ILdapGroupPort
             return ReadOnlyCollection<GroupModel>.Empty;
         }
 
-        using var connection = _connectionFactory.CreateConnection();
+        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
+            AuthType.Basic,
+            _ldapOptions.Username,
+            _ldapOptions.Password,
+            _ldapOptions.Timeout);
+
+        using var connection = _connectionFactory.CreateConnection(options);
+
+        var schema = _ldapSchemaLoader.Load(options);
 
         var result = new List<GroupModel>();
 
         foreach (var guid in guidList)
         {
-            var groupDn = FindGroupDn(guid, connection);
+            var groupDn = FindGroupDn(guid, connection, schema);
             if (groupDn is null)
             {
                 continue;
@@ -87,12 +109,12 @@ internal sealed class LdapGroup : ILdapGroupPort
         return result.AsReadOnly();
     }
     
-    private string? FindGroupDn(DirectoryGuid guid, LdapConnection conn)
+    private string? FindGroupDn(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema)
     {
         var filter = LdapFilters.FindGroupByGuid(guid);
         _logger.LogDebug("Searching by group with filter '{Filter:s}'...", filter);
 
-        var result = Find(filter, ["distinguishedName"], conn);
+        var result = Find(filter, [schema.Dn], conn);
         var first = result.FirstOrDefault();
         if (first is null)
         {
@@ -103,7 +125,7 @@ internal sealed class LdapGroup : ILdapGroupPort
     }
 
     private IEnumerable<DirectoryGuid> GetMembers(string groupDn,
-        LdapConnection conn)
+        ILdapConnection conn)
     {
         var filter = GetFilter(groupDn);
         _logger.LogDebug("Searching by group members with filter '{Filter:s}'...", filter);
@@ -139,7 +161,7 @@ internal sealed class LdapGroup : ILdapGroupPort
 
     private IEnumerable<SearchResultEntry> Find(string filter,
         string[] requiredAttributes,
-        LdapConnection conn)
+        ILdapConnection conn)
     {
         var baseDn = _baseDnResolver.GetBaseDn();
         var searchRequest = new SearchRequest(baseDn,

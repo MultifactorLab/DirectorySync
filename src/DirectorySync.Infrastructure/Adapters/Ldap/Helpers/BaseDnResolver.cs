@@ -1,8 +1,11 @@
 ﻿using System.DirectoryServices.Protocols;
+using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
-using DirectorySync.Infrastructure.Shared.Integrations.Ldap;
-using DirectorySync.Infrastructure.Shared.Multifactor.Core.Ldap;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Multifactor.Core.Ldap;
+using Multifactor.Core.Ldap.Connection;
+using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 
@@ -11,20 +14,27 @@ internal sealed class BaseDnResolver
     const string _defaultNamingContextAttr = "defaultNamingContext";
 
     private readonly LdapConnectionFactory _connectionFactory;
-    private readonly LdapConnectionString _connectionString;
+    private readonly LdapOptions _ldapOptions;
     private readonly ILogger<BaseDnResolver> _logger;
     private readonly Lazy<string> _dn;
 
     public BaseDnResolver(LdapConnectionFactory connectionFactory,
-        LdapConnectionString connectionString,
+        IOptions<LdapOptions> ldapOptions,
         ILogger<BaseDnResolver> logger)
     {
         _connectionFactory = connectionFactory;
-        _connectionString = connectionString;
+        _ldapOptions = ldapOptions.Value;
+
+        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
+            AuthType.Basic,
+            _ldapOptions.Username,
+            _ldapOptions.Password,
+            _ldapOptions.Timeout);
+
         _logger = logger;
         _dn = new Lazy<string>(() =>
         {
-            using var conn = _connectionFactory.CreateConnection();
+            using var conn = _connectionFactory.CreateConnection(options);
             var dn = GetBaseDnInternal(conn);
             return dn;
         });
@@ -36,12 +46,17 @@ internal sealed class BaseDnResolver
     /// <returns>BASE DN.</returns>
     public string GetBaseDn() => _dn.Value;
 
-    private string GetBaseDnInternal(LdapConnection conn)
+    private string GetBaseDnInternal(ILdapConnection conn, LdapConnectionString? connectionString = null)
     {
-        if (_connectionString.HasBaseDn)
+        if (connectionString is null)
         {
-            _logger.LogDebug("Base DN was consumed from config: {BaseDN:l}", _connectionString.Container);
-            return _connectionString.Container;
+            return string.Empty;
+        }
+
+        if (connectionString.HasBaseDn)
+        {
+            _logger.LogDebug("Base DN was consumed from config: {BaseDN:l}", connectionString.Container);
+            return connectionString.Container;
         }
 
         _logger.LogDebug("Try to consume Base DN from LDAP server");
