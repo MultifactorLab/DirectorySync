@@ -1,8 +1,6 @@
 ﻿using System.DirectoryServices.Protocols;
-using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Multifactor.Core.Ldap;
 using Multifactor.Core.Ldap.Connection;
 using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
@@ -14,39 +12,29 @@ internal sealed class BaseDnResolver
     const string _defaultNamingContextAttr = "defaultNamingContext";
 
     private readonly LdapConnectionFactory _connectionFactory;
-    private readonly LdapOptions _ldapOptions;
     private readonly ILogger<BaseDnResolver> _logger;
     private readonly Lazy<string> _dn;
 
     public BaseDnResolver(LdapConnectionFactory connectionFactory,
-        IOptions<LdapOptions> ldapOptions,
         ILogger<BaseDnResolver> logger)
     {
         _connectionFactory = connectionFactory;
-        _ldapOptions = ldapOptions.Value;
-
-        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
-            AuthType.Basic,
-            _ldapOptions.Username,
-            _ldapOptions.Password,
-            _ldapOptions.Timeout);
-
         _logger = logger;
-        _dn = new Lazy<string>(() =>
-        {
-            using var conn = _connectionFactory.CreateConnection(options);
-            var dn = GetBaseDnInternal(conn);
-            return dn;
-        });
     }
 
     /// <summary>
     /// Returns a Base DN from the LDAP connection string if presented. Otherwise, connects to a LDAP server and consumes Base DN from the RootDSE.
     /// </summary>
     /// <returns>BASE DN.</returns>
-    public string GetBaseDn() => _dn.Value;
+    public string GetBaseDn(LdapConnectionOptions options)
+    {
+        using var connection = _connectionFactory.CreateConnection(options);
 
-    private string GetBaseDnInternal(ILdapConnection conn, LdapConnectionString? connectionString = null)
+        var dn = GetBaseDnInternal(connection, options.ConnectionString);
+        return dn;
+    }
+
+    private string GetBaseDnInternal(ILdapConnection conn, LdapConnectionString? connectionString)
     {
         if (connectionString is null)
         {

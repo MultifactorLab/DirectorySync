@@ -20,21 +20,21 @@ namespace DirectorySync.Infrastructure.Adapters.Ldap;
 internal sealed class LdapMember : ILdapMemberPort
 {
     private readonly LdapConnectionFactory _connectionFactory;
-    private readonly LdapSchemaLoader _ldapSchemaLoader;
+    private readonly LdapSchemaLoader _schemaLoader;
     private readonly LdapOptions _ldapOptions;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _ldapAttributeMappingOptions;
     private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<LdapMember> _logger;
 
     public LdapMember(LdapConnectionFactory connectionFactory,
-        LdapSchemaLoader ldapSchemaLoader,
+        LdapSchemaLoader schemaLoader,
         IOptions<LdapOptions> ldapOptions,
         IOptionsMonitor<LdapAttributeMappingOptions> ldapAttributeMappingOptions,
         BaseDnResolver baseDnResolver,
         ILogger<LdapMember> logger)
     {
         _connectionFactory = connectionFactory;
-        _ldapSchemaLoader = ldapSchemaLoader;
+        _schemaLoader = schemaLoader;
         _ldapOptions = ldapOptions.Value;
         _ldapAttributeMappingOptions = ldapAttributeMappingOptions;
         _connectionFactory = connectionFactory;
@@ -43,7 +43,7 @@ internal sealed class LdapMember : ILdapMemberPort
     }
 
     public ReadOnlyCollection<MemberModel> GetByGuids(
-        IEnumerable<DirectoryGuid> objectGuids, 
+        IEnumerable<DirectoryGuid> objectGuids,
         string[] requiredAttributes,
         CancellationToken cancellationToken = default)
     {
@@ -64,10 +64,12 @@ internal sealed class LdapMember : ILdapMemberPort
 
         using var connection = _connectionFactory.CreateConnection(options);
 
+        var schema = _schemaLoader.Load(options);
+
         // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
         // поэтому формируем фильтр с OR-условиями.
         var filter = LdapFilters.FindEntriesByGuids(guidList);
-        
+
         var logText = GetFilterLogText(guidList);
         _logger.LogDebug("Searching {GuidCount} members by GUIDs: {GuidsPreview}. Filter length: {FilterLength}",
             guidList.Count(),
@@ -75,7 +77,7 @@ internal sealed class LdapMember : ILdapMemberPort
             filter.Length);
 
         var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
-        var entries = Find(filter, attributesToLoad, connection);
+        var entries = Find(filter, attributesToLoad, connection, options);
 
         var models = new List<MemberModel>();
         foreach (var entry in entries)
@@ -83,16 +85,16 @@ internal sealed class LdapMember : ILdapMemberPort
             var guid = GetObjectGuid(entry);
             var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
             var attributes = new LdapAttributeCollection(map);
-        
+
             var identity = attributes.GetSingleOrDefault(_ldapAttributeMappingOptions.CurrentValue.IdentityAttribute);
             var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
-            
+
             models.Add(MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []));
         }
 
         return new ReadOnlyCollection<MemberModel>(models);
     }
-    
+
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
     {
         var value = entry.Attributes["objectGuid"]?[0];
@@ -106,9 +108,10 @@ internal sealed class LdapMember : ILdapMemberPort
 
     private IEnumerable<SearchResultEntry> Find(string filter,
         string[] requiredAttributes,
-        ILdapConnection conn)
+        ILdapConnection conn,
+        LdapConnectionOptions options)
     {
-        var baseDn = _baseDnResolver.GetBaseDn();
+        var baseDn = _baseDnResolver.GetBaseDn(options);
         var searchRequest = new SearchRequest(baseDn,
             filter,
             SearchScope.Subtree,
@@ -157,7 +160,7 @@ internal sealed class LdapMember : ILdapMemberPort
             }
         }
     }
-    
+
     private ReadOnlyCollection<MemberProperty> GetMemberProperties(LdapAttributeCollection newAttributes, LdapAttributeMappingOptions options)
     {
         var properties = new List<MemberProperty>();
@@ -187,7 +190,7 @@ internal sealed class LdapMember : ILdapMemberPort
         {
             properties.Add(new MemberProperty(LdapPropertyOptions.AdditionalProperties.PhoneProperty, phone));
         }
-        
+
         return properties.AsReadOnly();
     }
 
@@ -199,7 +202,7 @@ internal sealed class LdapMember : ILdapMemberPort
         {
             previewText += $", ... +{guidList.Count() - 3} more";
         }
-        
+
         return previewText;
     }
 }

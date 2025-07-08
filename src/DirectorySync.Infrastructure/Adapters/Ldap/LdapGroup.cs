@@ -39,7 +39,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         _baseDnResolver = baseDnResolver;
         _logger = logger;
     }
-    
+
     public GroupModel? GetByGuidAsync(DirectoryGuid objectGuid)
     {
         ArgumentNullException.ThrowIfNull(objectGuid);
@@ -49,12 +49,12 @@ internal sealed class LdapGroup : ILdapGroupPort
             _ldapOptions.Username,
             _ldapOptions.Password,
             _ldapOptions.Timeout);
-        
-        var schema = _ldapSchemaLoader.Load(options);
 
         using var connection = _connectionFactory.CreateConnection(options);
 
-        var groupDn = FindGroupDn(objectGuid, connection, schema);
+        var schema = _ldapSchemaLoader.Load(options);
+
+        var groupDn = FindGroupDn(objectGuid, connection, schema, options);
         if (groupDn is null)
         {
             return null;
@@ -62,9 +62,11 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         var members = GetMembers(
             groupDn,
-            connection
+            connection,
+            schema,
+            options
         ).ToList();
-        
+
         return GroupModel.Create(objectGuid, members);
     }
 
@@ -92,7 +94,7 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         foreach (var guid in guidList)
         {
-            var groupDn = FindGroupDn(guid, connection, schema);
+            var groupDn = FindGroupDn(guid, connection, schema, options);
             if (groupDn is null)
             {
                 continue;
@@ -100,7 +102,9 @@ internal sealed class LdapGroup : ILdapGroupPort
 
             var members = GetMembers(
                 groupDn,
-                connection
+                connection,
+                schema,
+                options
             ).ToList();
 
             result.Add(GroupModel.Create(guid, members));
@@ -108,13 +112,13 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         return result.AsReadOnly();
     }
-    
-    private string? FindGroupDn(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema)
+
+    private string? FindGroupDn(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema, LdapConnectionOptions options)
     {
-        var filter = LdapFilters.FindGroupByGuid(guid);
+        var filter = LdapFilters.FindGroupByGuid(guid, schema);
         _logger.LogDebug("Searching by group with filter '{Filter:s}'...", filter);
 
-        var result = Find(filter, [schema.Dn], conn);
+        var result = Find(filter, [schema.Dn], conn, options);
         var first = result.FirstOrDefault();
         if (first is null)
         {
@@ -125,27 +129,29 @@ internal sealed class LdapGroup : ILdapGroupPort
     }
 
     private IEnumerable<DirectoryGuid> GetMembers(string groupDn,
-        ILdapConnection conn)
+        ILdapConnection conn,
+        ILdapSchema schema,
+        LdapConnectionOptions options)
     {
-        var filter = GetFilter(groupDn);
+        var filter = GetFilter(groupDn, schema);
         _logger.LogDebug("Searching by group members with filter '{Filter:s}'...", filter);
         var attrs = new string[] { "ObjectGUID" };
 
-        var result = Find(filter, attrs, conn);
+        var result = Find(filter, attrs, conn, options);
         foreach (var entry in result)
         {
             yield return GetObjectGuid(entry);
         }
     }
 
-    private string GetFilter(string groupDn)
+    private string GetFilter(string groupDn, ILdapSchema schema)
     {
         if (_requestOptions.IncludeNestedGroups)
         {
             return LdapFilters.FindEnabledGroupMembersByGroupDnRecursively(groupDn);
         }
 
-        return LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn);
+        return LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn, schema);
     }
 
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
@@ -161,9 +167,10 @@ internal sealed class LdapGroup : ILdapGroupPort
 
     private IEnumerable<SearchResultEntry> Find(string filter,
         string[] requiredAttributes,
-        ILdapConnection conn)
+        ILdapConnection conn,
+        LdapConnectionOptions options)
     {
-        var baseDn = _baseDnResolver.GetBaseDn();
+        var baseDn = _baseDnResolver.GetBaseDn(options);
         var searchRequest = new SearchRequest(baseDn,
             filter,
             SearchScope.Subtree,
