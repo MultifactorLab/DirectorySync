@@ -27,8 +27,21 @@ public class GroupModel : BaseModel
     public static GroupModel Create(Guid guid,
         IEnumerable<DirectoryGuid> newMembers)
     {
+        if (guid.Equals(Guid.Empty))
+        {
+            throw new ArgumentException("Group Guid can't be empty");
+        }
         ArgumentNullException.ThrowIfNull(newMembers, nameof(newMembers));
         
+        return new GroupModel(new DirectoryGuid(guid), newMembers);
+    }
+
+    public static GroupModel Create(DirectoryGuid guid,
+        IEnumerable<DirectoryGuid> newMembers)
+    {
+        ArgumentNullException.ThrowIfNull(guid, nameof(guid));
+        ArgumentNullException.ThrowIfNull(newMembers, nameof(newMembers));
+
         return new GroupModel(guid, newMembers);
     }
 

@@ -47,7 +47,7 @@ public class UserDeleter : IUserDeleter
         {
             var bucket = delUsers
                 .Skip(skip)
-                .Take(_userProcessingOptions.UpdatingBatchSize)
+                .Take(_userProcessingOptions.DeletingBatchSize)
                 .ToArray();
             
             if (bucket.Length == 0)

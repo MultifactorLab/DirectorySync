@@ -1,6 +1,6 @@
-using DirectorySync.Domain.ValueObjects;
+using DirectorySync.Application.Models.ValueObjects;
 
-namespace DirectorySync.Domain.Tests;
+namespace DirectorySync.Application.Tests.Models.ValueObjects;
 
 public class AttributesHashTests
 {
