@@ -13,7 +13,6 @@ internal sealed class BaseDnResolver
 
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly ILogger<BaseDnResolver> _logger;
-    private readonly Lazy<string> _dn;
 
     public BaseDnResolver(LdapConnectionFactory connectionFactory,
         ILogger<BaseDnResolver> logger)

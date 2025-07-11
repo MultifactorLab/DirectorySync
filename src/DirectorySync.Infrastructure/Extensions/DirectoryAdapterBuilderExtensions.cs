@@ -40,7 +40,8 @@ public static class DirectoryAdapterBuilderExtensions
             return new LdapSchemaLoader(factory);
         });
 
-        builder.Services.AddTransient<BaseDnResolver>();
+        builder.Services.AddSingleton<BaseDnResolver>();
+
         builder.Services.AddTransient<ILdapGroupPort, LdapGroup>();
         builder.Services.AddTransient<ILdapMemberPort, LdapMember>();
     }
