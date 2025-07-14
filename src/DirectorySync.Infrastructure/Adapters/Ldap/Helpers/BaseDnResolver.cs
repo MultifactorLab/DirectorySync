@@ -13,6 +13,7 @@ internal sealed class BaseDnResolver
 
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly ILogger<BaseDnResolver> _logger;
+    // dictionary - локальный кэш домен - baseDn
 
     public BaseDnResolver(LdapConnectionFactory connectionFactory,
         ILogger<BaseDnResolver> logger)
@@ -33,13 +34,8 @@ internal sealed class BaseDnResolver
         return dn;
     }
 
-    private string GetBaseDnInternal(ILdapConnection conn, LdapConnectionString? connectionString)
+    private string GetBaseDnInternal(ILdapConnection conn, LdapConnectionString connectionString)
     {
-        if (connectionString is null)
-        {
-            return string.Empty;
-        }
-
         if (connectionString.HasBaseDn)
         {
             _logger.LogDebug("Base DN was consumed from config: {BaseDN:l}", connectionString.Container);
