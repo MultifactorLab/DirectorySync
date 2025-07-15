@@ -111,7 +111,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         CancellationToken cancellationToken)
     {
         var getGroupTimer = _codeTimer.Start("Get Reference Group");
-        var referenceGroup = _groupPort.GetByGuidAsync(groupId);
+        var referenceGroup = _groupPort.GetByGuid(groupId);
         getGroupTimer.Stop();
         if (referenceGroup is null)
         {

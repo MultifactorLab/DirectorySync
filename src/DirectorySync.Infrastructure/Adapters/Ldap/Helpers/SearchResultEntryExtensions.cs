@@ -15,10 +15,7 @@ internal static class SearchResultEntryExtensions
     /// <exception cref="ArgumentException">If <paramref name="attr"/> is empty.</exception>
     public static LdapAttribute GetFirstValueAttribute(this SearchResultEntry entry, string attr)
     {
-        if (entry is null)
-        {
-            throw new ArgumentNullException(nameof(entry));
-        }
+        ArgumentNullException.ThrowIfNull(entry);
 
         if (string.IsNullOrWhiteSpace(attr))
         {

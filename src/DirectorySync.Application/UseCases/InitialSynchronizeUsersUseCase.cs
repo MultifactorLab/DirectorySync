@@ -86,7 +86,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
         string[] requiredAttributes,
         CancellationToken cancellationToken = default)
     {
-       var referenceGroups = _ldapGroupPort.GetByGuidAsync(trackingGroups);
+       var referenceGroups = _ldapGroupPort.GetByGuid(trackingGroups);
        
        if (referenceGroups is null || referenceGroups.Count == 0)
        {

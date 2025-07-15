@@ -19,6 +19,11 @@ internal sealed class LdapFinder
         string namingContext,
         ILdapConnection conn)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filter);
+        ArgumentNullException.ThrowIfNull(requiredAttributes);
+        ArgumentException.ThrowIfNullOrWhiteSpace(namingContext);
+        ArgumentNullException.ThrowIfNull(conn);
+        
         var searchRequest = new SearchRequest(namingContext,
             filter,
             SearchScope.Subtree,

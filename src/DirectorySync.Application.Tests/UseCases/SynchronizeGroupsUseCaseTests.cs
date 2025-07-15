@@ -64,7 +64,7 @@ public class SynchronizeGroupsUseCaseTests
     {
         // Arrange
         var groupId = new DirectoryGuid(Guid.NewGuid());
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId))
+        _groupPort.Setup(x => x.GetByGuid(groupId))
             .Returns((GroupModel)null);
 
         // Act
@@ -81,7 +81,7 @@ public class SynchronizeGroupsUseCaseTests
         var groupId = new DirectoryGuid(Guid.NewGuid());
         var groupModel = GroupModel.Create(groupId, []);
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId))
+        _groupPort.Setup(x => x.GetByGuid(groupId))
             .Returns(groupModel);
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns((GroupModel)null);
 
@@ -104,7 +104,7 @@ public class SynchronizeGroupsUseCaseTests
 
         var cached = GroupModel.Create(groupId, [userId]);
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns(reference);
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
 
         // Act
@@ -125,7 +125,7 @@ public class SynchronizeGroupsUseCaseTests
 
         var cached = GroupModel.Create(groupId, []);
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns(reference);
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
         _memberDatabase.Setup(x => x.FindManyById(It.IsAny<IEnumerable<DirectoryGuid>>())).Returns(ReadOnlyCollection<MemberModel>.Empty);
 
@@ -164,7 +164,7 @@ public class SynchronizeGroupsUseCaseTests
 
         var reference = GroupModel.Create(groupId, []);
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns(reference);
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
 
         var member = MemberModel.Create(removedId, new Identity("oldUser"), [groupId]);
@@ -201,7 +201,7 @@ public class SynchronizeGroupsUseCaseTests
 
         var reference = GroupModel.Create(groupId, [memberId]);
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns(reference);
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
 
         var member = MemberModel.Create(memberId, new Identity("user"), []);

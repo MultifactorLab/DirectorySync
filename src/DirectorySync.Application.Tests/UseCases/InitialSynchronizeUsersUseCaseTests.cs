@@ -69,7 +69,7 @@ public class InitialSynchronizeUsersUseCaseTests
         _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
             .Returns(Array.Empty<string>());
 
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns(new List<GroupModel>().AsReadOnly());
 
         // Act
@@ -99,7 +99,7 @@ public class InitialSynchronizeUsersUseCaseTests
             .Returns(Array.Empty<string>());
 
         var groupModel = GroupModel.Create(trackingGroupGuid, []);
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns(new List<GroupModel> { groupModel }.AsReadOnly());
 
         var memberModels = cloudIdentities.Select(identity =>
@@ -136,7 +136,7 @@ public class InitialSynchronizeUsersUseCaseTests
             .Returns(Array.Empty<string>());
 
         var groupModel = GroupModel.Create(trackingGroupGuid, []);
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns(new List<GroupModel> { groupModel }.AsReadOnly());
 
         var existingIdentities = cloudIdentities

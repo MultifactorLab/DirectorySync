@@ -6,6 +6,6 @@ namespace DirectorySync.Application.Ports.Directory;
 
 public interface ILdapGroupPort
 {
-    GroupModel? GetByGuidAsync(DirectoryGuid objectGuid);
-    ReadOnlyCollection<GroupModel>? GetByGuidAsync(IEnumerable<DirectoryGuid> objectGuids);
+    GroupModel? GetByGuid(DirectoryGuid objectGuid);
+    ReadOnlyCollection<GroupModel>? GetByGuid(IEnumerable<DirectoryGuid> objectGuids);
 }

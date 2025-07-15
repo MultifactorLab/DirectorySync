@@ -13,7 +13,6 @@ internal sealed class BaseDnResolver
 
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly ILogger<BaseDnResolver> _logger;
-    // dictionary - локальный кэш домен - baseDn
 
     public BaseDnResolver(LdapConnectionFactory connectionFactory,
         ILogger<BaseDnResolver> logger)

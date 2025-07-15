@@ -20,7 +20,12 @@ internal sealed class LdapDomainDiscovery
 
     public IEnumerable<string> GetForestDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
-        var childDomains = new List<string>();
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(schema);
+        
+        _logger.LogDebug("Forest domain detection started for {Host}...", options.ConnectionString.Host);
+        
+        var domains = new List<string>();
 
         using var connection = _connectionFactory.CreateConnection(options);
 
@@ -39,20 +44,26 @@ internal sealed class LdapDomainDiscovery
             if ((systemFlags & 0x2) == 0x2)
             {
                 var dnsRoot = GetAttribute(entry, "dnsRoot");
-
-                // Исключаем forest root domain
+                
                 if (!string.Equals(dnsRoot, schema.NamingContext.StringRepresentation, StringComparison.OrdinalIgnoreCase))
                 {
-                    childDomains.Add(dnsRoot);
+                    domains.Add(dnsRoot);
                 }
             }
         }
+        
+        _logger.LogDebug("Domains found in the forest: {domains}", string.Join(", ", domains));
 
-        return childDomains;
+        return domains;
     }
 
     public IEnumerable<string> GetTrustedDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(schema);
+        
+        _logger.LogDebug("Trusted external domain detection started...");
+        
         using var connection = _connectionFactory.CreateConnection(options);
 
         var trustedDomains = new List<string>();
@@ -81,6 +92,8 @@ internal sealed class LdapDomainDiscovery
             .Where(td => !forestDomains.Contains(td, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
+        _logger.LogDebug("Trusted external domains found: {domains}", string.Join(", ", trustedDomains));
+        
         return trustedOnly;
     }
 
@@ -122,11 +135,7 @@ internal sealed class LdapDomainDiscovery
 
     private string? GetAttribute(SearchResultEntry entry, string attributeName)
     {
-        if (entry.Attributes.Contains(attributeName))
-        {
-            return entry.Attributes[attributeName][0].ToString();
-        }
-        return null;
+        return entry.Attributes.Contains(attributeName) ? entry.Attributes[attributeName][0].ToString() : null;
     }
 
     private int GetAttributeInt(SearchResultEntry entry, string attributeName)

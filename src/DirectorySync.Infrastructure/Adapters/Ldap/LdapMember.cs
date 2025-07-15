@@ -72,7 +72,7 @@ internal sealed class LdapMember : ILdapMemberPort
 
         var logText = GetFilterLogText(guidList);
         _logger.LogDebug("Searching {GuidCount} members by GUIDs: {GuidsPreview}. Filter length: {FilterLength}",
-            guidList.Count(),
+            guidList.Count,
             logText,
             filter.Length);
 
@@ -82,17 +82,22 @@ internal sealed class LdapMember : ILdapMemberPort
         var models = new List<MemberModel>();
         foreach (var entry in entries)
         {
-            var guid = GetObjectGuid(entry);
-            var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
-            var attributes = new LdapAttributeCollection(map);
-
-            var identity = attributes.GetSingleOrDefault(_ldapAttributeMappingOptions.CurrentValue.IdentityAttribute);
-            var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
-
-            models.Add(MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []));
+            models.Add(GetMember(entry, requiredAttributes));
         }
 
         return new ReadOnlyCollection<MemberModel>(models);
+    }
+
+    private MemberModel GetMember(SearchResultEntry entry, string[] requiredAttributes)
+    {
+        var guid = GetObjectGuid(entry);
+        var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
+        var attributes = new LdapAttributeCollection(map);
+
+        var identity = attributes.GetSingleOrDefault(_ldapAttributeMappingOptions.CurrentValue.IdentityAttribute);
+        var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
+
+        return MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []);
     }
 
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)

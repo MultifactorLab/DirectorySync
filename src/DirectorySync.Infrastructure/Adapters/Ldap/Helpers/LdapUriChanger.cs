@@ -1,13 +1,11 @@
 namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 
-public static class LdapUriChanger
+internal static class LdapUriChanger
 {
     public static string ReplaceHostInLdapUrl(string ldapUrl, string newHost)
     {
-        if (string.IsNullOrWhiteSpace(ldapUrl) || string.IsNullOrWhiteSpace(newHost))
-        {
-            throw new ArgumentException("ldapUrl and newHost must be provided.");
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(ldapUrl);
+        ArgumentException.ThrowIfNullOrWhiteSpace(newHost);
         
         if (!Uri.TryCreate(ldapUrl, UriKind.Absolute, out var uri))
         {
