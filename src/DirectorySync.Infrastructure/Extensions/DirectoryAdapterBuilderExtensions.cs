@@ -28,17 +28,9 @@ public static class DirectoryAdapterBuilderExtensions
             .BindConfiguration("Sync:PropertyMapping")
         .ValidateDataAnnotations();
 
-        builder.Services.AddSingleton(prov =>
-        {
-            return LdapConnectionFactory.Create();
-        });
+        builder.Services.AddSingleton(_ => LdapConnectionFactory.Create());
 
-        builder.Services.AddSingleton(prov =>
-        {
-            var factory = prov.GetRequiredService<LdapConnectionFactory>();
-
-            return new LdapSchemaLoader(factory);
-        });
+        builder.Services.AddSingleton<LdapSchemaLoader>();
 
         builder.Services.AddSingleton<BaseDnResolver>();
         builder.Services.AddSingleton<LdapDomainDiscovery>();
