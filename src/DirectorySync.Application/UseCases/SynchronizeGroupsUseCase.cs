@@ -69,7 +69,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         foreach (var groupId in trackingGroupGuids)
         {
             using var withGroup = _logger.EnrichWithGroup(groupId);
-            ProcessGroupChanges(groupId, memberMap, cancellationToken);
+            ProcessGroupChanges(groupId, memberMap);
         }
 
         var toCreate = memberMap.Values
@@ -107,8 +107,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     }
     
     private void ProcessGroupChanges(DirectoryGuid groupId,
-        Dictionary<DirectoryGuid, MemberModel> memberMap,
-        CancellationToken cancellationToken)
+        Dictionary<DirectoryGuid, MemberModel> memberMap)
     {
         var getGroupTimer = _codeTimer.Start("Get Reference Group");
         var referenceGroup = _groupPort.GetByGuid(groupId);
@@ -152,7 +151,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         }
         else
         {
-            HandleAddedMembers(groupId, addedIds, memberMap, cancellationToken);
+            HandleAddedMembers(groupId, addedIds, memberMap);
         }
 
         SetMembersGroupMapping(memberMap.Values);
@@ -181,8 +180,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     
     private void HandleAddedMembers(DirectoryGuid groupId,
         IEnumerable<DirectoryGuid> addedIds,
-        Dictionary<DirectoryGuid, MemberModel> memberMap,
-        CancellationToken cancellationToken)
+        Dictionary<DirectoryGuid, MemberModel> memberMap)
     {
         var existingMembers = FindOrLoadMembers(addedIds, memberMap);
         var existingIds = existingMembers.Select(m => m.Id).ToHashSet();
@@ -190,7 +188,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         var requiredNames = _syncSettingsOptions.GetRequiredAttributeNames();
         
-        var newMembers = _memberPort.GetByGuids(newIds, requiredNames, cancellationToken);
+        var newMembers = _memberPort.GetByGuids(newIds, requiredNames);
         foreach (var member in newMembers)
         {
             member.AddGroups([groupId]);

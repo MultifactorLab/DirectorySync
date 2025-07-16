@@ -120,7 +120,7 @@ internal sealed class LdapGroup : ILdapGroupPort
                     continue;
                 }
 
-                var group = GetGroup(guid, connection, domainSchema, domainOptions);
+                var group = GetGroup(guid, connection, domainSchema);
                 if (group is null)
                 {
                     continue;
@@ -142,10 +142,9 @@ internal sealed class LdapGroup : ILdapGroupPort
     
     private GroupModel? GetGroup(DirectoryGuid objectGuid,
         ILdapConnection connection,
-        ILdapSchema schema,
-        LdapConnectionOptions options)
+        ILdapSchema schema)
     {
-        var groupDn = FindGroupDn(objectGuid, connection, schema, options);
+        var groupDn = FindGroupDn(objectGuid, connection, schema);
         if (groupDn is null)
         {
             return null;
@@ -160,7 +159,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         return GroupModel.Create(objectGuid, members);
     }
 
-    private string? FindGroupDn(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema, LdapConnectionOptions options)
+    private string? FindGroupDn(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema)
     {
         var filter = LdapFilters.FindGroupByGuid(guid, schema);
 

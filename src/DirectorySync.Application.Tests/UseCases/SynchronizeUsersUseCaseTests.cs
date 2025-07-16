@@ -89,7 +89,7 @@ public class SynchronizeUsersUseCaseTests
         var reference = MemberModel.Create(memberId, new Identity("user1"), []);
         reference.SetProperties([new MemberProperty("cn", "User")], new AttributesHash("hash1"));
 
-        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }, It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }))
             .Returns(new[] { reference }.AsReadOnly());
 
         // Act
@@ -114,7 +114,7 @@ public class SynchronizeUsersUseCaseTests
         var reference = MemberModel.Create(memberId, new Identity("user1"), []);
         reference.SetProperties([new MemberProperty("cn", "NewUser")], new AttributesHash("newHash"));
 
-        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }, It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }))
             .Returns(new[] { reference }.AsReadOnly());
 
         _userUpdater.Setup(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()))

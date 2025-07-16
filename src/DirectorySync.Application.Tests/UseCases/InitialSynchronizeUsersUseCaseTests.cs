@@ -105,7 +105,7 @@ public class InitialSynchronizeUsersUseCaseTests
         var memberModels = cloudIdentities.Select(identity =>
             MemberModel.Create(Guid.NewGuid(), identity, [])).ToList();
 
-        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>()))
             .Returns(memberModels.AsReadOnly());
 
         // Act
@@ -144,7 +144,7 @@ public class InitialSynchronizeUsersUseCaseTests
             .Select(identity => MemberModel.Create(Guid.NewGuid(), identity, []))
             .ToList();
 
-        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>()))
             .Returns(existingIdentities.AsReadOnly());
 
         // Act

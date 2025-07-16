@@ -62,7 +62,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
         var memberIds = cachedMembers.Select(m => m.Id).ToArray();
         
         var getUsersTimer = _codeTimer.Start("Get directory users");
-        var freshEntries = _memberPort.GetByGuids(memberIds, requiredNames, cancellationToken);
+        var freshEntries = _memberPort.GetByGuids(memberIds, requiredNames);
         getUsersTimer.Stop();
         _logger.LogDebug("Directory users found: {Users}", freshEntries.Count);
         

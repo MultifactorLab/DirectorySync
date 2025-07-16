@@ -98,7 +98,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 
        foreach (var referenceGroup in referenceGroups)
        {
-           members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes, cancellationToken));
+           members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes));
        }
        
        return members.Select(m => m.Identity).ToHashSet(); 

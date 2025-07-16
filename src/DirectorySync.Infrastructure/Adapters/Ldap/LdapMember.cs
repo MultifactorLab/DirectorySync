@@ -6,6 +6,7 @@ using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
+using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.NameResolving;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
 using Microsoft.Extensions.Logging;
@@ -20,41 +21,45 @@ namespace DirectorySync.Infrastructure.Adapters.Ldap;
 internal sealed class LdapMember : ILdapMemberPort
 {
     private readonly LdapConnectionFactory _connectionFactory;
-    private readonly LdapSchemaLoader _schemaLoader;
+    private readonly LdapSchemaLoader _ldapSchemaLoader;
+    private readonly LdapFinder _ldapFinder;
+    private readonly LdapDomainDiscovery _ldapDomainDiscovery;
     private readonly LdapOptions _ldapOptions;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _ldapAttributeMappingOptions;
-    private readonly BaseDnResolver _baseDnResolver;
     private readonly ILogger<LdapMember> _logger;
 
     public LdapMember(LdapConnectionFactory connectionFactory,
-        LdapSchemaLoader schemaLoader,
+        LdapSchemaLoader ldapSchemaLoader,
+        LdapFinder ldapFinder,
+        LdapDomainDiscovery ldapDomainDiscovery,
         IOptions<LdapOptions> ldapOptions,
         IOptionsMonitor<LdapAttributeMappingOptions> ldapAttributeMappingOptions,
-        BaseDnResolver baseDnResolver,
         ILogger<LdapMember> logger)
     {
         _connectionFactory = connectionFactory;
-        _schemaLoader = schemaLoader;
+        _ldapSchemaLoader = ldapSchemaLoader;
+        _ldapFinder = ldapFinder;
+        _ldapDomainDiscovery = ldapDomainDiscovery;
         _ldapOptions = ldapOptions.Value;
         _ldapAttributeMappingOptions = ldapAttributeMappingOptions;
         _connectionFactory = connectionFactory;
-        _baseDnResolver = baseDnResolver;
         _logger = logger;
     }
 
     public ReadOnlyCollection<MemberModel> GetByGuids(
         IEnumerable<DirectoryGuid> objectGuids,
-        string[] requiredAttributes,
-        CancellationToken cancellationToken = default)
+        string[] requiredAttributes)
     {
         ArgumentNullException.ThrowIfNull(objectGuids);
         ArgumentNullException.ThrowIfNull(requiredAttributes);
 
         var guidList = objectGuids.ToList();
-        if (!guidList.Any())
+        if (guidList.Count == 0)
         {
-            return new ReadOnlyCollection<MemberModel>(new List<MemberModel>());
+            return new ReadOnlyCollection<MemberModel>(Array.Empty<MemberModel>());
         }
+        
+        _logger.LogDebug("Fetching members for {Count} GUID(s)", guidList.Count);
 
         var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
             AuthType.Basic,
@@ -62,40 +67,66 @@ internal sealed class LdapMember : ILdapMemberPort
             _ldapOptions.Password,
             _ldapOptions.Timeout);
 
-        using var connection = _connectionFactory.CreateConnection(options);
-
-        var schema = _schemaLoader.Load(options);
-
-        // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
-        // поэтому формируем фильтр с OR-условиями.
-        var filter = LdapFilters.FindEntriesByGuids(guidList);
-
-        var logText = GetFilterLogText(guidList);
-        _logger.LogDebug("Searching {GuidCount} members by GUIDs: {GuidsPreview}. Filter length: {FilterLength}",
-            guidList.Count,
-            logText,
-            filter.Length);
-
-        var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
-        var entries = Find(filter, attributesToLoad, connection, options);
-
-        var models = new List<MemberModel>();
-        foreach (var entry in entries)
+        var schema = _ldapSchemaLoader.Load(options);
+        
+        var domainsToSearch = _ldapDomainDiscovery.GetForestDomains(options, schema)
+            .ToList();
+        
+        var trustedDomains = _ldapDomainDiscovery.GetTrustedDomains(options, schema);
+        foreach (var trustedDomain in trustedDomains)
         {
-            models.Add(GetMember(entry, requiredAttributes));
+            var trustedOptions = GetDomainConnectionOptions(_ldapOptions.Path, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
+            var trustedSchema = _ldapSchemaLoader.Load(trustedOptions);
+            domainsToSearch.AddRange(_ldapDomainDiscovery.GetForestDomains(trustedOptions, trustedSchema));
         }
+        
+        var models = new List<MemberModel>();
 
+        foreach (var domain in domainsToSearch.Distinct())
+        {
+            if (guidList.Count == 0)
+            {
+                break;
+            }
+            
+            var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, domain, _ldapOptions.Username, _ldapOptions.Password);
+            var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+            
+            using var connection = _connectionFactory.CreateConnection(domainOptions);
+            
+            // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
+            // поэтому формируем фильтр с OR-условиями.
+            var filter = LdapFilters.FindEntriesByGuids(guidList);
+
+            LogFilter(guidList, domain, filter);
+
+            var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
+            var entries = _ldapFinder.Find(filter,
+                attributesToLoad,
+                domainSchema.NamingContext.StringRepresentation,
+                connection);
+            
+            foreach (var entry in entries)
+            {
+                var member = MapToMemberModel(entry, requiredAttributes);
+                models.Add(member);
+                guidList.RemoveAll(g => g.Equals(member.Id));
+            }
+        }
+        
+        _logger.LogDebug("Fetched {Count} member(s) out of {Requested}", models.Count, guidList.Count);
+        
         return new ReadOnlyCollection<MemberModel>(models);
     }
 
-    private MemberModel GetMember(SearchResultEntry entry, string[] requiredAttributes)
+    private MemberModel MapToMemberModel(SearchResultEntry entry, string[] requiredAttributes)
     {
         var guid = GetObjectGuid(entry);
         var map = requiredAttributes.Select(entry.GetFirstValueAttribute);
         var attributes = new LdapAttributeCollection(map);
 
         var identity = attributes.GetSingleOrDefault(_ldapAttributeMappingOptions.CurrentValue.IdentityAttribute);
-        var properties = GetMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
+        var properties = BuildMemberProperties(attributes, _ldapAttributeMappingOptions.CurrentValue);
 
         return MemberModel.Create(guid, new Identity(identity), properties, new AttributesHash(attributes), []);
     }
@@ -111,62 +142,7 @@ internal sealed class LdapMember : ILdapMemberPort
         return new Guid(bytes);
     }
 
-    private IEnumerable<SearchResultEntry> Find(string filter,
-        string[] requiredAttributes,
-        ILdapConnection conn,
-        LdapConnectionOptions options)
-    {
-        var baseDn = _baseDnResolver.GetBaseDn(options);
-        var searchRequest = new SearchRequest(baseDn,
-            filter,
-            SearchScope.Subtree,
-            requiredAttributes);
-
-        var pageRequestControl = new PageResultRequestControl(_ldapOptions.PageSize);
-        var searchOptControl = new SearchOptionsControl(System.DirectoryServices.Protocols.SearchOption.DomainScope);
-
-        searchRequest.Controls.Add(pageRequestControl);
-        searchRequest.Controls.Add(searchOptControl);
-
-        var searchResults = new List<SearchResponse>();
-        var pages = 0;
-
-        while (true)
-        {
-            ++pages;
-
-            var response = conn.SendRequest(searchRequest);
-            if (response is not SearchResponse searchResponse)
-            {
-                throw new Exception($"Invalid search response: {response}");
-            }
-
-            searchResults.Add(searchResponse);
-
-            var control = searchResponse.Controls
-                .OfType<PageResultResponseControl>()
-                .FirstOrDefault();
-            if (control != null)
-            {
-                pageRequestControl.Cookie = control.Cookie;
-            }
-
-            if (pageRequestControl.Cookie.Length == 0)
-            {
-                break;
-            }
-        }
-
-        foreach (var sr in searchResults)
-        {
-            foreach (SearchResultEntry entry in sr.Entries)
-            {
-                yield return entry;
-            }
-        }
-    }
-
-    private ReadOnlyCollection<MemberProperty> GetMemberProperties(LdapAttributeCollection newAttributes, LdapAttributeMappingOptions options)
+    private ReadOnlyCollection<MemberProperty> BuildMemberProperties(LdapAttributeCollection newAttributes, LdapAttributeMappingOptions options)
     {
         var properties = new List<MemberProperty>();
         var identity = newAttributes.GetSingleOrDefault(options.IdentityAttribute);
@@ -199,15 +175,38 @@ internal sealed class LdapMember : ILdapMemberPort
         return properties.AsReadOnly();
     }
 
-    private string GetFilterLogText(List<DirectoryGuid?> guidList)
+    private LdapConnectionOptions GetDomainConnectionOptions(string currentConnectionString,
+        string domain,
+        string username,
+        string password)
+    {
+        var ldapIdentityFormat = NameTypeDetector.GetType(username);
+
+        var trustUsername = LdapUsernameChanger.ChangeDomain(username, domain, ldapIdentityFormat.Value);
+        
+        var newUri = LdapUriChanger.ReplaceHostInLdapUrl(currentConnectionString, domain);
+        
+        return new LdapConnectionOptions(new LdapConnectionString(newUri),
+            AuthType.Basic,
+            trustUsername,
+            password,
+            _ldapOptions.Timeout
+        );
+    }
+    
+    private void LogFilter(List<DirectoryGuid?> guidList, string domain, string filter)
     {
         var previewGuids = guidList.Take(3).Select(g => g.ToString()).ToArray();
         var previewText = string.Join(", ", previewGuids);
-        if (guidList.Count() > 3)
+        if (guidList.Count > 3)
         {
-            previewText += $", ... +{guidList.Count() - 3} more";
+            previewText += $", ... +{guidList.Count - 3} more";
         }
 
-        return previewText;
+        _logger.LogDebug("{Domain}: searching {GuidCount} members by GUIDs: {GuidsPreview}. Filter length: {FilterLength}",
+            domain,
+            guidList.Count,
+            previewText,
+            filter.Length);
     }
 }

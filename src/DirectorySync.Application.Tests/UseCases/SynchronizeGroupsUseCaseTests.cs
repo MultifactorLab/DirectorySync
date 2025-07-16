@@ -130,7 +130,7 @@ public class SynchronizeGroupsUseCaseTests
         _memberDatabase.Setup(x => x.FindManyById(It.IsAny<IEnumerable<DirectoryGuid>>())).Returns(ReadOnlyCollection<MemberModel>.Empty);
 
         var member = MemberModel.Create(addedMemberId, new Identity("newUser"), []);
-        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>()))
             .Returns(new[] { member }.AsReadOnly());
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns([]);
@@ -207,7 +207,7 @@ public class SynchronizeGroupsUseCaseTests
         var member = MemberModel.Create(memberId, new Identity("user"), []);
         _memberDatabase.Setup(x => x.FindManyById(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns(new[] { member }.AsReadOnly());
-        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>()))
             .Returns(ReadOnlyCollection<MemberModel>.Empty);
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns([]);
