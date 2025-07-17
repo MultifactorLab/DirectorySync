@@ -150,7 +150,7 @@ internal sealed class LdapGroup : ILdapGroupPort
             return null;
         }
         
-        var members = GetMembers(
+        var members = GetMembersCrossDomain(
             groupDn,
             connection,
             schema
@@ -169,33 +169,106 @@ internal sealed class LdapGroup : ILdapGroupPort
             conn);
         
         var first = result.FirstOrDefault();
-        
+
+
         return first is null ? null : first.DistinguishedName;
     }
 
-    private IEnumerable<DirectoryGuid> GetMembers(string groupDn,
+    private IEnumerable<DirectoryGuid> GetMembersCrossDomain(string groupDn,
         ILdapConnection conn,
         ILdapSchema schema)
     {
-        var filter = GetFilter(groupDn, schema);
+        var visitedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var queue = new Queue<(string GroupDn, ILdapConnection Connection, ILdapSchema Schema)>();
+        var pendingCrossForestGroups = new List<string>();
+    
+        queue.Enqueue((groupDn, conn, schema));
+        visitedGroups.Add(groupDn);
 
-        var attrs = new[] { "ObjectGUID" };
-
-        var result = _ldapFinder.Find(filter,
-            attrs,
-            schema.NamingContext.StringRepresentation,
-            conn);
-        
-        foreach (var entry in result)
+        while (queue.Count > 0)
         {
-            yield return GetObjectGuid(entry);
+            var (currentGroupDn, currentConn, currentSchema) = queue.Dequeue();
+
+            var filter = $"(&(objectClass={currentSchema.GroupObjectClass.Value})(distinguishedName={currentGroupDn}))";//GetFilter(currentGroupDn, currentSchema);
+            var attrs = new[] { "member" };
+
+            var memberResults = _ldapFinder.Find(filter,
+                attrs,
+                currentSchema.NamingContext.StringRepresentation,
+                currentConn);
+
+            foreach (var groupEntry in memberResults)
+            {
+                var memberDns = groupEntry.Attributes["member"]?.GetValues(typeof(string)).Cast<string>() ?? [];
+
+                foreach (var memberDn in memberDns)
+                {
+                    if (!visitedGroups.Contains(memberDn))
+                    {
+                        visitedGroups.Add(memberDn);
+                        
+                        var targetDomain = LdapDomainExtractor.GetDomainFromDn(memberDn);
+                        var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
+                        var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+                        var domainConn = _connectionFactory.CreateConnection(domainOptions);
+
+                        filter = $"(distinguishedName={memberDn})";
+                        attrs = new[] { "objectGuid", domainSchema.ObjectClass.Value, "userAccountControl" };
+                        
+                        var entryResults = _ldapFinder.Find(
+                            filter,
+                            attrs,
+                            domainSchema.NamingContext.StringRepresentation,
+                            domainConn);
+
+                        foreach (var entry in entryResults)
+                        {
+                            var objectClasses = entry.Attributes[domainSchema.ObjectClass]?.GetValues(typeof(string))?.Cast<string>()?.ToList() ?? [];
+                            
+                            if (objectClasses.Contains(domainSchema.GroupObjectClass.Value, StringComparer.OrdinalIgnoreCase))
+                            {
+                                if (targetDomain.Equals(currentSchema.Dn, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    queue.Enqueue((memberDn, domainConn, domainSchema));
+                                }
+                                else
+                                {
+                                    pendingCrossForestGroups.Add(memberDn);
+                                }
+                            }
+                            else if (objectClasses.Contains(domainSchema.UserObjectClass.Value, StringComparer.OrdinalIgnoreCase))
+                            {
+                                var uacValues = entry.Attributes["userAccountControl"]?.GetValues(typeof(string))?.Cast<string>() ?? [];
+                                var uac = uacValues.Select(v => int.TryParse(v, out var i) ? i : 0).FirstOrDefault();
+
+                                var disabled = (uac & 0x0002) != 0;
+                                if (!disabled)
+                                {
+                                    yield return GetObjectGuid(entry);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            foreach (var crossForestGroupDn in pendingCrossForestGroups)
+            {
+                var targetDomain = LdapDomainExtractor.GetDomainFromDn(crossForestGroupDn);
+                var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+                var domainConn = _connectionFactory.CreateConnection(domainOptions);
+
+                queue.Enqueue((crossForestGroupDn, domainConn, domainSchema));
+            }
+
+            pendingCrossForestGroups.Clear();
         }
     }
 
     private string GetFilter(string groupDn, ILdapSchema schema)
     {
-        return _requestOptions.IncludeNestedGroups ? LdapFilters.FindEnabledGroupMembersByGroupDnRecursively(groupDn) 
-            : LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn, schema);
+        return LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn, schema);
     }
 
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
