@@ -10,6 +10,11 @@ internal static class LdapFilters
         return $"(&(objectCategory={schema.GroupObjectClass})(objectGUID={guid.OctetString}))";
     }
 
+    public static string FindGroupByDn(string dn, ILdapSchema schema)
+    {
+        return $"(&(objectClass={schema.GroupObjectClass})(distinguishedName={dn}))";
+    }
+
     public static string FindEnabledGroupMembersByGroupDn(string groupDn, ILdapSchema schema)
     {
         // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
@@ -17,11 +22,11 @@ internal static class LdapFilters
         return $"(&(objectClass={schema.UserObjectClass})(memberof={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
     }
 
-    public static string FindEnabledGroupMembersByGroupDnRecursively(string groupDn)
+    public static string FindEnabledGroupMembersByGroupDnRecursively(string groupDn, ILdapSchema schema)
     {
         // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
         // Active Directory only.
-        return $"(&(objectClass=user)(memberof:1.2.840.113556.1.4.1941:={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
+        return $"(&(objectClass={schema.UserObjectClass})(memberof:1.2.840.113556.1.4.1941:={groupDn})(!userAccountControl:1.2.840.113556.1.4.803:=2))";
     }
 
     public static string FindEntryByGuid(DirectoryGuid guid)
