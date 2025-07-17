@@ -1,8 +1,8 @@
-﻿using DirectorySync.Domain;
+﻿using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Extensions;
 
-internal static class LdapAttributeCollectionExtensions
+public static class LdapAttributeCollectionExtensions
 {
     public static string GetSingle(this LdapAttributeCollection attrs, string name)
     {

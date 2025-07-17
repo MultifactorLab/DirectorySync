@@ -1,11 +1,11 @@
+using System.Collections.ObjectModel;
 using System.Net;
 using System.Text.Json;
-using DirectorySync.Application.Integrations.Multifactor.Creating;
-using DirectorySync.Application.Integrations.Multifactor.Deleting;
-using DirectorySync.Application.Integrations.Multifactor.Updating;
+using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Infrastructure.Adapters.Multifactor;
 using DirectorySync.Infrastructure.Configurations;
 using DirectorySync.Infrastructure.Exceptions;
-using DirectorySync.Infrastructure.Integrations.Multifactor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
@@ -36,12 +36,12 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Get_UsersIdentities(statusCode: (HttpStatusCode)statusCode));
-            var api = mocker.CreateInstance<MultifactorApi>();
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
 
-            var response = await api.GetUsersIdentitesAsync();
+            var response = await api.GetUsersIdentitiesAsync();
 
             Assert.NotNull(response);
-            Assert.Empty(response.Identities);
+            Assert.Empty(response);
         }
 
         [Theory]
@@ -56,7 +56,7 @@ public class MultifactorApiTests
             // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
             {
-                await service.GetUsersIdentitesAsync();
+                await service.GetUsersIdentitiesAsync();
             });
 
             // Assert
@@ -71,13 +71,13 @@ public class MultifactorApiTests
         public async Task EmptyBucket_ShouldReturnEmpty()
         {
             var mocker = new AutoMocker();
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new NewUsersBucket();
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new ReadOnlyCollection<MemberModel>(Array.Empty<MemberModel>());
 
             var response = await api.CreateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.CreatedUsers);
+            Assert.Empty(response);
         }
 
         [Theory]
@@ -96,14 +96,13 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create(statusCode: (HttpStatusCode)statusCode));
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[] { MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []) };
 
             var response = await api.CreateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.CreatedUsers);
+            Assert.Empty(response);
         }
 
         [Theory]
@@ -115,9 +114,8 @@ public class MultifactorApiTests
             // Arrange
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
 
-            var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
-            
+            var bucket = new MemberModel[] { MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []) };
+
             // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
             {
@@ -130,23 +128,20 @@ public class MultifactorApiTests
         }
 
         [Fact]
-        public async Task NullModel_ShouldReturnEmptyAndLog()
+        public async Task NullModel_ShouldThrowArgumentNullException()
         {
             var mocker = new AutoMocker();
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Create());
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
 
-            var response = await api.CreateManyAsync(bucket);
+            MemberModel[]? bucket = null;
 
-            Assert.NotNull(response);
-            Assert.Empty(response.CreatedUsers);
-
-            const string log = "Response model is null";
-            mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
+            await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            {
+                await api.CreateManyAsync(bucket);
+            });
         }
 
         [Fact]
@@ -161,15 +156,17 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(cli);
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
-            bucket.AddNewUser(Guid.NewGuid(), "identity2", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []),
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity2"), [])
+            };
 
             var response = await api.CreateManyAsync(bucket);
 
-            Assert.Contains("identity1", response.CreatedUsers.Select(x => x.Identity));
-            Assert.Contains("identity2", response.CreatedUsers.Select(x => x.Identity));
+            Assert.Contains("identity1", response.Select(x => x.Identity.Value));
+            Assert.Contains("identity2", response.Select(x => x.Identity.Value));
         }
 
         [Fact]
@@ -190,31 +187,35 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(cli);
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new NewUsersBucket();
-            bucket.AddNewUser(Guid.NewGuid(), "identity1", new());
-            bucket.AddNewUser(Guid.NewGuid(), "identity2", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []),
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity2"), [])
+            };
 
             var response = await api.CreateManyAsync(bucket);
 
-            Assert.DoesNotContain("identity1", response.CreatedUsers.Select(x => x.Identity));
-            Assert.Contains("identity2", response.CreatedUsers.Select(x => x.Identity));
+            Assert.DoesNotContain("identity1", response.Select(x => x.Identity.Value));
+            Assert.Contains("identity2", response.Select(x => x.Identity.Value));
         }
     }
 
     public class UpdateMany
     {
         [Fact]
-        public async Task EmptyBucket_ShouldReturnEmpty()
+        public async Task EmptyBucket_ShouldReturnEmptyAndLog()
         {
             var mocker = new AutoMocker();
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new ModifiedUsersBucket();
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+
+            var bucket = Array.Empty<MemberModel>();
 
             var response = await api.UpdateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.UpdatedUsers);
+            Assert.Empty(response);
         }
 
         [Theory]
@@ -233,14 +234,17 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update(statusCode: (HttpStatusCode)statusCode));
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), [])
+            };
 
             var response = await api.UpdateManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.UpdatedUsers.Select(x => x.Identity));
+            Assert.Empty(response.Select(x => x.Identity));
         }
 
         [Theory]
@@ -252,8 +256,10 @@ public class MultifactorApiTests
             // Arrange
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
 
-            var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1", new());
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), [])
+            };
 
             // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
@@ -267,23 +273,20 @@ public class MultifactorApiTests
         }
 
         [Fact]
-        public async Task NullModel_ShouldReturnEmptyAndLog()
+        public async Task NullModel_ShouldThrowArgumentNullException()
         {
             var mocker = new AutoMocker();
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Update());
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
 
-            var response = await api.UpdateManyAsync(bucket);
+            MemberModel[]? bucket = null;
 
-            Assert.NotNull(response);
-            Assert.Empty(response.UpdatedUsers.Select(x => x.Identity));
-
-            const string log = "Response model is null";
-            mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
+            await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            {
+                await api.UpdateManyAsync(bucket);
+            });
         }
 
         [Fact]
@@ -298,15 +301,17 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(cli);
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1", new());
-            bucket.Add(Guid.NewGuid(), "identity2", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []),
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity2"), [])
+            };
 
             var response = await api.UpdateManyAsync(bucket);
 
-            Assert.Contains("identity1", response.UpdatedUsers.Select(x => x.Identity));
-            Assert.Contains("identity2", response.UpdatedUsers.Select(x => x.Identity));
+            Assert.Contains("identity1", response.Select(x => x.Identity.Value));
+            Assert.Contains("identity2", response.Select(x => x.Identity.Value));
         }
 
         [Fact]
@@ -327,15 +332,17 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(cli);
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new ModifiedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1", new());
-            bucket.Add(Guid.NewGuid(), "identity2", new());
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []),
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity2"), [])
+            };
 
             var response = await api.UpdateManyAsync(bucket);
 
-            Assert.DoesNotContain("identity1", response.UpdatedUsers.Select(x => x.Identity));
-            Assert.Contains("identity2", response.UpdatedUsers.Select(x => x.Identity));
+            Assert.DoesNotContain("identity1", response.Select(x => x.Identity.Value));
+            Assert.Contains("identity2", response.Select(x => x.Identity.Value));
         }
     }
 
@@ -345,13 +352,13 @@ public class MultifactorApiTests
         public async Task EmptyBucket_ShouldReturnEmpty()
         {
             var mocker = new AutoMocker();
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new DeletedUsersBucket();
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = Array.Empty<MemberModel>();
 
             var response = await api.DeleteManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.DeletedUsers);
+            Assert.Empty(response);
         }
 
         [Theory]
@@ -370,14 +377,16 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Delete(statusCode: (HttpStatusCode)statusCode));
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new DeletedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), [])
+            };
 
             var response = await api.DeleteManyAsync(bucket);
 
             Assert.NotNull(response);
-            Assert.Empty(response.DeletedUsers);
+            Assert.Empty(response);
         }
 
         [Theory]
@@ -389,8 +398,10 @@ public class MultifactorApiTests
             // Arrange
             var service = GetMockMultifactorApiWithResiliencePolisies((HttpStatusCode)statusCode);
 
-            var bucket = new DeletedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), [])
+            };
 
             // Act
             var exception = await Assert.ThrowsAsync(exceptionType, async () =>
@@ -404,23 +415,20 @@ public class MultifactorApiTests
         }
 
         [Fact]
-        public async Task NullModel_ShouldReturnEmptyAndLog()
+        public async Task NullModel_ShouldThrowArgumentNullException()
         {
             var mocker = new AutoMocker();
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(FakeMultifactorCloud.ClientMock.Users_Delete());
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new DeletedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
 
-            var response = await api.DeleteManyAsync(bucket);
+            MemberModel[]? bucket = null;
 
-            Assert.NotNull(response);
-            Assert.Empty(response.DeletedUsers);
-
-            const string log = "Response model is null";
-            mocker.GetMock<ILogger<MultifactorApi>>().VerifyLog(LogLevel.Warning, Times.Once(), log);
+            await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            {
+                await api.DeleteManyAsync(bucket);
+            });
         }
 
         [Fact]
@@ -435,15 +443,17 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(cli);
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new DeletedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
-            bucket.Add(Guid.NewGuid(), "identity2");
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []),
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity2"), [])
+            };
 
             var response = await api.DeleteManyAsync(bucket);
 
-            Assert.Contains("identity1", response.DeletedUsers.Select(x => x.Identity));
-            Assert.Contains("identity2", response.DeletedUsers.Select(x => x.Identity));
+            Assert.Contains("identity1", response.Select(x => x.Identity.Value));
+            Assert.Contains("identity2", response.Select(x => x.Identity.Value));
         }
 
         [Fact]
@@ -464,19 +474,21 @@ public class MultifactorApiTests
             mocker.GetMock<IHttpClientFactory>()
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(cli);
-            var api = mocker.CreateInstance<MultifactorApi>();
-            var bucket = new DeletedUsersBucket();
-            bucket.Add(Guid.NewGuid(), "identity1");
-            bucket.Add(Guid.NewGuid(), "identity2");
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+            var bucket = new MemberModel[]
+            {
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity1"), []),
+                MemberModel.Create(Guid.NewGuid(), new Identity("identity2"), [])
+            };
 
             var response = await api.DeleteManyAsync(bucket);
 
-            Assert.DoesNotContain("identity1", response.DeletedUsers.Select(x => x.Identity));
-            Assert.Contains("identity2", response.DeletedUsers.Select(x => x.Identity));
+            Assert.DoesNotContain("identity1", response.Select(x => x.Identity.Value));
+            Assert.Contains("identity2", response.Select(x => x.Identity.Value));
         }
     }
 
-    internal static MultifactorApi GetMockMultifactorApiWithResiliencePolisies(HttpStatusCode statusCode)
+    internal static MultifactorUsersApi GetMockMultifactorApiWithResiliencePolisies(HttpStatusCode statusCode)
     {
 
         var mocker = new AutoMocker();
@@ -513,6 +525,6 @@ public class MultifactorApiTests
             .Setup(x => x.CreateClient(It.IsAny<string>()))
             .Returns(httpClient);
 
-        return mocker.CreateInstance<MultifactorApi>();
+        return mocker.CreateInstance<MultifactorUsersApi>();
     }
 }

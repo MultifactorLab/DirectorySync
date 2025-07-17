@@ -10,8 +10,5 @@ internal static class HostApplicationBuilderExtensions
         
         builder.Services.AddSingleton<OrderBoard>();
         builder.Services.AddHostedService<WorkloadDispatcher>();
-        builder.Services.AddOptions<SyncOptions>()
-            .BindConfiguration("Sync")
-            .ValidateDataAnnotations();
     }
 }
