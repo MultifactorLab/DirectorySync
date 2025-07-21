@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.DirectoryServices.Protocols;
 using DirectorySync.Application.Models.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,9 @@ internal sealed class LdapDomainDiscovery
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly ILogger<LdapDomainDiscovery> _logger;
 
+    private readonly ConcurrentDictionary<string, ReadOnlyCollection<LdapDomain>> _forestDomainsCache = new();
+    private readonly ConcurrentDictionary<string, ReadOnlyCollection<LdapDomain>> _trustedDomainsCache = new();
+    
     public LdapDomainDiscovery(LdapConnectionFactory connectionFactory,
         ILogger<LdapDomainDiscovery> logger)
     {
@@ -24,6 +28,14 @@ internal sealed class LdapDomainDiscovery
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(schema);
+        
+        var cacheKey = GetCacheKey("forest", options, schema);
+
+        if (_forestDomainsCache.TryGetValue(cacheKey, out var cachedDomains))
+        {
+            _logger.LogInformation("Forest domains  for {Key} founded in cache.", cacheKey);
+            return cachedDomains;
+        }
         
         _logger.LogDebug("Forest domain detection started for {Host}...", options.ConnectionString.Host);
 
@@ -41,8 +53,11 @@ internal sealed class LdapDomainDiscovery
         
         forestDomains.RemoveAll(d => d.Equals(new LdapDomain(schema.NamingContext.StringRepresentation)));
         
+        var result = forestDomains.AsReadOnly();
+        
+        _forestDomainsCache[cacheKey] = result;
+        
         _logger.LogDebug("Domains found in the forest: {domains}", string.Join(", ", forestDomains));
-
         return forestDomains.AsReadOnly();
     }
 
@@ -50,6 +65,14 @@ internal sealed class LdapDomainDiscovery
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(schema);
+        
+        var cacheKey = GetCacheKey("trusted", options, schema);
+
+        if (_trustedDomainsCache.TryGetValue(cacheKey, out var cachedTrusted))
+        {
+            _logger.LogInformation("Trusted domains for {Key} founded in cache.", cacheKey);
+            return cachedTrusted;
+        }
         
         _logger.LogDebug("Trusted external domain detection started...");
         
@@ -68,10 +91,14 @@ internal sealed class LdapDomainDiscovery
             "dnsRoot");
         
         var trustedOnly = trustedDomains.Except(forestDomains);
+        
+        var result = trustedOnly.ToList().AsReadOnly();
+
+        _trustedDomainsCache[cacheKey] = result;
 
         _logger.LogDebug("Trusted external domains found: {domains}", string.Join(", ", trustedDomains));
-        
-        return trustedOnly.ToArray().AsReadOnly();
+
+        return result;
     }
 
     private List<LdapDomain> QueryDomains(ILdapConnection connection,
@@ -118,5 +145,10 @@ internal sealed class LdapDomainDiscovery
     {
         var val = GetAttribute(entry, attributeName);
         return val != null ? int.Parse(val) : 0;
+    }
+    
+    private static string GetCacheKey(string type, LdapConnectionOptions options, ILdapSchema schema)
+    {
+        return $"{type}:{options.ConnectionString.Host}:{schema.NamingContext.StringRepresentation}";
     }
 }
