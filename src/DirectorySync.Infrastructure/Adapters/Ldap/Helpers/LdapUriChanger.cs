@@ -1,11 +1,13 @@
+using DirectorySync.Application.Models.ValueObjects;
+
 namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 
 internal static class LdapUriChanger
 {
-    public static string ReplaceHostInLdapUrl(string ldapUrl, string newHost)
+    public static string ReplaceHostInLdapUrl(string ldapUrl, LdapDomain newHost)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ldapUrl);
-        ArgumentException.ThrowIfNullOrWhiteSpace(newHost);
+        ArgumentNullException.ThrowIfNull(newHost);
         
         if (!Uri.TryCreate(ldapUrl, UriKind.Absolute, out var uri))
         {
@@ -14,7 +16,7 @@ internal static class LdapUriChanger
         
         var builder = new UriBuilder(uri)
         {
-            Host = newHost
+            Host = newHost.Value
         };
 
         return builder.Uri.ToString();

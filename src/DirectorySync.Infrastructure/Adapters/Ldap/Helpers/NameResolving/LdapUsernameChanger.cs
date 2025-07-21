@@ -1,20 +1,15 @@
-﻿namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.NameResolving;
+﻿using DirectorySync.Application.Models.ValueObjects;
+
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.NameResolving;
 
 internal sealed class LdapUsernameChanger
 {
     public static string ChangeDomain(string username, 
-        string newDomain, 
+        LdapDomain newDomain, 
         LdapIdentityFormat ldapIdentityFormat)
     {
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            throw new ArgumentException("Username must be provided.");
-        }
-
-        if (string.IsNullOrWhiteSpace(newDomain))
-        {
-            throw new ArgumentException("Domain must be provided.");
-        }
+        ArgumentException.ThrowIfNullOrEmpty(username);
+        ArgumentNullException.ThrowIfNull(newDomain);
 
         switch (ldapIdentityFormat)
         {
@@ -37,14 +32,9 @@ internal sealed class LdapUsernameChanger
         }
     }
 
-    private static string ReplaceBaseDn(string distinguishedName, string newBaseDn)
+    private static string ReplaceBaseDn(string distinguishedName, LdapDomain newBaseDn)
     {
-        if (string.IsNullOrWhiteSpace(distinguishedName) || string.IsNullOrWhiteSpace(newBaseDn))
-        {
-            throw new ArgumentException("distinguishedName and newBaseDn must be provided.");
-        }
-        
-        if (!newBaseDn.Contains("DC=", StringComparison.OrdinalIgnoreCase))
+        if (!newBaseDn.Value.Contains("DC=", StringComparison.OrdinalIgnoreCase))
         {
             newBaseDn = ConvertDomainToBaseDn(newBaseDn);
         }
@@ -71,19 +61,14 @@ internal sealed class LdapUsernameChanger
         return newDn.TrimStart(',');
     }
     
-    private static string ConvertDomainToBaseDn(string domain)
+    private static LdapDomain ConvertDomainToBaseDn(LdapDomain domain)
     {
-        if (string.IsNullOrWhiteSpace(domain))
-        {
-            throw new ArgumentException("Domain must be provided.");
-        }
-
-        var parts = domain.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        var parts = domain.Value.Split('.', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < parts.Length; i++)
         {
             parts[i] = $"DC={parts[i]}";
         }
 
-        return string.Join(",", parts);
+        return new LdapDomain(string.Join(",", parts));
     }
 }

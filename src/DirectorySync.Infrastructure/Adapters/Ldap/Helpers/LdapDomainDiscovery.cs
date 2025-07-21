@@ -1,4 +1,6 @@
-﻿using System.DirectoryServices.Protocols;
+﻿using System.Collections.ObjectModel;
+using System.DirectoryServices.Protocols;
+using DirectorySync.Application.Models.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Multifactor.Core.Ldap.Connection;
 using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
@@ -18,46 +20,33 @@ internal sealed class LdapDomainDiscovery
         _logger = logger;
     }
 
-    public IEnumerable<string> GetForestDomains(LdapConnectionOptions options, ILdapSchema schema)
+    public ReadOnlyCollection<LdapDomain> GetForestDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(schema);
         
         _logger.LogDebug("Forest domain detection started for {Host}...", options.ConnectionString.Host);
-        
-        var domains = new List<string>();
 
         using var connection = _connectionFactory.CreateConnection(options);
-
-        var searchRequest = new SearchRequest(
-            $"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}",
+        
+        var forestDomains = QueryDomains(connection, 
+            $"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}", 
             "(objectClass=crossRef)",
-            SearchScope.OneLevel,
-            "nCName", "dnsRoot", "systemFlags", "netBiosName"
-        );
-
-        var response = (SearchResponse)connection.SendRequest(searchRequest);
-
-        foreach (SearchResultEntry entry in response.Entries)
+            SearchScope.OneLevel, 
+            "dnsRoot", entry =>
         {
             var systemFlags = GetAttributeInt(entry, "systemFlags");
-            if ((systemFlags & 0x2) == 0x2)
-            {
-                var dnsRoot = GetAttribute(entry, "dnsRoot");
-                
-                if (!string.Equals(dnsRoot, schema.NamingContext.StringRepresentation, StringComparison.OrdinalIgnoreCase))
-                {
-                    domains.Add(dnsRoot);
-                }
-            }
-        }
+            return (systemFlags & 0x2) == 0x2;
+        });
         
-        _logger.LogDebug("Domains found in the forest: {domains}", string.Join(", ", domains));
+        forestDomains.RemoveAll(d => d.Equals(new LdapDomain(schema.NamingContext.StringRepresentation)));
+        
+        _logger.LogDebug("Domains found in the forest: {domains}", string.Join(", ", forestDomains));
 
-        return domains;
+        return forestDomains.AsReadOnly();
     }
 
-    public IEnumerable<string> GetTrustedDomains(LdapConnectionOptions options, ILdapSchema schema)
+    public ReadOnlyCollection<LdapDomain> GetTrustedDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(schema);
@@ -65,72 +54,59 @@ internal sealed class LdapDomainDiscovery
         _logger.LogDebug("Trusted external domain detection started...");
         
         using var connection = _connectionFactory.CreateConnection(options);
-
-        var trustedDomains = new List<string>();
-        var trustedSearchRequest = new SearchRequest(
-            $"CN=System,{schema.NamingContext.StringRepresentation}",
+        
+        var trustedDomains = QueryDomains(connection, 
+            $"CN=System,{schema.NamingContext.StringRepresentation}", 
             "(objectClass=trustedDomain)",
-            SearchScope.Subtree,
-            "trustPartner"
-        );
+            SearchScope.Subtree, 
+            "trustPartner");
 
-        var trustedResponse = (SearchResponse)connection.SendRequest(trustedSearchRequest);
-
-        foreach (SearchResultEntry entry in trustedResponse.Entries)
-        {
-            var trustPartner = GetAttribute(entry, "trustPartner");
-
-            if (!string.IsNullOrEmpty(trustPartner))
-            {
-                trustedDomains.Add(trustPartner);
-            }
-        }
-
-        var forestDomains = GetForestDomainNames(connection, schema);
-
-        var trustedOnly = trustedDomains
-            .Where(td => !forestDomains.Contains(td, StringComparer.OrdinalIgnoreCase))
-            .ToList();
+        var forestDomains = QueryDomains(connection, 
+            $"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}", 
+            "(objectClass=crossRef)",
+            SearchScope.OneLevel, 
+            "dnsRoot");
+        
+        var trustedOnly = trustedDomains.Except(forestDomains);
 
         _logger.LogDebug("Trusted external domains found: {domains}", string.Join(", ", trustedDomains));
         
-        return trustedOnly;
+        return trustedOnly.ToArray().AsReadOnly();
     }
 
-    private List<string> GetForestDomainNames(ILdapConnection connection, ILdapSchema schema)
+    private List<LdapDomain> QueryDomains(ILdapConnection connection,
+        string dn,
+        string filter,
+        SearchScope scope,
+        string attribute,
+        Func<SearchResultEntry, bool>? predicate = null)
     {
-        var forestDomains = new List<string>();
+        var domains = new List<LdapDomain>();
 
         var searchRequest = new SearchRequest(
-            $"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}",
-            "(objectClass=crossRef)",
-            SearchScope.OneLevel,
-            "dnsRoot", "netBiosName", "systemFlags"
+            dn,
+            filter,
+            scope,
+            attribute, "systemFlags" // include systemFlags if available for consistency
         );
 
         var response = (SearchResponse)connection.SendRequest(searchRequest);
 
         foreach (SearchResultEntry entry in response.Entries)
         {
-            var systemFlags = GetAttributeInt(entry, "systemFlags");
-            if ((systemFlags & 0x2) == 0x2)
+            if (predicate != null && !predicate(entry))
             {
-                var dnsRoot = GetAttribute(entry, "dnsRoot");
-                var netBiosName = GetAttribute(entry, "netBiosName");
+                continue;
+            }
 
-                if (!string.IsNullOrEmpty(dnsRoot))
-                {
-                    forestDomains.Add(dnsRoot);
-                }
-
-                if (!string.IsNullOrEmpty(netBiosName) && !forestDomains.Contains(netBiosName, StringComparer.OrdinalIgnoreCase))
-                {
-                    forestDomains.Add(netBiosName);
-                }
+            var value = GetAttribute(entry, attribute);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                domains.Add(new LdapDomain(value));
             }
         }
 
-        return forestDomains;
+        return domains;
     }
 
     private string? GetAttribute(SearchResultEntry entry, string attributeName)

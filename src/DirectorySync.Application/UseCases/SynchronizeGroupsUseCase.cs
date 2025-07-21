@@ -23,6 +23,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     private readonly IMemberDatabase _memberDatabase;
     private readonly ILdapGroupPort _groupPort;
     private readonly ILdapMemberPort _memberPort;
+    private readonly IDirectoryDomainsUpdater _directoryDomainsUpdater;
     private readonly IUserGroupsMapper _userGroupsMapper;
     private readonly IUserCreator _userCreator;
     private readonly IUserUpdater _userUpdater;
@@ -36,6 +37,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         IMemberDatabase memberDatabase,
         ILdapGroupPort groupPort,
         ILdapMemberPort memberPort,
+        IDirectoryDomainsUpdater directoryDomainsUpdater,
         IUserGroupsMapper userGroupsMapper,
         IUserCreator userCreator,
         IUserUpdater userUpdater,
@@ -49,6 +51,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         _memberDatabase = memberDatabase;
         _groupPort = groupPort;
         _memberPort = memberPort;
+        _directoryDomainsUpdater = directoryDomainsUpdater;
         _userGroupsMapper = userGroupsMapper;
         _userCreator = userCreator;
         _userUpdater = userUpdater;
@@ -65,11 +68,12 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         _logger.LogInformation(ApplicationEvent.StartGrpousSynchronizing, "Start synchronization for groups: {group}", trackingGroupGuids);
         
         var memberMap = new Dictionary<DirectoryGuid, MemberModel>();
+        var domainsToSearch = new List<LdapDomain>();
 
         foreach (var groupId in trackingGroupGuids)
         {
             using var withGroup = _logger.EnrichWithGroup(groupId);
-            ProcessGroupChanges(groupId, memberMap);
+            ProcessGroupChanges(groupId, memberMap, domainsToSearch);
         }
 
         var toCreate = memberMap.Values
@@ -103,14 +107,18 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         
         _groupUpdater.UpdateGroupsWithMembers(created.Concat(updated).Concat(deleted));
         
+        _directoryDomainsUpdater.UpdateDomainsToSearch(domainsToSearch);
+        
         _logger.LogInformation(ApplicationEvent.CompleteGrpousSynchronizing, "Complete groups synchronization");
     }
     
     private void ProcessGroupChanges(DirectoryGuid groupId,
-        Dictionary<DirectoryGuid, MemberModel> memberMap)
+        Dictionary<DirectoryGuid, MemberModel> memberMap,
+        List<LdapDomain> domainsToSearch)
     {
         var getGroupTimer = _codeTimer.Start("Get Reference Group");
-        var referenceGroup = _groupPort.GetByGuid(groupId);
+        var (referenceGroup, searchDomains) = _groupPort.GetByGuid(groupId);
+        domainsToSearch.AddRange(searchDomains);
         getGroupTimer.Stop();
         if (referenceGroup is null)
         {
@@ -151,7 +159,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
         }
         else
         {
-            HandleAddedMembers(groupId, addedIds, memberMap);
+            HandleAddedMembers(groupId, addedIds, memberMap, searchDomains.ToArray());
         }
 
         SetMembersGroupMapping(memberMap.Values);
@@ -180,7 +188,8 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
     
     private void HandleAddedMembers(DirectoryGuid groupId,
         IEnumerable<DirectoryGuid> addedIds,
-        Dictionary<DirectoryGuid, MemberModel> memberMap)
+        Dictionary<DirectoryGuid, MemberModel> memberMap,
+        LdapDomain[] domainsToSearch)
     {
         var existingMembers = FindOrLoadMembers(addedIds, memberMap);
         var existingIds = existingMembers.Select(m => m.Id).ToHashSet();
@@ -188,7 +197,7 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
 
         var requiredNames = _syncSettingsOptions.GetRequiredAttributeNames();
         
-        var newMembers = _memberPort.GetByGuids(newIds, requiredNames);
+        var newMembers = _memberPort.GetByGuids(newIds, requiredNames, domainsToSearch);
         foreach (var member in newMembers)
         {
             member.AddGroups([groupId]);
@@ -243,14 +252,16 @@ public class SynchronizeGroupsUseCase : ISynchronizeGroupsUseCase
             }
         }
 
-        if (notFoundInMap.Count > 0)
+        if (notFoundInMap.Count <= 0)
         {
-            var loaded = _memberDatabase.FindManyById(notFoundInMap);
-            foreach (var m in loaded)
-            {
-                memberMap[m.Id] = m;
-                result.Add(m);
-            }
+            return result;
+        }
+
+        var loaded = _memberDatabase.FindManyById(notFoundInMap);
+        foreach (var m in loaded)
+        {
+            memberMap[m.Id] = m;
+            result.Add(m);
         }
 
         return result;

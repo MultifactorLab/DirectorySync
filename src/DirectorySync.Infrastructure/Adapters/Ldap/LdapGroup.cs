@@ -40,22 +40,22 @@ internal sealed class LdapGroup : ILdapGroupPort
         _logger = logger;
     }
 
-    public GroupModel? GetByGuid(DirectoryGuid objectGuid)
+    public (GroupModel? groups, ReadOnlyCollection<LdapDomain> domains) GetByGuid(DirectoryGuid objectGuid)
     {
         ArgumentNullException.ThrowIfNull(objectGuid);
         
         _logger.LogDebug("Fetching group by GUID: {Guid}", objectGuid);
         
-        var group = FindGroups([objectGuid]).FirstOrDefault();
+        var (groups, domains) = FindGroups([objectGuid]);
 
-        _logger.LogDebug(group is not null
+        _logger.LogDebug(groups is not null
             ? "Group found for GUID: {Guid}"
             : "Group not found for GUID: {Guid}", objectGuid);
 
-        return group;
+        return (groups.FirstOrDefault(), domains.AsReadOnly());
     }
 
-    public ReadOnlyCollection<GroupModel> GetByGuid(IEnumerable<DirectoryGuid> objectGuids)
+    public (ReadOnlyCollection<GroupModel> groups, ReadOnlyCollection<LdapDomain> domains) GetByGuid(IEnumerable<DirectoryGuid> objectGuids)
     {
         ArgumentNullException.ThrowIfNull(objectGuids);
 
@@ -65,17 +65,18 @@ internal sealed class LdapGroup : ILdapGroupPort
         if (guidList.Count == 0)
         {
             _logger.LogWarning("No GUIDs provided for fetching groups");
-            return ReadOnlyCollection<GroupModel>.Empty;
+            return (ReadOnlyCollection<GroupModel>.Empty, ReadOnlyCollection<LdapDomain>.Empty);
         }
 
-        var groups = FindGroups(guidList);
+        var (groups, domains) = FindGroups(guidList);
         _logger.LogDebug("Fetched {Count} group(s) out of {Requested}", groups.Count, guidList.Count);
-        return groups.AsReadOnly();
+        return (groups.AsReadOnly(), domains.AsReadOnly());
     }
 
-    private List<GroupModel> FindGroups(IEnumerable<DirectoryGuid> objectGuids)
+    private (List<GroupModel> groups, List<LdapDomain> domains)FindGroups(IEnumerable<DirectoryGuid> objectGuids)
     {
         var foundGroups = new List<GroupModel>();
+        var searchDomains = new HashSet<LdapDomain>();
 
         var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
             AuthType.Basic,
@@ -96,29 +97,44 @@ internal sealed class LdapGroup : ILdapGroupPort
 
             using var connection = _connectionFactory.CreateConnection(domainOptions);
 
-            foreach (var guid in guidSet)
+            try
             {
-                var group = GetGroup(guid, connection, domainSchema);
-                if (group is not null)
+                foreach (var guid in guidSet)
                 {
+                    var group = GetGroup(guid, domain, connection, domainSchema, searchDomains);
+                    if (group is null)
+                    {
+                        continue;
+                    }
+                    
                     foundGroups.Add(group);
                     _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
 
-                    if (foundGroups.Count == guidSet.Count)
+                    if (foundGroups.Count != guidSet.Count)
                     {
-                        _logger.LogDebug("All requested groups found. Ending search.");
-                        return foundGroups;
+                        continue;
                     }
+
+                    _logger.LogDebug("All requested groups found. Ending search.");
+                    return (foundGroups, searchDomains.ToList());
                 }
+            }
+            catch (LdapException ex)
+            {
+                _logger.LogDebug("Ldap exception occured while searching in {Domain}. Status: {Status}.",
+                    domain,
+                    ex.ErrorCode);
             }
         }
 
-        return foundGroups;
+        return (foundGroups, searchDomains.ToList());
     }
     
     private GroupModel? GetGroup(DirectoryGuid objectGuid,
+        LdapDomain domain,
         ILdapConnection connection,
-        ILdapSchema schema)
+        ILdapSchema schema,
+        HashSet<LdapDomain> domainsToSearch)
     {
         var groupDn = FindGroupDn(objectGuid, connection, schema);
         if (groupDn is null)
@@ -127,8 +143,10 @@ internal sealed class LdapGroup : ILdapGroupPort
         }
         
         var members = GetMembersCrossDomain(groupDn,
+            domain,
             connection,
-            schema).ToList();
+            schema,
+            domainsToSearch).ToList();
 
         return GroupModel.Create(objectGuid, members);
     }
@@ -146,33 +164,44 @@ internal sealed class LdapGroup : ILdapGroupPort
     }
 
     private IEnumerable<DirectoryGuid> GetMembersCrossDomain(string groupDn,
+        LdapDomain initialDomain,
         ILdapConnection initialConn,
-        ILdapSchema initialSchema)
+        ILdapSchema initialSchema,
+        HashSet<LdapDomain> domainsToSearch)
     {
         var visitedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { groupDn };
-        var queue = new Queue<(string GroupDn, ILdapConnection Conn, ILdapSchema Schema)>();
-        queue.Enqueue((groupDn, initialConn, initialSchema));
+        var queue = new Queue<(string GroupDn, LdapDomain Domain, ILdapConnection Conn, ILdapSchema Schema)>();
+        queue.Enqueue((groupDn, initialDomain, initialConn, initialSchema));
 
         while (queue.Count > 0)
         {
-            var (currentGroupDn, conn, schema) = queue.Dequeue();
+            var (currentGroupDn, currentDomain, conn, schema) = queue.Dequeue();
 
-            foreach (var userGuid in GetGroupMembers(currentGroupDn, conn, schema))
+            var members = GetGroupMembers(currentGroupDn, conn, schema).ToArray();
+
+            if (members.Length > 0)
+            {
+                domainsToSearch.Add(currentDomain);
+            }
+
+            foreach (var userGuid in members)
             {
                 yield return userGuid;
             }
 
             foreach (var nestedGroupDn in GetNestedGroups(currentGroupDn, conn, schema))
             {
-                if (visitedGroups.Add(nestedGroupDn))
+                if (!visitedGroups.Add(nestedGroupDn))
                 {
-                    var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn);
-                    var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
-                    var domainSchema = _ldapSchemaLoader.Load(domainOptions);
-                    var domainConn = _connectionFactory.CreateConnection(domainOptions);
-
-                    queue.Enqueue((nestedGroupDn, domainConn, domainSchema));
+                    continue;
                 }
+
+                var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn);
+                var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+                var domainConn = _connectionFactory.CreateConnection(domainOptions);
+
+                queue.Enqueue((nestedGroupDn, targetDomain, domainConn, domainSchema));
             }
         }
     }
@@ -216,7 +245,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         return new Guid(bytes);
     }
 
-    private IEnumerable<string> GetAllDomains(LdapConnectionOptions options, ILdapSchema schema)
+    private IEnumerable<LdapDomain> GetAllDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
         var domains = _ldapDomainDiscovery.GetForestDomains(options, schema).ToList();
         foreach (var trustedDomain in _ldapDomainDiscovery.GetTrustedDomains(options, schema))
@@ -230,7 +259,7 @@ internal sealed class LdapGroup : ILdapGroupPort
     }
 
     private LdapConnectionOptions GetDomainConnectionOptions(string currentConnectionString,
-        string domain,
+        LdapDomain domain,
         string username,
         string password)
     {

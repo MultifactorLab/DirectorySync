@@ -65,7 +65,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
        var requiredAttributes = _syncSettingsOptions.GetRequiredAttributeNames();
        _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
 
-       var refIdentitiesMap = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes, cancellationToken);
+       var refIdentitiesMap = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes);
        
        if (refIdentitiesMap.Count == 0)
        {
@@ -83,10 +83,9 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
     } 
 
     private HashSet<Identity> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
-        string[] requiredAttributes,
-        CancellationToken cancellationToken = default)
+        string[] requiredAttributes)
     {
-       var referenceGroups = _ldapGroupPort.GetByGuid(trackingGroups);
+       var (referenceGroups, searchDomains) = _ldapGroupPort.GetByGuid(trackingGroups);
        
        if (referenceGroups is null || referenceGroups.Count == 0)
        {
@@ -98,7 +97,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 
        foreach (var referenceGroup in referenceGroups)
        {
-           members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes));
+           members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes, searchDomains.ToArray()));
        }
        
        return members.Select(m => m.Identity).ToHashSet(); 

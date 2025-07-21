@@ -23,7 +23,6 @@ internal sealed class LdapMember : ILdapMemberPort
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly LdapSchemaLoader _ldapSchemaLoader;
     private readonly LdapFinder _ldapFinder;
-    private readonly LdapDomainDiscovery _ldapDomainDiscovery;
     private readonly LdapOptions _ldapOptions;
     private readonly IOptionsMonitor<LdapAttributeMappingOptions> _ldapAttributeMappingOptions;
     private readonly ILogger<LdapMember> _logger;
@@ -31,7 +30,6 @@ internal sealed class LdapMember : ILdapMemberPort
     public LdapMember(LdapConnectionFactory connectionFactory,
         LdapSchemaLoader ldapSchemaLoader,
         LdapFinder ldapFinder,
-        LdapDomainDiscovery ldapDomainDiscovery,
         IOptions<LdapOptions> ldapOptions,
         IOptionsMonitor<LdapAttributeMappingOptions> ldapAttributeMappingOptions,
         ILogger<LdapMember> logger)
@@ -39,7 +37,6 @@ internal sealed class LdapMember : ILdapMemberPort
         _connectionFactory = connectionFactory;
         _ldapSchemaLoader = ldapSchemaLoader;
         _ldapFinder = ldapFinder;
-        _ldapDomainDiscovery = ldapDomainDiscovery;
         _ldapOptions = ldapOptions.Value;
         _ldapAttributeMappingOptions = ldapAttributeMappingOptions;
         _connectionFactory = connectionFactory;
@@ -48,7 +45,8 @@ internal sealed class LdapMember : ILdapMemberPort
 
     public ReadOnlyCollection<MemberModel> GetByGuids(
         IEnumerable<DirectoryGuid> objectGuids,
-        string[] requiredAttributes)
+        string[] requiredAttributes,
+        LdapDomain[] domainsToSearch)
     {
         ArgumentNullException.ThrowIfNull(objectGuids);
         ArgumentNullException.ThrowIfNull(requiredAttributes);
@@ -60,25 +58,6 @@ internal sealed class LdapMember : ILdapMemberPort
         }
         
         _logger.LogDebug("Fetching members for {Count} GUID(s)", guidList.Count);
-
-        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
-            AuthType.Basic,
-            _ldapOptions.Username,
-            _ldapOptions.Password,
-            _ldapOptions.Timeout);
-
-        var schema = _ldapSchemaLoader.Load(options);
-        
-        var domainsToSearch = _ldapDomainDiscovery.GetForestDomains(options, schema)
-            .ToList();
-        
-        var trustedDomains = _ldapDomainDiscovery.GetTrustedDomains(options, schema);
-        foreach (var trustedDomain in trustedDomains)
-        {
-            var trustedOptions = GetDomainConnectionOptions(_ldapOptions.Path, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
-            var trustedSchema = _ldapSchemaLoader.Load(trustedOptions);
-            domainsToSearch.AddRange(_ldapDomainDiscovery.GetForestDomains(trustedOptions, trustedSchema));
-        }
         
         var models = new List<MemberModel>();
 
@@ -176,7 +155,7 @@ internal sealed class LdapMember : ILdapMemberPort
     }
 
     private LdapConnectionOptions GetDomainConnectionOptions(string currentConnectionString,
-        string domain,
+        LdapDomain domain,
         string username,
         string password)
     {
@@ -194,7 +173,7 @@ internal sealed class LdapMember : ILdapMemberPort
         );
     }
     
-    private void LogFilter(List<DirectoryGuid?> guidList, string domain, string filter)
+    private void LogFilter(List<DirectoryGuid?> guidList, LdapDomain domain, string filter)
     {
         var previewGuids = guidList.Take(3).Select(g => g.ToString()).ToArray();
         var previewText = string.Join(", ", previewGuids);

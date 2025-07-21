@@ -18,6 +18,7 @@ public interface ISynchronizeUsersUseCase
 public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
 {
     private readonly IMemberDatabase _memberDatabase;
+    private readonly IDirectoryDomainDatabase _directoryDomainDatabase;
     private readonly ILdapMemberPort _memberPort;
     private readonly IUserUpdater _userUpdater;
     private readonly ISyncSettingsOptions _syncSettingsOptions;
@@ -25,6 +26,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
     private readonly ILogger<SynchronizeGroupsUseCase> _logger;
 
     public SynchronizeUsersUseCase(IMemberDatabase memberDatabase,
+        IDirectoryDomainDatabase directoryDomainDatabase,
         ILdapMemberPort memberPort,
         IUserUpdater userUpdater,
         ISyncSettingsOptions syncSettingsOptions,
@@ -32,6 +34,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
         ILogger<SynchronizeGroupsUseCase> logger)
     {
         _memberDatabase = memberDatabase;
+        _directoryDomainDatabase = directoryDomainDatabase;
         _memberPort = memberPort;
         _userUpdater = userUpdater;
         _syncSettingsOptions = syncSettingsOptions;
@@ -59,10 +62,22 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
             return;
         }
         
+        var searchDomains = _directoryDomainDatabase.FindAll();
+
+        if (searchDomains.Count == 0)
+        {
+            _logger.LogDebug("Users in cache not found");
+            _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization");
+            return;
+        }
+        
         var memberIds = cachedMembers.Select(m => m.Id).ToArray();
         
         var getUsersTimer = _codeTimer.Start("Get directory users");
-        var freshEntries = _memberPort.GetByGuids(memberIds, requiredNames);
+        var freshEntries = _memberPort.GetByGuids(memberIds, 
+            requiredNames, 
+            searchDomains.ToArray());
+        
         getUsersTimer.Stop();
         _logger.LogDebug("Directory users found: {Users}", freshEntries.Count);
         
