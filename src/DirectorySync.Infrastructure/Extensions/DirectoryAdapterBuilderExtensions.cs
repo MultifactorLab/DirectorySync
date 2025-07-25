@@ -31,8 +31,7 @@ public static class DirectoryAdapterBuilderExtensions
         builder.Services.AddSingleton(_ => LdapConnectionFactory.Create());
 
         builder.Services.AddSingleton<LdapSchemaLoader>();
-
-        builder.Services.AddSingleton<BaseDnResolver>();
+        
         builder.Services.AddSingleton<LdapDomainDiscovery>();
         builder.Services.AddSingleton<LdapFinder>();
 
