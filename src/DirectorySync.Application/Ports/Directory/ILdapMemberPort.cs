@@ -6,5 +6,5 @@ namespace DirectorySync.Application.Ports.Directory;
 
 public interface ILdapMemberPort
 {
-    ReadOnlyCollection<MemberModel> GetByGuids(IEnumerable<DirectoryGuid> objectGuids, string[] requiredAttributes, CancellationToken cancellationToken = default);
+    ReadOnlyCollection<MemberModel> GetByGuids(IEnumerable<DirectoryGuid> objectGuids, string[] requiredAttributes, LdapDomain[] domainsToSearch);
 }
