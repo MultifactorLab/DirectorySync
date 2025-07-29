@@ -11,7 +11,7 @@ internal static class LdapUriChanger
         
         if (!Uri.TryCreate(ldapUrl, UriKind.Absolute, out var uri))
         {
-            throw new ArgumentException($"Invalid LDAP URL format: {ldapUrl}");
+            throw new ArgumentException($"Invalid LDAP URL format: {ldapUrl}\nLdapUrl:{ldapUrl}");
         }
         
         var builder = new UriBuilder(uri)

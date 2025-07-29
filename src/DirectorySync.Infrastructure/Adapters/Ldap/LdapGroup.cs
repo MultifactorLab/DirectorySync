@@ -86,11 +86,16 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         var schema = _ldapSchemaLoader.Load(options);
 
-        var domainsToSearch = GetAllDomains(options, schema);
+        var domainsToSearch = GetAllDomains(options, schema).Distinct().ToArray();
+
+        if (domainsToSearch.Length == 0)
+        {
+            throw new ApplicationException("No Domains provided for fetching groups");
+        }
 
         var guidSet = objectGuids.ToHashSet();
 
-        foreach (var domain in domainsToSearch.Distinct())
+        foreach (var domain in domainsToSearch)
         {
             var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, domain, _ldapOptions.Username, _ldapOptions.Password);
             var domainSchema = _ldapSchemaLoader.Load(domainOptions);
@@ -250,9 +255,16 @@ internal sealed class LdapGroup : ILdapGroupPort
         var domains = _ldapDomainDiscovery.GetForestDomains(options, schema).ToList();
         foreach (var trustedDomain in _ldapDomainDiscovery.GetTrustedDomains(options, schema))
         {
-            var trustedOptions = GetDomainConnectionOptions(_ldapOptions.Path, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
-            var trustedSchema = _ldapSchemaLoader.Load(trustedOptions);
-            domains.AddRange(_ldapDomainDiscovery.GetForestDomains(trustedOptions, trustedSchema));
+            try
+            {
+                var trustedOptions = GetDomainConnectionOptions(_ldapOptions.Path, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var trustedSchema = _ldapSchemaLoader.Load(trustedOptions);
+                domains.AddRange(_ldapDomainDiscovery.GetForestDomains(trustedOptions, trustedSchema));
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, $"Failed to get trusted domain {trustedDomain}");
+            }
         }
 
         return domains;
