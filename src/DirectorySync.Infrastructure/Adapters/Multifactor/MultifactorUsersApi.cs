@@ -57,7 +57,6 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = CreateUsersRequest.FromDomainModels(newUsers);
         
-        _logger.LogDebug("Creating users. Payload:{@Users:l}", dto.NewUsers);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.PostAsync<CreateUsersResponse>("v2/ds/users", dto);
@@ -79,7 +78,10 @@ public class MultifactorUsersApi : IUserCloudPort
             var failures = response.Model.Failures
                 .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
                 .Select(x => x.Identity!);
-            
+
+            var failedUsers = dto.NewUsers.Where(c => failures.Contains(c.Identity));
+            _logger.LogWarning("Failed users payloads: {@Users}", (object)failedUsers);
+
             newUsers.RemoveAll(c => failures.Contains(c.Identity));
         }
         
@@ -99,7 +101,6 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = UpdateUsersRequest.FromDomainModels(updUsers);
         
-        _logger.LogDebug("Updating users. Payload:{@Users:l}", dto.ModifiedUsers);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.PutAsync<UpdateUsersResponse>("v2/ds/users", dto);
@@ -121,7 +122,10 @@ public class MultifactorUsersApi : IUserCloudPort
             var failures = response.Model.Failures
                 .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
                 .Select(x => x.Identity!);
-            
+
+            var failedUsers = dto.ModifiedUsers.Where(c => failures.Contains(c.Identity));
+            _logger.LogWarning("Failed users payloads: {@Users}", (object)failedUsers);
+
             updUsers.RemoveAll(c => failures.Contains(c.Identity));
         }
         
@@ -140,8 +144,7 @@ public class MultifactorUsersApi : IUserCloudPort
         }
             
         var dto = DeleteUsersRequest.FromDomainModels(delUsers);
-        
-        _logger.LogDebug("Deleating users. Payload:{Users:l}", dto.Identities);
+
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.DeleteAsync<DeleteUsersResponse>("ds/users", dto);
@@ -163,7 +166,7 @@ public class MultifactorUsersApi : IUserCloudPort
             var failures = response.Model.Failures
                 .Where(x => !string.IsNullOrWhiteSpace(x?.Identity))
                 .Select(x => x.Identity!);
-            
+
             delUsers.RemoveAll(c => failures.Contains(c.Identity));
         }
         
