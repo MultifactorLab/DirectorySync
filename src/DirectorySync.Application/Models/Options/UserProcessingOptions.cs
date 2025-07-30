@@ -12,4 +12,6 @@ public class UserProcessingOptions
 
     [Range(1, 100)]
     public int UpdatingBatchSize { get; set; } = 50;
+    
+    public TimeSpan RequestInterval { get; set; } = TimeSpan.FromMilliseconds(200);
 }

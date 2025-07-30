@@ -11,7 +11,7 @@ namespace DirectorySync.Application.Services;
 
 public interface IUserUpdater
 {
-    Task<ReadOnlyCollection<MemberModel>> UpdateManyAsync(IEnumerable<MemberModel> updUsers, CancellationToken token = default);
+    Task<ReadOnlyCollection<MemberModel>> UpdateManyAsync(IEnumerable<MemberModel> updUsers, CancellationToken cancellationToken = default);
 }
     
 public class UserUpdater : IUserUpdater
@@ -35,7 +35,7 @@ public class UserUpdater : IUserUpdater
         _memberDatabase = memberDatabase;
     }
 
-    public async Task<ReadOnlyCollection<MemberModel>> UpdateManyAsync(IEnumerable<MemberModel> updUsers, CancellationToken token = default)
+    public async Task<ReadOnlyCollection<MemberModel>> UpdateManyAsync(IEnumerable<MemberModel> updUsers, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(updUsers);
 
@@ -60,8 +60,10 @@ public class UserUpdater : IUserUpdater
             }
             
             var timer = _codeTimer.Start("Api Request: Update Users");
-            var res = await _userCloudPort.UpdateManyAsync(bucket, token);
+            var res = await _userCloudPort.UpdateManyAsync(bucket, cancellationToken);
             timer.Stop();
+            
+            var delay = Task.Delay(_userProcessingOptions.RequestInterval, cancellationToken);
             
             timer = _codeTimer.Start("Update Cached Group: Modified Users");
             _memberDatabase.UpdateMany(res);
@@ -70,6 +72,8 @@ public class UserUpdater : IUserUpdater
             updatedMembers.AddRange(res);
             
             skip += bucket.Length;
+            
+            await delay;
         }
         
         return updatedMembers.AsReadOnly();
