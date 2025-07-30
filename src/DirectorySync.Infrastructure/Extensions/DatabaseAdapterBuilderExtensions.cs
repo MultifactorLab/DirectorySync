@@ -50,6 +50,7 @@ internal static class DatabaseAdapterBuilderExtensions
         builder.Services.AddTransient<IGroupDatabase, GroupLiteDb>();
         builder.Services.AddTransient<ISyncSettingsDatabase, SyncSettingsLiteDb>();
         builder.Services.AddTransient<ISystemDatabase, SystemLiteDb>();
+        builder.Services.AddTransient<IDirectoryDomainDatabase, DirectoryDomainLiteDb>();
     }
 
     private static string GetLocalAppData()
