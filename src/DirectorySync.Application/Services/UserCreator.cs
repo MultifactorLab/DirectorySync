@@ -58,6 +58,8 @@ public class UserCreator : IUserCreator
             var timer = _codeTimer.Start("Api Request: Create Users");
             var res = await _userCloudPort.CreateManyAsync(bucket, cancellationToken);
             timer.Stop();
+
+            var delay = Task.Delay(_userProcessingOptions.RequestInterval, cancellationToken);
             
             timer = _codeTimer.Start("Update Cached Group: Created Users");
             _memberDatabase.InsertMany(res);
@@ -66,6 +68,8 @@ public class UserCreator : IUserCreator
             addedMembers.AddRange(res);
             
             skip += bucket.Length;
+
+            await delay;
         }
         
         return addedMembers.AsReadOnly();
