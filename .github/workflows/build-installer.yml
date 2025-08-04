@@ -31,8 +31,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore NuGet packages
-        run: dotnet restore ${{ env.Solution_Name }}
+      - name: Restore DirectorySync NuGet packages
+        run: dotnet restore src/DirectorySync/DirectorySync.csproj -r ${{ env.Runtime_Identifier }}
+
+      - name: Restore installer NuGet packages
+        run: dotnet restore src/DirectorySync.Installer/DirectorySync.Installer.wixproj -r ${{ env.Runtime_Identifier }}
 
       - name: Build solution
         run: dotnet build ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-restore
