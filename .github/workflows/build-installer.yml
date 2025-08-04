@@ -31,11 +31,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install WiX Toolset
-        run: |
-          choco install wixtoolset --version=5.0.0 --yes
-          refreshenv
-
       - name: Restore NuGet packages
         run: dotnet restore ${{ env.Solution_Name }}
 
