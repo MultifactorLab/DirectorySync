@@ -13,7 +13,7 @@
 		<Authors>$(Company)</Authors>
 		<Copyright>$(Company)</Copyright>
 		<Description>$(Company) DirectorySync</Description>
-		<Version>1.7.0</Version>
+		<Version>1.7.1</Version>
 		<FileVersion>$(Version).*</FileVersion>
 		<ProductVersion>$(Version)</ProductVersion>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
@@ -22,6 +22,10 @@
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <NoWarn>1701;1702;CA1416</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
 
     <ItemGroup>
