@@ -15,9 +15,9 @@ jobs:
     runs-on: windows-2022
 
     env:
-      Solution_Name: DirectorySync.sln
-      Project_Name: DirectorySync
-      Installer_Project: DirectorySync.Installer
+      Solution_Name: src/DirectorySync.sln
+      Project_Name: src/DirectorySync/DirectorySync.csproj
+      Installer_Project: src/DirectorySync.Installer/DirectorySync.Installer.wixproj
       Build_Configuration: Release
       Runtime_Identifier: win-x64
       Output_Dir: publish/win-x64
@@ -31,20 +31,41 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Install WiX Toolset
+        run: |
+          choco install wixtoolset --version=5.0.0 --yes
+          refreshenv
+
       - name: Restore NuGet packages
         run: dotnet restore ${{ env.Solution_Name }}
 
+      - name: Build solution
+        run: dotnet build ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-restore
+
+      - name: Run tests
+        run: dotnet test ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-build --verbosity normal
+
       - name: Publish .NET app
-        run: dotnet publish ${{ env.Project_Name }} -c ${{ env.Build_Configuration }} -r ${{ env.Runtime_Identifier }} --self-contained true -p:PublishSingleFile=true -o ${{ env.Output_Dir }}
+        run: dotnet publish ${{ env.Project_Name }} -c ${{ env.Build_Configuration }} -r ${{ env.Runtime_Identifier }} --self-contained true -p:PublishSingleFile=true -o ${{ env.Output_Dir }} --no-build
 
       - name: Build WiX installer
-        working-directory: ${{ env.Installer_Project }}
         run: |
-          candle *.wxs -dPublishDir=../${{ env.Output_Dir }} -out obj/
-          light obj/*.wixobj -out ../Installer.msi
+          dotnet build ${{ env.Installer_Project }} -c ${{ env.Build_Configuration }} -p:Platform=x64 -p:Configuration=${{ env.Build_Configuration }} --no-restore
+
+      - name: Find MSI file
+        id: find-msi
+        run: |
+          $msiPath = Get-ChildItem -Path "src/DirectorySync.Installer/bin/${{ env.Build_Configuration }}/x64/" -Filter "*.msi" -Recurse | Select-Object -First 1
+          if ($msiPath) {
+            echo "msi-path=$($msiPath.FullName)" >> $env:GITHUB_OUTPUT
+            echo "msi-name=$($msiPath.Name)" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "No MSI file found"
+            exit 1
+          }
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
         with:
           name: DirectorySyncInstaller
-          path: Installer.msi
+          path: ${{ steps.find-msi.outputs.msi-path }}
