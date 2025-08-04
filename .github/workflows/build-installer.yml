@@ -46,7 +46,7 @@ jobs:
       - name: Find MSI file
         id: find-msi
         run: |
-          $msiPath = Get-ChildItem -Path "src/DirectorySync.Installer/bin/${{ env.Build_Configuration }}/x64/" -Filter "*.msi" -Recurse | Select-Object -First 1
+          $msiPath = Get-ChildItem -Path "src/DirectorySync.Installer/bin/x64/${{ env.Build_Configuration }}/" -Filter "*.msi" -Recurse | Select-Object -First 1
           if ($msiPath) {
             echo "msi-path=$($msiPath.FullName)" >> $env:GITHUB_OUTPUT
             echo "msi-name=$($msiPath.Name)" >> $env:GITHUB_OUTPUT
