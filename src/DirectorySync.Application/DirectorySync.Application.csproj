@@ -12,6 +12,7 @@
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <NoWarn>1701;1702;CA1416</NoWarn>
+      <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
 
     <ItemGroup>
