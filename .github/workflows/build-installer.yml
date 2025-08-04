@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/*
   pull_request:
     branches:
       - main
@@ -33,15 +32,15 @@ jobs:
         run: dotnet restore ${{ env.Solution_Name }}
 
       - name: Build solution
-        run: dotnet build ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-restore
+        run: dotnet build ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-restore -warnasmessage:*
 
       - name: Run tests
-        run: dotnet test ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-build --verbosity normal
+        run: dotnet test ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-build --verbosity normal -warnasmessage:*
 
 
       - name: Build WiX installer
         run: |
-          dotnet build ${{ env.Installer_Project }} -c ${{ env.Build_Configuration }} -p:Platform=x64 -p:Configuration=${{ env.Build_Configuration }} --no-restore
+          dotnet build ${{ env.Installer_Project }} -c ${{ env.Build_Configuration }} -p:Platform=x64 -p:Configuration=${{ env.Build_Configuration }} --no-restore -warnasmessage:*
 
       - name: Find MSI file
         id: find-msi
