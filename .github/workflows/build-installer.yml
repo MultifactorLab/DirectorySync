@@ -31,11 +31,8 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore DirectorySync NuGet packages
-        run: dotnet restore src/DirectorySync/DirectorySync.csproj -r ${{ env.Runtime_Identifier }}
-
-      - name: Restore installer NuGet packages
-        run: dotnet restore src/DirectorySync.Installer/DirectorySync.Installer.wixproj -r ${{ env.Runtime_Identifier }}
+      - name: Restore NuGet packages
+        run: dotnet restore ${{ env.Solution_Name }}
 
       - name: Build solution
         run: dotnet build ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-restore
@@ -44,7 +41,7 @@ jobs:
         run: dotnet test ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-build --verbosity normal
 
       - name: Publish .NET app
-        run: dotnet publish ${{ env.Project_Name }} -c ${{ env.Build_Configuration }} -r ${{ env.Runtime_Identifier }} --self-contained true -p:PublishSingleFile=true -o ${{ env.Output_Dir }} --no-build
+        run: dotnet publish ${{ env.Project_Name }} -c ${{ env.Build_Configuration }} --self-contained true -p:PublishSingleFile=true -o ${{ env.Output_Dir }} --no-build
 
       - name: Build WiX installer
         run: |
