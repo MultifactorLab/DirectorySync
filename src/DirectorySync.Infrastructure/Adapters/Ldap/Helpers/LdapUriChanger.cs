@@ -1,17 +1,18 @@
 using DirectorySync.Application.Models.ValueObjects;
+using Multifactor.Core.Ldap;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 
 internal static class LdapUriChanger
 {
-    public static string ReplaceHostInLdapUrl(string ldapUrl, LdapDomain newHost)
+    public static LdapConnectionString ReplaceHostInLdapConnectionString(LdapConnectionString mainLdapConnectionString, LdapDomain newHost)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(ldapUrl);
+        ArgumentNullException.ThrowIfNull(mainLdapConnectionString);
         ArgumentNullException.ThrowIfNull(newHost);
-        
-        if (!Uri.TryCreate(ldapUrl, UriKind.Absolute, out var uri))
+
+        if (!Uri.TryCreate(mainLdapConnectionString.WellFormedLdapUrl, UriKind.Absolute, out var uri))
         {
-            throw new ArgumentException($"Invalid LDAP URL format: {ldapUrl}\nLdapUrl:{ldapUrl}");
+            throw new ArgumentException($"Invalid LDAP URL format: {mainLdapConnectionString.WellFormedLdapUrl}");
         }
         
         var builder = new UriBuilder(uri)
@@ -19,6 +20,6 @@ internal static class LdapUriChanger
             Host = newHost.Value
         };
 
-        return builder.Uri.ToString();
+        return new LdapConnectionString(builder.Uri.ToString());
     }  
 }

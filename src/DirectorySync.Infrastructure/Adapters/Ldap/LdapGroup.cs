@@ -78,15 +78,15 @@ internal sealed class LdapGroup : ILdapGroupPort
         var foundGroups = new List<GroupModel>();
         var searchDomains = new HashSet<LdapDomain>();
 
-        var options = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
+        var mainOptions = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
             AuthType.Basic,
             _ldapOptions.Username,
             _ldapOptions.Password,
             _ldapOptions.Timeout);
 
-        var schema = _ldapSchemaLoader.Load(options);
+        var schema = _ldapSchemaLoader.Load(mainOptions);
 
-        var domainsToSearch = GetAllDomains(options, schema).Distinct().ToArray();
+        var domainsToSearch = GetAllDomains(mainOptions, schema).Distinct().ToArray();
 
         if (domainsToSearch.Length == 0)
         {
@@ -97,7 +97,7 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         foreach (var domain in domainsToSearch)
         {
-            var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, domain, _ldapOptions.Username, _ldapOptions.Password);
+            var domainOptions = GetDomainConnectionOptions(mainOptions.ConnectionString, domain, _ldapOptions.Username, _ldapOptions.Password);
             var domainSchema = _ldapSchemaLoader.Load(domainOptions);
 
             using var connection = _connectionFactory.CreateConnection(domainOptions);
@@ -106,7 +106,7 @@ internal sealed class LdapGroup : ILdapGroupPort
             {
                 foreach (var guid in guidSet)
                 {
-                    var group = GetGroup(guid, domain, connection, domainSchema, searchDomains);
+                    var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains);
                     if (group is null)
                     {
                         continue;
@@ -136,6 +136,7 @@ internal sealed class LdapGroup : ILdapGroupPort
     }
     
     private GroupModel? GetGroup(DirectoryGuid objectGuid,
+        LdapConnectionString mainLdapConnectionString,
         LdapDomain domain,
         ILdapConnection connection,
         ILdapSchema schema,
@@ -148,6 +149,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         }
         
         var members = GetMembersCrossDomain(groupDn,
+            mainLdapConnectionString,
             domain,
             connection,
             schema,
@@ -169,6 +171,7 @@ internal sealed class LdapGroup : ILdapGroupPort
     }
 
     private IEnumerable<DirectoryGuid> GetMembersCrossDomain(string groupDn,
+        LdapConnectionString initialConnectionString,
         LdapDomain initialDomain,
         ILdapConnection initialConn,
         ILdapSchema initialSchema,
@@ -202,7 +205,7 @@ internal sealed class LdapGroup : ILdapGroupPort
                 }
 
                 var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn);
-                var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var domainOptions = GetDomainConnectionOptions(initialConnectionString, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
                 var domainSchema = _ldapSchemaLoader.Load(domainOptions);
                 var domainConn = _connectionFactory.CreateConnection(domainOptions);
 
@@ -257,7 +260,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         {
             try
             {
-                var trustedOptions = GetDomainConnectionOptions(_ldapOptions.Path, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var trustedOptions = GetDomainConnectionOptions(options.ConnectionString, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
                 var trustedSchema = _ldapSchemaLoader.Load(trustedOptions);
                 domains.AddRange(_ldapDomainDiscovery.GetForestDomains(trustedOptions, trustedSchema));
             }
@@ -270,7 +273,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         return domains;
     }
 
-    private LdapConnectionOptions GetDomainConnectionOptions(string currentConnectionString,
+    private LdapConnectionOptions GetDomainConnectionOptions(LdapConnectionString mainConnectionString,
         LdapDomain domain,
         string username,
         string password)
@@ -279,9 +282,9 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         var trustUsername = LdapUsernameChanger.ChangeDomain(username, domain, ldapIdentityFormat.Value);
         
-        var newUri = LdapUriChanger.ReplaceHostInLdapUrl(currentConnectionString, domain);
+        var newLdapConnectionString = LdapUriChanger.ReplaceHostInLdapConnectionString(mainConnectionString, domain);
         
-        return new LdapConnectionOptions(new LdapConnectionString(newUri),
+        return new LdapConnectionOptions(newLdapConnectionString,
             AuthType.Basic,
             trustUsername,
             password,

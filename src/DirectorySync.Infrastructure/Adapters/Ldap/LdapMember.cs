@@ -58,6 +58,8 @@ internal sealed class LdapMember : ILdapMemberPort
         }
         
         _logger.LogDebug("Fetching members for {Count} GUID(s)", guidList.Count);
+
+        var mainLdapConnectionString = new LdapConnectionString(_ldapOptions.Path);
         
         var models = new List<MemberModel>();
 
@@ -68,7 +70,7 @@ internal sealed class LdapMember : ILdapMemberPort
                 break;
             }
             
-            var domainOptions = GetDomainConnectionOptions(_ldapOptions.Path, domain, _ldapOptions.Username, _ldapOptions.Password);
+            var domainOptions = GetDomainConnectionOptions(mainLdapConnectionString, domain, _ldapOptions.Username, _ldapOptions.Password);
             var domainSchema = _ldapSchemaLoader.Load(domainOptions);
             
             using var connection = _connectionFactory.CreateConnection(domainOptions);
@@ -154,7 +156,7 @@ internal sealed class LdapMember : ILdapMemberPort
         return properties.AsReadOnly();
     }
 
-    private LdapConnectionOptions GetDomainConnectionOptions(string currentConnectionString,
+    private LdapConnectionOptions GetDomainConnectionOptions(LdapConnectionString mainConnectionString,
         LdapDomain domain,
         string username,
         string password)
@@ -163,9 +165,9 @@ internal sealed class LdapMember : ILdapMemberPort
 
         var trustUsername = LdapUsernameChanger.ChangeDomain(username, domain, ldapIdentityFormat.Value);
         
-        var newUri = LdapUriChanger.ReplaceHostInLdapUrl(currentConnectionString, domain);
+        var newLdapConnectionString = LdapUriChanger.ReplaceHostInLdapConnectionString(mainConnectionString, domain);
         
-        return new LdapConnectionOptions(new LdapConnectionString(newUri),
+        return new LdapConnectionOptions(newLdapConnectionString,
             AuthType.Basic,
             trustUsername,
             password,
