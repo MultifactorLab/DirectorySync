@@ -1,0 +1,55 @@
+name: Build Installer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    env:
+      Solution_Name: src/DirectorySync.sln
+      Project_Name: src/DirectorySync/DirectorySync.csproj
+      Installer_Project: src/DirectorySync.Installer/DirectorySync.Installer.wixproj
+      Build_Configuration: Release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore NuGet packages
+        run: dotnet restore ${{ env.Solution_Name }}
+
+      - name: Build solution
+        run: dotnet build ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-restore -warnasmessage:*
+
+      - name: Run tests
+        run: dotnet test ${{ env.Solution_Name }} -c ${{ env.Build_Configuration }} --no-build --verbosity normal -warnasmessage:*
+
+
+      - name: Build WiX installer
+        run: |
+          dotnet build ${{ env.Installer_Project }} -c ${{ env.Build_Configuration }} -p:Platform=x64 -p:Configuration=${{ env.Build_Configuration }} --no-restore -warnasmessage:*
+
+      - name: Find MSI file
+        id: find-msi
+        run: |
+          $msiPath = Get-ChildItem -Path "src/DirectorySync.Installer/bin/x64/${{ env.Build_Configuration }}/" -Filter "*.msi" -Recurse | Select-Object -First 1
+          if ($msiPath) {
+            echo "msi-path=$($msiPath.FullName)" >> $env:GITHUB_OUTPUT
+            echo "msi-name=$($msiPath.Name)" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "No MSI file found"
+            exit 1
+          }
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DirectorySyncInstaller
+          path: ${{ steps.find-msi.outputs.msi-path }}
