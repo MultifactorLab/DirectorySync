@@ -20,6 +20,7 @@ public static class AddApplicationServicesExtension
         builder.Services.AddTransient<IUserDeleter, UserDeleter>();
         builder.Services.AddTransient<IGroupUpdater, GroupUpdater>();
         builder.Services.AddTransient<IUserGroupsMapper, UserGroupsMapper>();
+        builder.Services.AddTransient<IDirectoryDomainsUpdater, DirectoryDomainsUpdater>();
         
         builder.Services.AddTransient<ISynchronizeUsersUseCase, SynchronizeUsersUseCase>();
         builder.Services.AddTransient<ISynchronizeGroupsUseCase, SynchronizeGroupsUseCase>();

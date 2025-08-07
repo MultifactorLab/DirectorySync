@@ -17,6 +17,7 @@ namespace DirectorySync.Application.Tests.UseCases;
 public class SynchronizeUsersUseCaseTests
 {
     private readonly Mock<IMemberDatabase> _memberDatabase = new();
+    private readonly Mock<IDirectoryDomainDatabase> _directoryDomainDatabase = new();
     private readonly Mock<ILdapMemberPort> _memberPort = new();
     private readonly Mock<IUserUpdater> _userUpdater = new();
     private readonly Mock<ISyncSettingsOptions> _syncSettingsOptions = new();
@@ -40,6 +41,7 @@ public class SynchronizeUsersUseCaseTests
 
         _useCase = new SynchronizeUsersUseCase(
             _memberDatabase.Object,
+            _directoryDomainDatabase.Object,
             _memberPort.Object,
             _userUpdater.Object,
             _syncSettingsOptions.Object,
@@ -82,15 +84,17 @@ public class SynchronizeUsersUseCaseTests
         var memberId = new DirectoryGuid(Guid.NewGuid());
         var cached = MemberModel.Create(memberId, new Identity("user1"), []);
         cached.SetProperties([new MemberProperty("cn", "User")], new AttributesHash("hash1"));
+        var domain = new LdapDomain("domain.example");
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns(["cn"]);
         _memberDatabase.Setup(x => x.FindAll()).Returns(new[] { cached }.AsReadOnly());
+        _directoryDomainDatabase.Setup(x => x.FindAll()).Returns(new[] { domain }.AsReadOnly());
 
         var reference = MemberModel.Create(memberId, new Identity("user1"), []);
         reference.SetProperties([new MemberProperty("cn", "User")], new AttributesHash("hash1"));
 
-        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }, It.IsAny<CancellationToken>()))
-            .Returns(new[] { reference }.AsReadOnly());
+        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }, new[] { domain }))
+            .Returns((new[] { reference }.AsReadOnly()));
 
         // Act
         await _useCase.ExecuteAsync();
@@ -107,14 +111,16 @@ public class SynchronizeUsersUseCaseTests
         var memberId = new DirectoryGuid(Guid.NewGuid());
         var cached = MemberModel.Create(memberId, new Identity("user1"), []);
         cached.SetProperties([new MemberProperty("cn", "OldUser")], new AttributesHash("oldHash"));
+        var domain = new LdapDomain("domain.example");
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns(["cn"]);
         _memberDatabase.Setup(x => x.FindAll()).Returns(new [] { cached }.AsReadOnly());
+        _directoryDomainDatabase.Setup(x => x.FindAll()).Returns(new[] { domain }.AsReadOnly());
 
         var reference = MemberModel.Create(memberId, new Identity("user1"), []);
         reference.SetProperties([new MemberProperty("cn", "NewUser")], new AttributesHash("newHash"));
 
-        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }, It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(new[] { memberId }, new[] { "cn" }, It.IsAny<LdapDomain[]>()))
             .Returns(new[] { reference }.AsReadOnly());
 
         _userUpdater.Setup(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()))

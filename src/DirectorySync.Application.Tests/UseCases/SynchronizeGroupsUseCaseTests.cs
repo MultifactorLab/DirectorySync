@@ -20,6 +20,7 @@ public class SynchronizeGroupsUseCaseTests
     private readonly Mock<IMemberDatabase> _memberDatabase = new();
     private readonly Mock<ILdapGroupPort> _groupPort = new();
     private readonly Mock<ILdapMemberPort> _memberPort = new();
+    private readonly Mock<IDirectoryDomainsUpdater> _directoryDomainUpdater = new();
     private readonly Mock<IUserGroupsMapper> _userGroupsMapper = new();
     private readonly Mock<IUserCreator> _userCreator = new();
     private readonly Mock<IUserUpdater> _userUpdater = new();
@@ -49,6 +50,7 @@ public class SynchronizeGroupsUseCaseTests
             _memberDatabase.Object,
             _groupPort.Object,
             _memberPort.Object,
+            _directoryDomainUpdater.Object,
             _userGroupsMapper.Object,
             _userCreator.Object,
             _userUpdater.Object,
@@ -64,8 +66,8 @@ public class SynchronizeGroupsUseCaseTests
     {
         // Arrange
         var groupId = new DirectoryGuid(Guid.NewGuid());
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId))
-            .Returns((GroupModel)null);
+        _groupPort.Setup(x => x.GetByGuid(groupId))
+            .Returns((null, ReadOnlyCollection<LdapDomain>.Empty.AsReadOnly()));
 
         // Act
         await _useCase.ExecuteAsync(new[] { groupId });
@@ -80,9 +82,10 @@ public class SynchronizeGroupsUseCaseTests
         // Arrange
         var groupId = new DirectoryGuid(Guid.NewGuid());
         var groupModel = GroupModel.Create(groupId, []);
+        var domain = new LdapDomain("domain.example");
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId))
-            .Returns(groupModel);
+        _groupPort.Setup(x => x.GetByGuid(groupId))
+            .Returns((groupModel, new[] { domain }.AsReadOnly()));
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns((GroupModel)null);
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns([]);
@@ -104,7 +107,9 @@ public class SynchronizeGroupsUseCaseTests
 
         var cached = GroupModel.Create(groupId, [userId]);
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        var domain = new LdapDomain("domain.example");
+        
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns((reference, new[] { domain }.AsReadOnly()));
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
 
         // Act
@@ -124,13 +129,15 @@ public class SynchronizeGroupsUseCaseTests
         var reference = GroupModel.Create(groupId, [addedMemberId]);
 
         var cached = GroupModel.Create(groupId, []);
+        
+        var domain = new LdapDomain("domain.example");
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns((reference, new[] { domain }.AsReadOnly()));
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
         _memberDatabase.Setup(x => x.FindManyById(It.IsAny<IEnumerable<DirectoryGuid>>())).Returns(ReadOnlyCollection<MemberModel>.Empty);
 
         var member = MemberModel.Create(addedMemberId, new Identity("newUser"), []);
-        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<LdapDomain[]>()))
             .Returns(new[] { member }.AsReadOnly());
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns([]);
@@ -151,6 +158,7 @@ public class SynchronizeGroupsUseCaseTests
         // Assert
         _userCreator.Verify(x => x.CreateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Once);
         _groupUpdater.Verify(x => x.UpdateGroupsWithMembers(It.IsAny<IEnumerable<MemberModel>>()), Times.Once);
+        _directoryDomainUpdater.Verify(x => x.UpdateDomainsToSearch(It.IsAny<IEnumerable<LdapDomain>>()), Times.Once);
     }
 
     [Fact]
@@ -163,8 +171,10 @@ public class SynchronizeGroupsUseCaseTests
         var cached = GroupModel.Create(groupId, [removedId]);
 
         var reference = GroupModel.Create(groupId, []);
+        
+        var domain = new LdapDomain("domain.example");
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns((reference, new[] { domain }.AsReadOnly()));
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
 
         var member = MemberModel.Create(removedId, new Identity("oldUser"), [groupId]);
@@ -188,6 +198,7 @@ public class SynchronizeGroupsUseCaseTests
         // Assert
         _userDeleter.Verify(x => x.DeleteManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Once);
         _groupUpdater.Verify(x => x.UpdateGroupsWithMembers(It.IsAny<IEnumerable<MemberModel>>()), Times.Once);
+        _directoryDomainUpdater.Verify(x => x.UpdateDomainsToSearch(It.IsAny<IEnumerable<LdapDomain>>()), Times.Once);
     }
 
     [Fact]
@@ -200,14 +211,16 @@ public class SynchronizeGroupsUseCaseTests
         var cached = GroupModel.Create(groupId, []);
 
         var reference = GroupModel.Create(groupId, [memberId]);
+        
+        var domain = new LdapDomain("domain.example");
 
-        _groupPort.Setup(x => x.GetByGuidAsync(groupId)).Returns(reference);
+        _groupPort.Setup(x => x.GetByGuid(groupId)).Returns((reference, new[] { domain }.AsReadOnly()));
         _groupDatabase.Setup(x => x.FindById(groupId)).Returns(cached);
 
         var member = MemberModel.Create(memberId, new Identity("user"), []);
         _memberDatabase.Setup(x => x.FindManyById(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns(new[] { member }.AsReadOnly());
-        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _memberPort.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<LdapDomain[]>()))
             .Returns(ReadOnlyCollection<MemberModel>.Empty);
 
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns([]);
@@ -228,5 +241,6 @@ public class SynchronizeGroupsUseCaseTests
         // Assert
         _userUpdater.Verify(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Once);
         _groupUpdater.Verify(x => x.UpdateGroupsWithMembers(It.IsAny<IEnumerable<MemberModel>>()), Times.Once);
+        _directoryDomainUpdater.Verify(x => x.UpdateDomainsToSearch(It.IsAny<IEnumerable<LdapDomain>>()), Times.Once);
     }
 }

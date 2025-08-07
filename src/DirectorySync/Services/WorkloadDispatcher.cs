@@ -237,7 +237,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ApplicationEvent.CloudSettingSynchronizationServiceError, "End of initial cloud users synchronization. Details: {0}", ex.Message);
+            _logger.LogError(ApplicationEvent.CloudSettingSynchronizationServiceError, "End of initial cloud settings synchronization. Details: {0}", ex.Message);
         }
         var trackingGroups = _syncSettings.CurrentValue.TrackingGroups.Select(c => new DirectoryGuid(c));
 
