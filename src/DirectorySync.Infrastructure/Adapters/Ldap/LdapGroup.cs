@@ -256,7 +256,7 @@ internal sealed class LdapGroup : ILdapGroupPort
     private IEnumerable<LdapDomain> GetAllDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
         var domains = _ldapDomainDiscovery.GetForestDomains(options, schema).ToList();
-        foreach (var trustedDomain in _ldapDomainDiscovery.GetTrustedDomains(options, schema))
+        foreach (var trustedDomain in _ldapDomainDiscovery.GetForestTrusts(options, schema))
         {
             try
             {
