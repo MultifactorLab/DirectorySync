@@ -22,7 +22,7 @@ internal sealed class LdapUsernameChanger
                 return $"{newDomain}\\{usernamePart}";
             
             case LdapIdentityFormat.SamAccountName:
-                return $"{newDomain}\\{username}";
+                return $"{username}";
             
             case LdapIdentityFormat.DistinguishedName:
                 return ReplaceBaseDn(username, newDomain);
