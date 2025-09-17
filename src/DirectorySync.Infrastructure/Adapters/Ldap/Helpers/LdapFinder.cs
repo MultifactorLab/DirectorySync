@@ -17,7 +17,8 @@ internal sealed class LdapFinder
     public IEnumerable<SearchResultEntry> Find(string filter,
         string[] requiredAttributes,
         string namingContext,
-        ILdapConnection conn)
+        ILdapConnection conn,
+        SearchScope scope = SearchScope.Subtree)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filter);
         ArgumentNullException.ThrowIfNull(requiredAttributes);
@@ -26,7 +27,7 @@ internal sealed class LdapFinder
         
         var searchRequest = new SearchRequest(namingContext,
             filter,
-            SearchScope.Subtree,
+            scope,
             requiredAttributes);
 
         var pageRequestControl = new PageResultRequestControl(_ldapOptions.PageSize);
