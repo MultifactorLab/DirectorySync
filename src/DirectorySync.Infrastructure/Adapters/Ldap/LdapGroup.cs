@@ -243,55 +243,38 @@ internal sealed class LdapGroup : ILdapGroupPort
 
     private IEnumerable<LdapContainerEntry> GetNestedContainers(LdapContainerEntry container, ILdapConnection conn, ILdapSchema schema)
     {
-        var nestedGroups = new HashSet<LdapContainerEntry>();
-        
         if (container.ObjectClass == schema.GroupObjectClass)
         {
-            var filter = LdapFilters.FindGroup(schema);
-            var results = _ldapFinder.Find(
-                filter, 
-                ["member"],
-                container.DistinguishedName,
-                conn,
-                SearchScope.OneLevel);
+            var filter = LdapFilters.FindGroupByDn(container.DistinguishedName, schema);
+            var results = _ldapFinder.Find(filter, ["member"], schema.NamingContext.StringRepresentation, conn);
 
             var memberDns = results
                 .SelectMany(e => e.Attributes["member"]?.GetValues(typeof(string)).Cast<string>() ?? Enumerable.Empty<string>())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            
+
             var userDns = results.SelectMany(e =>
-                _ldapFinder.Find(
-                        LdapFilters.FindEnabledGroupMembersByGroupDn(container.DistinguishedName, schema),
-                        ["distinguishedName"],
-                        schema.NamingContext.StringRepresentation,
-                        conn)
+                _ldapFinder.Find(LdapFilters.FindGroupMembersByGroupDn(container.DistinguishedName, schema), ["distinguishedName"], schema.NamingContext.StringRepresentation, conn)
                     .Select(u => u.DistinguishedName)).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             memberDns.ExceptWith(userDns);
-            
-            foreach (var dn in memberDns)
-            {
-                nestedGroups.Add(new LdapContainerEntry(dn, "Group"));
-            }
+            return memberDns.Select(c => new LdapContainerEntry(c, schema.GroupObjectClass));
         }
-        else if (container.ObjectClass == schema.OrganizationalUnitObjectClass)
+        if (container.ObjectClass == schema.OrganizationalUnitObjectClass)
         {
-            var filter = LdapFilters.FindOu(schema);
-            var results = _ldapFinder.Find(
+            var filter = LdapFilters.FindOuNestContainers(schema);
+            return _ldapFinder.Find(
                 filter,
-                ["objectCategory"],
+                ["objectClass"],
                 container.DistinguishedName,
                 conn,
-                SearchScope.OneLevel);
-
-            foreach (var entry in results)
-            {
-                var objectClass = entry.Attributes[schema.ObjectClass].GetValues(typeof(string)).LastOrDefault()?.ToString();
-                nestedGroups.Add(new LdapContainerEntry(entry.DistinguishedName, objectClass ?? string.Empty));
-            }
+                SearchScope.OneLevel)
+                .Select(e => new LdapContainerEntry(
+                    e.DistinguishedName,
+                    e.Attributes["objectClass"].GetValues(typeof(string)).LastOrDefault()?.ToString() ?? string.Empty
+                ));
         }
 
-        return nestedGroups;
+        return Enumerable.Empty<LdapContainerEntry>();
     }
 
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)

@@ -9,17 +9,22 @@ internal static class LdapFilters
     {
         return $"(&(|({schema.ObjectClass}={schema.GroupObjectClass})({schema.ObjectClass}={schema.OrganizationalUnitObjectClass}))(objectGUID={guid.OctetString}))";
     }
-
-    public static string FindGroup(ILdapSchema schema)
+    
+    public static string FindOuNestContainers(ILdapSchema schema)
     {
-        return $"(&({schema.ObjectClass}={schema.GroupObjectClass}))";
+        return $"(|(objectClass={schema.GroupObjectClass})(objectClass={schema.OrganizationalUnitObjectClass}))";
     }
     
-    public static string FindOu(ILdapSchema schema)
+    public static string FindGroupByDn(string dn, ILdapSchema schema)
     {
-        return $"(&({schema.ObjectClass}={schema.OrganizationalUnitObjectClass}))";
+        return $"(&(objectClass={schema.GroupObjectClass})(distinguishedName={dn}))";
     }
 
+    public static string FindGroupMembersByGroupDn(string groupDn, ILdapSchema schema)
+    {
+        return $"(&({schema.ObjectClass}={schema.UserObjectClass})(memberof={groupDn}))";
+    }
+    
     public static string FindEnabledGroupMembersByGroupDn(string groupDn, ILdapSchema schema)
     {
         // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
