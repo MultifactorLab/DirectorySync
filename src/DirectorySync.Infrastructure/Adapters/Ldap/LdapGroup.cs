@@ -101,17 +101,16 @@ internal sealed class LdapGroup : ILdapGroupPort
             var domainSchema = _ldapSchemaLoader.Load(domainOptions);
 
             using var connection = _connectionFactory.CreateConnection(domainOptions);
-
-            try
+            foreach (var guid in guidSet)
             {
-                foreach (var guid in guidSet)
+                try
                 {
                     var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains);
                     if (group is null)
                     {
                         continue;
                     }
-                    
+                        
                     foundGroups.Add(group);
                     _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
 
@@ -123,12 +122,12 @@ internal sealed class LdapGroup : ILdapGroupPort
                     _logger.LogDebug("All requested groups found. Ending search.");
                     return (foundGroups, searchDomains.ToList());
                 }
-            }
-            catch (LdapException ex)
-            {
-                _logger.LogDebug("Ldap exception occured while searching in {Domain}. Status: {Status}.",
-                    domain,
-                    ex.ErrorCode);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception occured while searching group {GroupGuid} in {Domain}.",
+                        guid, 
+                        domain);
+                }
             }
         }
 
@@ -193,7 +192,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         while (queue.Count > 0)
         {
             var (currentGroupDn, currentDomain, conn, schema) = queue.Dequeue();
-
+            
             var members = GetContainerUsers(currentGroupDn, conn, schema).ToArray();
 
             if (members.Length > 0)
@@ -212,8 +211,9 @@ internal sealed class LdapGroup : ILdapGroupPort
                 {
                     continue;
                 }
-
+                
                 var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn.DistinguishedName);
+
                 var domainOptions = GetDomainConnectionOptions(initialConnectionString, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
                 var domainSchema = _ldapSchemaLoader.Load(domainOptions);
                 var domainConn = _connectionFactory.CreateConnection(domainOptions);

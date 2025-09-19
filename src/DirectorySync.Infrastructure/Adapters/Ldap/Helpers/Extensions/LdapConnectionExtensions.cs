@@ -3,7 +3,7 @@ using Multifactor.Core.Ldap.Connection;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
 
-internal static class ILdapConnectionExtensions
+internal static class LdapConnectionExtensions
 {
     public static SearchResultEntryCollection QueryDomains(this ILdapConnection connection,
         string dn,
