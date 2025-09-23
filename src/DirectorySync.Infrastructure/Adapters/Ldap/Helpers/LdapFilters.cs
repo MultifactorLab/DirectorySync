@@ -39,7 +39,7 @@ internal static class LdapFilters
         // NOT disabled: UAC flags does not contain UF_ACCOUNT_DISABLE
         // Active Directory only.
         LdapImplementation.ActiveDirectory or LdapImplementation.Samba or LdapImplementation.MultiDirectory  =>
-            $"(&({schema.ObjectClass}={schema.UserObjectClass})(memberof={groupDn})(!(userAccountControl:1.2.840.113556.1.4.803:=2))",
+            $"(&({schema.ObjectClass}={schema.UserObjectClass})(memberof={groupDn})(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
         
         _ => $"(&({schema.ObjectClass}={schema.UserObjectClass})(memberof={groupDn}))"
     };

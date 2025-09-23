@@ -233,7 +233,10 @@ internal sealed class LdapGroup : ILdapGroupPort
             ? schema.NamingContext.StringRepresentation
             : container.DistinguishedName;
         
-        var results = _ldapFinder.Find(filter, ["objectGuid"], namingContext, conn);
+        var searchScope = container.ObjectClass == schema.GroupObjectClass ?
+            SearchScope.Subtree : SearchScope.OneLevel;
+        
+        var results = _ldapFinder.Find(filter, ["objectGuid"], namingContext, conn, searchScope);
 
         foreach (var entry in results)
         {
