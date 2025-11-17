@@ -41,26 +41,6 @@ internal sealed class MultiDirectoryDomainDiscovery : IDomainDiscoveryStrategy
 
     public List<LdapDomain> FindForestTrusts(ILdapConnection connection, ILdapSchema schema)
     {
-        /*var entries = connection.QueryDomains($"{schema.NamingContext.StringRepresentation}",
-            $"({schema.ObjectClass}=*)",
-            SearchScope.Subtree,
-            []);
-            
-        var trustedDomains = new List<LdapDomain>();
-            
-        foreach (SearchResultEntry entry in entries)
-        {
-            var value = entry.GetAttributeValue("trustPartner");
-
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                trustedDomains.Add(new LdapDomain(value));
-            }
-        }
-            
-        var forestDomains = FindForestDomains(connection, schema);
-
-        return trustedDomains.Except(forestDomains).ToList();*/
         return [];
     }
 }
