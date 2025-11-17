@@ -1,7 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
-using System.DirectoryServices.Protocols;
 using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Infrastructure.Adapters.Ldap.Abstractions;
+using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.DomainDiscoveryStrategies;
 using Microsoft.Extensions.Logging;
 using Multifactor.Core.Ldap.Connection;
 using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
@@ -13,7 +14,7 @@ internal sealed class LdapDomainDiscovery
 {
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly ILogger<LdapDomainDiscovery> _logger;
-
+    
     private readonly ConcurrentDictionary<string, ReadOnlyCollection<LdapDomain>> _forestDomainsCache = new();
     private readonly ConcurrentDictionary<string, ReadOnlyCollection<LdapDomain>> _trustedDomainsCache = new();
     
@@ -24,6 +25,12 @@ internal sealed class LdapDomainDiscovery
         _logger = logger;
     }
 
+    /// <summary>
+    /// Get the root domain and its child domains (trustType=Parent-Child)
+    /// </summary>
+    /// <param name="options"></param>
+    /// <param name="schema"></param>
+    /// <returns></returns>
     public ReadOnlyCollection<LdapDomain> GetForestDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -33,7 +40,7 @@ internal sealed class LdapDomainDiscovery
 
         if (_forestDomainsCache.TryGetValue(cacheKey, out var cachedDomains))
         {
-            _logger.LogInformation("Forest domains  for {Key} founded in cache.", cacheKey);
+            _logger.LogInformation("Forest domains for {Key} founded in cache.", cacheKey);
             return cachedDomains;
         }
         
@@ -41,17 +48,8 @@ internal sealed class LdapDomainDiscovery
 
         using var connection = _connectionFactory.CreateConnection(options);
         
-        var forestDomains = QueryDomains(connection, 
-            $"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}", 
-            "(objectClass=crossRef)",
-            SearchScope.OneLevel, 
-            "dnsRoot", entry =>
-        {
-            var systemFlags = GetAttributeInt(entry, "systemFlags");
-            return (systemFlags & 0x2) == 0x2;
-        });
-        
-        forestDomains.RemoveAll(d => d.Equals(new LdapDomain(schema.NamingContext.StringRepresentation)));
+        var strategy = CreateStrategy(schema.LdapServerImplementation, _logger);
+        var forestDomains = strategy.FindForestDomains(connection, schema);
         
         var result = forestDomains.AsReadOnly();
         
@@ -61,7 +59,13 @@ internal sealed class LdapDomainDiscovery
         return forestDomains.AsReadOnly();
     }
 
-    public ReadOnlyCollection<LdapDomain> GetTrustedDomains(LdapConnectionOptions options, ILdapSchema schema)
+    /// <summary>
+    /// Get trusted domains with separate forests (trustType=Forest)
+    /// </summary>
+    /// <param name="options"></param>
+    /// <param name="schema"></param>
+    /// <returns></returns>
+    public ReadOnlyCollection<LdapDomain> GetForestTrusts(LdapConnectionOptions options, ILdapSchema schema)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(schema);
@@ -78,21 +82,10 @@ internal sealed class LdapDomainDiscovery
         
         using var connection = _connectionFactory.CreateConnection(options);
         
-        var trustedDomains = QueryDomains(connection, 
-            $"CN=System,{schema.NamingContext.StringRepresentation}", 
-            "(objectClass=trustedDomain)",
-            SearchScope.Subtree, 
-            "trustPartner");
-
-        var forestDomains = QueryDomains(connection, 
-            $"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}", 
-            "(objectClass=crossRef)",
-            SearchScope.OneLevel, 
-            "dnsRoot");
+        var strategy = CreateStrategy(schema.LdapServerImplementation, _logger);
+        var trustedDomains = strategy.FindForestTrusts(connection, schema);
         
-        var trustedOnly = trustedDomains.Except(forestDomains);
-        
-        var result = trustedOnly.ToList().AsReadOnly();
+        var result = trustedDomains.ToList().AsReadOnly();
 
         _trustedDomainsCache[cacheKey] = result;
 
@@ -100,52 +93,17 @@ internal sealed class LdapDomainDiscovery
 
         return result;
     }
-
-    private List<LdapDomain> QueryDomains(ILdapConnection connection,
-        string dn,
-        string filter,
-        SearchScope scope,
-        string attribute,
-        Func<SearchResultEntry, bool>? predicate = null)
-    {
-        var domains = new List<LdapDomain>();
-
-        var searchRequest = new SearchRequest(
-            dn,
-            filter,
-            scope,
-            attribute, "systemFlags" // include systemFlags if available for consistency
-        );
-
-        var response = (SearchResponse)connection.SendRequest(searchRequest);
-
-        foreach (SearchResultEntry entry in response.Entries)
+    
+    private static IDomainDiscoveryStrategy CreateStrategy(LdapImplementation ldapImplementation, ILogger logger) =>
+        ldapImplementation switch
         {
-            if (predicate != null && !predicate(entry))
-            {
-                continue;
-            }
-
-            var value = GetAttribute(entry, attribute);
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                domains.Add(new LdapDomain(value));
-            }
-        }
-
-        return domains;
-    }
-
-    private string? GetAttribute(SearchResultEntry entry, string attributeName)
-    {
-        return entry.Attributes.Contains(attributeName) ? entry.Attributes[attributeName][0].ToString() : null;
-    }
-
-    private int GetAttributeInt(SearchResultEntry entry, string attributeName)
-    {
-        var val = GetAttribute(entry, attributeName);
-        return val != null ? int.Parse(val) : 0;
-    }
+            LdapImplementation.ActiveDirectory => new ActiveDirectoryDomainDiscovery(logger),
+            LdapImplementation.Samba => new ActiveDirectoryDomainDiscovery(logger),
+            LdapImplementation.FreeIPA => new FreeIpaDomainDiscovery(logger),
+            LdapImplementation.OpenLDAP => new OpenLdapDomainDiscovery(logger),
+            LdapImplementation.MultiDirectory => new MultiDirectoryDomainDiscovery(logger),
+            _ => throw new NotSupportedException($"Unknown system type: {nameof(ldapImplementation)}")
+        };
     
     private static string GetCacheKey(string type, LdapConnectionOptions options, ILdapSchema schema)
     {

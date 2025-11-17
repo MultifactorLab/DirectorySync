@@ -1,10 +1,23 @@
-﻿using System.DirectoryServices.Protocols;
+using System.DirectoryServices.Protocols;
 using DirectorySync.Application.Models.ValueObjects;
 
-namespace DirectorySync.Infrastructure.Integrations.Ldap;
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
 
 internal static class SearchResultEntryExtensions
 {
+    public static string? GetAttributeValue(this SearchResultEntry entry, string attributeName)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        
+        if (!entry.Attributes.Contains(attributeName))
+        {
+            return null;
+        }
+
+        DirectoryAttribute attribute = entry.Attributes[attributeName];
+        return attribute.Count > 0 ? attribute[0].ToString() : null;
+    }
+    
     /// <summary>
     /// Returns a <see cref="LdapAttribute"/> with empty or single value.
     /// </summary>
@@ -22,7 +35,7 @@ internal static class SearchResultEntryExtensions
             throw new ArgumentException($"'{nameof(attr)}' cannot be null or whitespace.", nameof(attr));
         }
 
-        var value = entry.Attributes[attr]?[0]?.ToString();
+        var value = entry.Attributes[attr]?.GetValues(typeof(string)).FirstOrDefault()?.ToString();
         return new LdapAttribute(attr, value);
     }
 }

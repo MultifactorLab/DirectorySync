@@ -101,17 +101,16 @@ internal sealed class LdapGroup : ILdapGroupPort
             var domainSchema = _ldapSchemaLoader.Load(domainOptions);
 
             using var connection = _connectionFactory.CreateConnection(domainOptions);
-
-            try
+            foreach (var guid in guidSet)
             {
-                foreach (var guid in guidSet)
+                try
                 {
                     var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains);
                     if (group is null)
                     {
                         continue;
                     }
-                    
+                        
                     foundGroups.Add(group);
                     _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
 
@@ -123,12 +122,12 @@ internal sealed class LdapGroup : ILdapGroupPort
                     _logger.LogDebug("All requested groups found. Ending search.");
                     return (foundGroups, searchDomains.ToList());
                 }
-            }
-            catch (LdapException ex)
-            {
-                _logger.LogDebug("Ldap exception occured while searching in {Domain}. Status: {Status}.",
-                    domain,
-                    ex.ErrorCode);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception occured while searching group {GroupGuid} in {Domain}.",
+                        guid, 
+                        domain);
+                }
             }
         }
 
@@ -142,13 +141,13 @@ internal sealed class LdapGroup : ILdapGroupPort
         ILdapSchema schema,
         HashSet<LdapDomain> domainsToSearch)
     {
-        var groupDn = FindGroupDn(objectGuid, connection, schema);
-        if (groupDn is null)
+        var group = FindContainer(objectGuid, connection, schema);
+        if (group is null)
         {
             return null;
         }
         
-        var members = GetMembersCrossDomain(groupDn,
+        var members = GetMembersCrossDomain(group,
             mainLdapConnectionString,
             domain,
             connection,
@@ -158,34 +157,43 @@ internal sealed class LdapGroup : ILdapGroupPort
         return GroupModel.Create(objectGuid, members);
     }
 
-    private string? FindGroupDn(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema)
+    private LdapContainerEntry? FindContainer(DirectoryGuid guid, ILdapConnection conn, ILdapSchema schema)
     {
-        var filter = LdapFilters.FindGroupByGuid(guid, schema);
+        var filter = LdapFilters.FindContainerByGuid(guid, schema);
 
         var result = _ldapFinder.Find(filter,
-            [schema.Dn],
+            [schema.ObjectClass],
             schema.NamingContext.StringRepresentation,
             conn);
         
-        return result.FirstOrDefault()?.DistinguishedName;
+        var entry = result.FirstOrDefault();
+        
+        if (entry is null)
+        {
+            return null;
+        }
+
+        var objectClass = entry.Attributes[schema.ObjectClass].GetValues(typeof(string)).LastOrDefault()?.ToString();
+
+        return new LdapContainerEntry(entry.DistinguishedName, objectClass ?? schema.GroupObjectClass);
     }
 
-    private IEnumerable<DirectoryGuid> GetMembersCrossDomain(string groupDn,
+    private IEnumerable<DirectoryGuid> GetMembersCrossDomain(LdapContainerEntry container,
         LdapConnectionString initialConnectionString,
         LdapDomain initialDomain,
         ILdapConnection initialConn,
         ILdapSchema initialSchema,
         HashSet<LdapDomain> domainsToSearch)
     {
-        var visitedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { groupDn };
-        var queue = new Queue<(string GroupDn, LdapDomain Domain, ILdapConnection Conn, ILdapSchema Schema)>();
-        queue.Enqueue((groupDn, initialDomain, initialConn, initialSchema));
+        var visitedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { container.DistinguishedName };
+        var queue = new Queue<(LdapContainerEntry Group, LdapDomain Domain, ILdapConnection Conn, ILdapSchema Schema)>();
+        queue.Enqueue((container, initialDomain, initialConn, initialSchema));
 
         while (queue.Count > 0)
         {
             var (currentGroupDn, currentDomain, conn, schema) = queue.Dequeue();
-
-            var members = GetGroupMembers(currentGroupDn, conn, schema).ToArray();
+            
+            var members = GetContainerUsers(currentGroupDn, conn, schema).ToArray();
 
             if (members.Length > 0)
             {
@@ -197,14 +205,15 @@ internal sealed class LdapGroup : ILdapGroupPort
                 yield return userGuid;
             }
 
-            foreach (var nestedGroupDn in GetNestedGroups(currentGroupDn, conn, schema))
+            foreach (var nestedGroupDn in GetNestedContainers(currentGroupDn, conn, schema))
             {
-                if (!visitedGroups.Add(nestedGroupDn))
+                if (!visitedGroups.Add(nestedGroupDn.DistinguishedName))
                 {
                     continue;
                 }
+                
+                var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn.DistinguishedName);
 
-                var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn);
                 var domainOptions = GetDomainConnectionOptions(initialConnectionString, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
                 var domainSchema = _ldapSchemaLoader.Load(domainOptions);
                 var domainConn = _connectionFactory.CreateConnection(domainOptions);
@@ -214,10 +223,20 @@ internal sealed class LdapGroup : ILdapGroupPort
         }
     }
 
-    private IEnumerable<DirectoryGuid> GetGroupMembers(string groupDn, ILdapConnection conn, ILdapSchema schema)
+    private IEnumerable<DirectoryGuid> GetContainerUsers(LdapContainerEntry container, ILdapConnection conn, ILdapSchema schema)
     {
-        var filter = LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn, schema);
-        var results = _ldapFinder.Find(filter, ["objectGuid"], schema.NamingContext.StringRepresentation, conn);
+        var filter = container.ObjectClass == schema.GroupObjectClass ? 
+            LdapFilters.FindEnabledGroupMembersByGroupDn(container.DistinguishedName, schema)
+            : LdapFilters.FindEnabledUsersInOu(schema);
+
+        var namingContext = container.ObjectClass == schema.GroupObjectClass
+            ? schema.NamingContext.StringRepresentation
+            : container.DistinguishedName;
+        
+        var searchScope = container.ObjectClass == schema.GroupObjectClass ?
+            SearchScope.Subtree : SearchScope.OneLevel;
+        
+        var results = _ldapFinder.Find(filter, ["objectGuid"], namingContext, conn, searchScope);
 
         foreach (var entry in results)
         {
@@ -225,21 +244,40 @@ internal sealed class LdapGroup : ILdapGroupPort
         }
     }
 
-    private IEnumerable<string> GetNestedGroups(string groupDn, ILdapConnection conn, ILdapSchema schema)
+    private IEnumerable<LdapContainerEntry> GetNestedContainers(LdapContainerEntry container, ILdapConnection conn, ILdapSchema schema)
     {
-        var filter = LdapFilters.FindGroupByDn(groupDn, schema);
-        var results = _ldapFinder.Find(filter, ["member"], schema.NamingContext.StringRepresentation, conn);
+        if (container.ObjectClass == schema.GroupObjectClass)
+        {
+            var filter = LdapFilters.FindGroupByDn(container.DistinguishedName, schema);
+            var results = _ldapFinder.Find(filter, ["member"], schema.NamingContext.StringRepresentation, conn);
 
-        var memberDns = results
-            .SelectMany(e => e.Attributes["member"]?.GetValues(typeof(string)).Cast<string>() ?? Enumerable.Empty<string>())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var memberDns = results
+                .SelectMany(e => e.Attributes["member"]?.GetValues(typeof(string)).Cast<string>() ?? Enumerable.Empty<string>())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var userDns = results.SelectMany(e =>
-            _ldapFinder.Find(LdapFilters.FindEnabledGroupMembersByGroupDn(groupDn, schema), ["distinguishedName"], schema.NamingContext.StringRepresentation, conn)
-            .Select(u => u.DistinguishedName)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var userDns = results.SelectMany(e =>
+                _ldapFinder.Find(LdapFilters.FindGroupMembersByGroupDn(container.DistinguishedName, schema), ["distinguishedName"], schema.NamingContext.StringRepresentation, conn)
+                    .Select(u => u.DistinguishedName)).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        memberDns.ExceptWith(userDns);
-        return memberDns;
+            memberDns.ExceptWith(userDns);
+            return memberDns.Select(c => new LdapContainerEntry(c, schema.GroupObjectClass));
+        }
+        if (container.ObjectClass == schema.OrganizationalUnitObjectClass)
+        {
+            var filter = LdapFilters.FindOuNestContainers(schema);
+            return _ldapFinder.Find(
+                filter,
+                ["objectClass"],
+                container.DistinguishedName,
+                conn,
+                SearchScope.OneLevel)
+                .Select(e => new LdapContainerEntry(
+                    e.DistinguishedName,
+                    e.Attributes["objectClass"].GetValues(typeof(string)).LastOrDefault()?.ToString() ?? string.Empty
+                ));
+        }
+
+        return Enumerable.Empty<LdapContainerEntry>();
     }
 
     private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
@@ -256,7 +294,7 @@ internal sealed class LdapGroup : ILdapGroupPort
     private IEnumerable<LdapDomain> GetAllDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
         var domains = _ldapDomainDiscovery.GetForestDomains(options, schema).ToList();
-        foreach (var trustedDomain in _ldapDomainDiscovery.GetTrustedDomains(options, schema))
+        foreach (var trustedDomain in _ldapDomainDiscovery.GetForestTrusts(options, schema))
         {
             try
             {

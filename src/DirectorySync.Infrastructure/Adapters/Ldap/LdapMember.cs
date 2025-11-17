@@ -7,6 +7,7 @@ using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.NameResolving;
+using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
 using Microsoft.Extensions.Logging;

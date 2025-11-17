@@ -1,0 +1,65 @@
+using System.DirectoryServices.Protocols;
+using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Infrastructure.Adapters.Ldap.Abstractions;
+using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
+using Microsoft.Extensions.Logging;
+using Multifactor.Core.Ldap.Connection;
+using Multifactor.Core.Ldap.Schema;
+
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.DomainDiscoveryStrategies;
+
+internal sealed class ActiveDirectoryDomainDiscovery : IDomainDiscoveryStrategy
+{
+    private readonly ILogger _logger;
+
+    public ActiveDirectoryDomainDiscovery(ILogger logger)
+    {
+        _logger = logger;
+    }
+    
+    public List<LdapDomain> FindForestDomains(ILdapConnection connection, ILdapSchema schema)
+    {
+        var entries = connection.QueryDomains($"CN=Partitions,CN=Configuration,{schema.NamingContext.StringRepresentation}",
+            $"(&({schema.ObjectClass}=crossRef)(systemFlags=3)(nCName=*))",
+            SearchScope.OneLevel,
+            ["dnsRoot"]);
+        
+        var forestDomains = new List<LdapDomain>();
+        
+        foreach (SearchResultEntry entry in entries)
+        {
+            var value = entry.GetAttributeValue("dnsRoot");
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                forestDomains.Add(new LdapDomain(value));
+            }
+        }
+        
+        return forestDomains;
+    }
+
+    public List<LdapDomain> FindForestTrusts(ILdapConnection connection, ILdapSchema schema)
+    {
+        var entries = connection.QueryDomains($"CN=System,{schema.NamingContext.StringRepresentation}",
+            $"({schema.ObjectClass}=trustedDomain)",
+            SearchScope.OneLevel,
+            []);
+        
+        var trustedDomains = new List<LdapDomain>();
+        
+        foreach (SearchResultEntry entry in entries)
+        {
+            var value = entry.GetAttributeValue("trustPartner");
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                trustedDomains.Add(new LdapDomain(value));
+            }
+        }
+        
+        var forestDomains = FindForestDomains(connection, schema);
+
+        return trustedDomains.Except(forestDomains).ToList();
+    }
+}
