@@ -114,7 +114,19 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
             if (cached.AttributesHash != referenceMember.AttributesHash)
             {
                 cached.SetProperties(referenceMember.Properties, referenceMember.AttributesHash);
-                cached.MarkForUpdate();
+
+                if (cached.Identity != referenceMember.Identity)
+                {
+                    _logger.LogInformation(ApplicationEvent.UserLoginChanged,
+                        "User login change detected: {OldLogin} -> {NewLogin}",
+                        cached.Identity, referenceMember.Identity);
+                    cached.MarkForIdentityUpdate(referenceMember.Identity);
+                }
+                else
+                {
+                    cached.MarkForUpdate();
+                }
+
                 changed.Add(cached);
             }
         }

@@ -17,6 +17,7 @@ internal class UpdateUsersRequest
         ArgumentNullException.ThrowIfNull(domainModels);
 
         return new UpdateUsersRequest(domainModels.Select(x => new ModifiedUserDto(x.Identity,
+            x.NewIdentity,
             x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
             x.AddedCloudGroups.ToArray(),
             x.RemovedCloudGroups.ToArray())));
@@ -27,12 +28,15 @@ internal class ModifiedUserDto
 {
     public string Identity { get; }
 
+    public string? NewIdentity { get; }
+
     public UserPropertyDto[] Properties { get; }
 
     public string[] SignUpGroupsToAdd { get; }
     public string[] SignUpGroupsToRemove { get; }
 
     public ModifiedUserDto(string identity,
+        string? newIdentity,
         IEnumerable<UserPropertyDto> properties,
         IEnumerable<string> signUpGroupsToAdd,
         IEnumerable<string> signUpGroupsToRemove)
@@ -45,6 +49,7 @@ internal class ModifiedUserDto
         ArgumentNullException.ThrowIfNull(properties);
 
         Identity = identity;
+        NewIdentity = newIdentity;
         Properties = properties.ToArray();
         SignUpGroupsToAdd = signUpGroupsToAdd.ToArray();
         SignUpGroupsToRemove = signUpGroupsToRemove.ToArray();

@@ -64,6 +64,16 @@ public class UserUpdater : IUserUpdater
             timer.Stop();
             
             timer = _codeTimer.Start("Update Cached Group: Modified Users");
+            foreach (var member in res)
+            {
+                if (member.NewIdentity is not null)
+                {
+                    _logger.LogInformation(ApplicationEvent.UserLoginChanged,
+                        "User updated (login changed): {OldLogin} to {NewLogin}",
+                        member.Identity, member.NewIdentity);
+                    member.ApplyIdentityChange();
+                }
+            }
             _memberDatabase.UpdateMany(res);
             timer.Stop();
             

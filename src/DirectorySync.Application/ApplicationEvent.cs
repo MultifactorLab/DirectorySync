@@ -16,6 +16,7 @@ public static class ApplicationEvent
     public const ushort UserSynchronizationServiceDisabled = 11101;
     public const ushort StartUserSynchronization = 11102;
     public const ushort CompleteUsersSynchronization = 11103;
+    public const ushort UserLoginChanged = 11104;
     public const ushort UserSynchronizationServiceError = 11150;
     public const ushort UserSynchronizationServiceStopping = 11999;
     
