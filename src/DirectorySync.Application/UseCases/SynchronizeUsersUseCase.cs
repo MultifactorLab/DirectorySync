@@ -23,7 +23,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
     private readonly IUserUpdater _userUpdater;
     private readonly ISyncSettingsOptions _syncSettingsOptions;
     private readonly CodeTimer _codeTimer;
-    private readonly ILogger<SynchronizeGroupsUseCase> _logger;
+    private readonly ILogger<SynchronizeUsersUseCase> _logger;
 
     public SynchronizeUsersUseCase(IMemberDatabase memberDatabase,
         IDirectoryDomainDatabase directoryDomainDatabase,
@@ -31,7 +31,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
         IUserUpdater userUpdater,
         ISyncSettingsOptions syncSettingsOptions,
         CodeTimer codeTimer,
-        ILogger<SynchronizeGroupsUseCase> logger)
+        ILogger<SynchronizeUsersUseCase> logger)
     {
         _memberDatabase = memberDatabase;
         _directoryDomainDatabase = directoryDomainDatabase;
@@ -66,7 +66,7 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
 
         if (searchDomains.Count == 0)
         {
-            _logger.LogDebug("Users in cache not found");
+            _logger.LogDebug("No search domains configured; skipping user synchronization");
             _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization");
             return;
         }
@@ -92,11 +92,14 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
             return;
         }
         
-        _logger.LogDebug("Found modified users: {@Modified}", modifiedMembers);
+        _logger.LogDebug("Modified users pending sync: {Count}", modifiedMembers.Count);
+        _logger.LogTrace("Modified users detail: {@Members}", modifiedMembers);
         
         var updatedMembers = await _userUpdater.UpdateManyAsync(modifiedMembers, cancellationToken);
         
-        _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization, "Complete users synchronization. Updated users: {Users:l}", updatedMembers.Select(c => c.Identity));
+        _logger.LogInformation(ApplicationEvent.CompleteUsersSynchronization,
+            "Complete users synchronization. Updated count: {Count}", updatedMembers.Count);
+        _logger.LogTrace("Updated identities: {Identities:l}", string.Join(",", updatedMembers.Select(c => c.Identity)));
     }
 
     private ReadOnlyCollection<MemberModel> ProcessMembersChanges(IEnumerable<MemberModel> cachedMembers,
@@ -118,8 +121,8 @@ public class SynchronizeUsersUseCase : ISynchronizeUsersUseCase
                 if (cached.Identity != referenceMember.Identity)
                 {
                     _logger.LogInformation(ApplicationEvent.UserLoginChanged,
-                        "User login change detected: {OldLogin} -> {NewLogin}",
-                        cached.Identity, referenceMember.Identity);
+                        "User login change detected: {OldLogin} -> {NewLogin} (externalObjectId: {ExternalObjectId})",
+                        cached.Identity, referenceMember.Identity, ExternalDirectoryObjectId.ToCanonicalString(cached.Id));
                     cached.MarkForIdentityUpdate(referenceMember.Identity);
                 }
                 else

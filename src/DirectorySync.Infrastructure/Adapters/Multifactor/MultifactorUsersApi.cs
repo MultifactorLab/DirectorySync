@@ -57,7 +57,8 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = CreateUsersRequest.FromDomainModels(newUsers);
         
-        _logger.LogDebug("Creating users. Payload:{@Users:l}", dto.NewUsers);
+        _logger.LogDebug("Creating {Count} user(s) via v2/ds/users", newUsers.Count);
+        _logger.LogTrace("Create users payload: {@Payload}", dto.NewUsers);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.PostAsync<CreateUsersResponse>("v2/ds/users", dto);
@@ -99,7 +100,8 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = UpdateUsersRequest.FromDomainModels(updUsers);
         
-        _logger.LogDebug("Updating users. Payload:{@Users:l}", dto.ModifiedUsers);
+        _logger.LogDebug("Updating {Count} user(s) via v2/ds/users", updUsers.Count);
+        _logger.LogTrace("Update users payload: {@Payload}", dto.ModifiedUsers);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.PutAsync<UpdateUsersResponse>("v2/ds/users", dto);
@@ -141,7 +143,8 @@ public class MultifactorUsersApi : IUserCloudPort
             
         var dto = DeleteUsersRequest.FromDomainModels(delUsers);
         
-        _logger.LogDebug("Deleating users. Payload:{Users:l}", dto.Identities);
+        _logger.LogDebug("Deleting {Count} user(s) via ds/users", delUsers.Count);
+        _logger.LogTrace("Delete users identities: {Identities:l}", dto.Identities);
         var client = _clientFactory.CreateClient(_clientName);
         var adapter = new HttpClientAdapter(client);
         var response = await adapter.DeleteAsync<DeleteUsersResponse>("ds/users", dto);

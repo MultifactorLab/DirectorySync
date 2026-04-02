@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
 
@@ -87,6 +88,7 @@ public class MemberModel : BaseModel
     {
         ArgumentNullException.ThrowIfNull(groupIds);
 
+        
         var duplicates  = _groupIds.Intersect(groupIds).ToArray();
         if (duplicates.Length != 0)
         {

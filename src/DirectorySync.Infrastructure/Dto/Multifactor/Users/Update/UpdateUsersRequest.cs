@@ -1,4 +1,5 @@
 using DirectorySync.Application.Models.Core;
+using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Infrastructure.Dto.Multifactor.Users.Update;
 
@@ -16,8 +17,10 @@ internal class UpdateUsersRequest
     {
         ArgumentNullException.ThrowIfNull(domainModels);
 
-        return new UpdateUsersRequest(domainModels.Select(x => new ModifiedUserDto(x.Identity,
-            x.NewIdentity,
+        return new UpdateUsersRequest(domainModels.Select(x => new ModifiedUserDto(
+            x.Identity.Value,
+            ExternalDirectoryObjectId.ToCanonicalString(x.Id),
+            x.NewIdentity?.Value,
             x.Properties.Select(p => new UserPropertyDto(p.Name, p.Value)),
             x.AddedCloudGroups.ToArray(),
             x.RemovedCloudGroups.ToArray())));
@@ -28,6 +31,8 @@ internal class ModifiedUserDto
 {
     public string Identity { get; }
 
+    public string ExternalObjectId { get; }
+
     public string? NewIdentity { get; }
 
     public UserPropertyDto[] Properties { get; }
@@ -36,6 +41,7 @@ internal class ModifiedUserDto
     public string[] SignUpGroupsToRemove { get; }
 
     public ModifiedUserDto(string identity,
+        string externalObjectId,
         string? newIdentity,
         IEnumerable<UserPropertyDto> properties,
         IEnumerable<string> signUpGroupsToAdd,
@@ -46,9 +52,15 @@ internal class ModifiedUserDto
             throw new ArgumentException($"'{nameof(identity)}' cannot be null or whitespace.", nameof(identity));
         }
 
+        if (string.IsNullOrWhiteSpace(externalObjectId))
+        {
+            throw new ArgumentException($"'{nameof(externalObjectId)}' cannot be null or whitespace.", nameof(externalObjectId));
+        }
+
         ArgumentNullException.ThrowIfNull(properties);
 
         Identity = identity;
+        ExternalObjectId = externalObjectId;
         NewIdentity = newIdentity;
         Properties = properties.ToArray();
         SignUpGroupsToAdd = signUpGroupsToAdd.ToArray();

@@ -22,7 +22,7 @@ public class SynchronizeUsersUseCaseTests
     private readonly Mock<IUserUpdater> _userUpdater = new();
     private readonly Mock<ISyncSettingsOptions> _syncSettingsOptions = new();
     private readonly CodeTimer _codeTimer;
-    private readonly Mock<ILogger<SynchronizeGroupsUseCase>> _logger = new();
+    private readonly Mock<ILogger<SynchronizeUsersUseCase>> _logger = new();
 
     private readonly SynchronizeUsersUseCase _useCase;
 
@@ -167,7 +167,7 @@ public class SynchronizeUsersUseCaseTests
         Assert.NotNull(capturedMember);
         Assert.Equal("ivanov", capturedMember!.Identity.Value);
         Assert.NotNull(capturedMember.NewIdentity);
-        Assert.Equal("petrov", capturedMember.NewIdentity!.Value););
+        Assert.Equal("petrov", capturedMember.NewIdentity!.Value);
     }
 
     [Fact]
