@@ -86,6 +86,8 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         var schema = _ldapSchemaLoader.Load(mainOptions);
 
+        var primaryDnsDomain = LdapNamingContextDnsDomain.FromNamingContext(schema.NamingContext.StringRepresentation);
+
         var domainsToSearch = GetAllDomains(mainOptions, schema).Distinct().ToArray();
 
         if (domainsToSearch.Length == 0)
@@ -105,7 +107,7 @@ internal sealed class LdapGroup : ILdapGroupPort
             {
                 try
                 {
-                    var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains);
+                    var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains, primaryDnsDomain);
                     if (group is null)
                     {
                         continue;
@@ -139,7 +141,8 @@ internal sealed class LdapGroup : ILdapGroupPort
         LdapDomain domain,
         ILdapConnection connection,
         ILdapSchema schema,
-        HashSet<LdapDomain> domainsToSearch)
+        HashSet<LdapDomain> domainsToSearch,
+        LdapDomain primaryDnsDomain)
     {
         var group = FindContainer(objectGuid, connection, schema);
         if (group is null)
@@ -152,7 +155,8 @@ internal sealed class LdapGroup : ILdapGroupPort
             domain,
             connection,
             schema,
-            domainsToSearch).ToList();
+            domainsToSearch,
+            primaryDnsDomain).ToList();
 
         return GroupModel.Create(objectGuid, members);
     }
@@ -183,7 +187,8 @@ internal sealed class LdapGroup : ILdapGroupPort
         LdapDomain initialDomain,
         ILdapConnection initialConn,
         ILdapSchema initialSchema,
-        HashSet<LdapDomain> domainsToSearch)
+        HashSet<LdapDomain> domainsToSearch,
+        LdapDomain primaryDnsDomain)
     {
         var visitedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { container.DistinguishedName };
         var queue = new Queue<(LdapContainerEntry Group, LdapDomain Domain, ILdapConnection Conn, ILdapSchema Schema)>();
@@ -213,6 +218,15 @@ internal sealed class LdapGroup : ILdapGroupPort
                 }
                 
                 var targetDomain = LdapDomainExtractor.GetDomainFromDn(nestedGroupDn.DistinguishedName);
+
+                if (!_ldapOptions.AllowCrossDomainConnections && !targetDomain.Equals(primaryDnsDomain))
+                {
+                    _logger.LogWarning(
+                        "Nested directory object in domain {TargetDomain} skipped: cross-domain LDAP connections are disabled (primary domain: {PrimaryDomain}).",
+                        targetDomain,
+                        primaryDnsDomain);
+                    continue;
+                }
 
                 var domainOptions = GetDomainConnectionOptions(initialConnectionString, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
                 var domainSchema = _ldapSchemaLoader.Load(domainOptions);
@@ -293,6 +307,13 @@ internal sealed class LdapGroup : ILdapGroupPort
 
     private IEnumerable<LdapDomain> GetAllDomains(LdapConnectionOptions options, ILdapSchema schema)
     {
+        if (!_ldapOptions.AllowCrossDomainConnections)
+        {
+            var primaryDnsDomain = LdapNamingContextDnsDomain.FromNamingContext(schema.NamingContext.StringRepresentation);
+            _logger.LogDebug("Cross-domain LDAP connections disabled; using primary directory domain {PrimaryDomain} only.", primaryDnsDomain);
+            return new[] { primaryDnsDomain };
+        }
+
         var domains = _ldapDomainDiscovery.GetForestDomains(options, schema).ToList();
         foreach (var trustedDomain in _ldapDomainDiscovery.GetForestTrusts(options, schema))
         {

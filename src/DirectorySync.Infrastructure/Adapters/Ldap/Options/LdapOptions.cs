@@ -17,5 +17,7 @@ namespace DirectorySync.Infrastructure.Adapters.Ldap.Options
         public int PageSize { get; set; } = 500;
 
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
+
+        public bool AllowCrossDomainConnections { get; set; } = true;
     }
 }
