@@ -43,6 +43,27 @@ public class MultifactorUsersApi : IUserCloudPort
         
         return identites.ToArray().AsReadOnly();
     }
+    
+    public async Task<ReadOnlyCollection<CloudUserModel>> GetUsersAsync(CancellationToken ct = default)
+    {
+        var client = _clientFactory.CreateClient(_clientName);
+        var adapter = new HttpClientAdapter(client);
+        var response = await adapter.GetAsync<GetUsersV2Response>("v2/ds/users");
+
+        if (response.IsSuccessStatusCode)
+        {
+            return GetUsersV2Response.ToDomainModels(response.Model);
+        }
+
+        _logger.LogWarning("v2/ds/users returned {StatusCode}, falling back to v1 identities", response.StatusCode);
+
+        var identities = await GetUsersIdentitiesAsync(ct);
+        var fallback = identities
+            .Select(id => new CloudUserModel(id))
+            .ToArray();
+
+        return fallback.AsReadOnly();
+    }
 
     public async Task<ReadOnlyCollection<MemberModel>> CreateManyAsync(IEnumerable<MemberModel> newMembers, CancellationToken ct = default)
     {
