@@ -176,6 +176,8 @@ public class InitialSynchronizeUsersUseCaseTests
         {
             new(oldIdentity, new DirectoryGuid(adMemberGuid))
         }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
 
         _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(cloudUsers);
@@ -184,11 +186,11 @@ public class InitialSynchronizeUsersUseCaseTests
             .Returns(Array.Empty<string>());
 
         var groupModel = GroupModel.Create(trackingGroupGuid, [new DirectoryGuid(adMemberGuid)]);
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
-            .Returns(new List<GroupModel> { groupModel }.AsReadOnly());
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), domainsToSearch.AsReadOnly()));
 
         var adMember = MemberModel.Create(adMemberGuid, newIdentity, []);
-        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
             .Returns(new List<MemberModel> { adMember }.AsReadOnly());
 
         // Act
@@ -212,6 +214,8 @@ public class InitialSynchronizeUsersUseCaseTests
         {
             new(removedIdentity, new DirectoryGuid(removedGuid))
         }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
 
         _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(cloudUsers);
@@ -220,12 +224,12 @@ public class InitialSynchronizeUsersUseCaseTests
             .Returns(Array.Empty<string>());
 
         var groupModel = GroupModel.Create(trackingGroupGuid, []);
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
-            .Returns(new List<GroupModel> { groupModel }.AsReadOnly());
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), domainsToSearch.AsReadOnly()));
 
         // AD has different member
         var otherMember = MemberModel.Create(Guid.NewGuid(), new Identity("other@example.com"), []);
-        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
             .Returns(new List<MemberModel> { otherMember }.AsReadOnly());
 
         // Act
@@ -248,6 +252,8 @@ public class InitialSynchronizeUsersUseCaseTests
         {
             new(new Identity("user@company.com"))
         }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
 
         _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(cloudUsers);
@@ -256,11 +262,11 @@ public class InitialSynchronizeUsersUseCaseTests
             .Returns(Array.Empty<string>());
 
         var groupModel = GroupModel.Create(trackingGroupGuid, []);
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
-            .Returns(new List<GroupModel> { groupModel }.AsReadOnly());
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), domainsToSearch.AsReadOnly()));
 
         var adMember = MemberModel.Create(Guid.NewGuid(), new Identity("COMPANY\\user"), []);
-        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
             .Returns(new List<MemberModel> { adMember }.AsReadOnly());
 
         // Act
@@ -282,6 +288,8 @@ public class InitialSynchronizeUsersUseCaseTests
         {
             new(identity)
         }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
 
         _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(cloudUsers);
@@ -290,11 +298,11 @@ public class InitialSynchronizeUsersUseCaseTests
             .Returns(Array.Empty<string>());
 
         var groupModel = GroupModel.Create(trackingGroupGuid, []);
-        _ldapGroupPortMock.Setup(x => x.GetByGuidAsync(It.IsAny<IEnumerable<DirectoryGuid>>()))
-            .Returns(new List<GroupModel> { groupModel }.AsReadOnly());
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(),  domainsToSearch.AsReadOnly()));
 
         var adMember = MemberModel.Create(Guid.NewGuid(), identity, []);
-        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
             .Returns(new List<MemberModel> { adMember }.AsReadOnly());
 
         // Act
