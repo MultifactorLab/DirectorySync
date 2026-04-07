@@ -9,8 +9,9 @@ namespace DirectorySync.Infrastructure.ConfigurationSources.Cloud;
 public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigurationProvider
 {
     private ISyncSettingsCloudPort? _settingsCloudPort;
+    private readonly Dictionary<string, int> _collectionLengths = new();
 
-    public void Init(ISyncSettingsCloudPort settingsCloudPort)
+    public void Init(ISyncSettingsCloudPort settingsCloudPort, ILogger logger)
     {
         _settingsCloudPort = settingsCloudPort;
         Load();
@@ -45,7 +46,7 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
 
         SetCollection("Sync:DirectoryGroupMappings", settings.DirectoryGroupMappings);
         SetCollection("Sync:TrackingGroups", settings.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
-        Data[$"Sync:IncludeNestedGroups"] = "True";
+        Data["Sync:IncludeNestedGroups"] = "True";
 
         Data["Sync:PropertyMapping:IdentityAttribute"] = settings.PropertyMapping.IdentityAttribute;
         Data["Sync:PropertyMapping:NameAttribute"] = settings.PropertyMapping.NameAttribute;
@@ -63,12 +64,20 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
     
     private void SetCollection(string key, string?[] elements)
     {
-        ResetCollection(key);
-        
         for (int index = 0; index < elements.Length; index++)
         {
             Data[$"{key}:{index}"] = elements[index];
         }
+
+        if (_collectionLengths.TryGetValue(key, out var previousLength) && previousLength > elements.Length)
+        {
+            for (var index = elements.Length; index < previousLength; index++)
+            {
+                Data[$"{key}:{index}"] = string.Empty;
+            }
+        }
+
+        _collectionLengths[key] = elements.Length;
     }
 
     private void SetCollection(string key, GroupMapping?[] elements)
@@ -79,6 +88,10 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         {
             var baseKey = $"{key}:{index}";
             var mapping = elements[index];
+            if (mapping is null)
+            {
+                continue;
+            }
 
             Data[$"{baseKey}:DirectoryGroup"] = mapping.DirectoryGroup;
 
