@@ -20,7 +20,7 @@ internal sealed class GetUsersV2Response
             .Select(u =>
             {
                 var identity = new Identity(u.Identity!);
-                DirectoryGuid? guid = TryParseGuid(u.ExternalObjectId);
+                DirectoryGuid? guid = ParseGuid(u.ExternalObjectId);
                 return new CloudUserModel(identity, guid);
             })
             .ToArray();
@@ -28,7 +28,7 @@ internal sealed class GetUsersV2Response
         return result.AsReadOnly();
     }
 
-    private static DirectoryGuid? TryParseGuid(string? raw)
+    private static DirectoryGuid? ParseGuid(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
         {

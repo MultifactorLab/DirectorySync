@@ -146,8 +146,7 @@ public class SynchronizeUsersUseCaseTests
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns(["cn"]);
         _memberDatabase.Setup(x => x.FindAll()).Returns(new[] { cached }.AsReadOnly());
         _directoryDomainDatabase.Setup(x => x.FindAll()).Returns(new[] { domain }.AsReadOnly());
-
-        // Same GUID, different identity — simulates samAccountName rename in AD
+        
         var reference = MemberModel.Create(memberId, new Identity("petrov"), []);
         reference.SetProperties([new MemberProperty("cn", "Ivan Petrov")], new AttributesHash("newHash"));
 
@@ -182,8 +181,7 @@ public class SynchronizeUsersUseCaseTests
         _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns(["cn"]);
         _memberDatabase.Setup(x => x.FindAll()).Returns(new[] { cached }.AsReadOnly());
         _directoryDomainDatabase.Setup(x => x.FindAll()).Returns(new[] { domain }.AsReadOnly());
-
-        // Same identity, only cn changed
+        
         var reference = MemberModel.Create(memberId, new Identity("user1"), []);
         reference.SetProperties([new MemberProperty("cn", "New Name")], new AttributesHash("newHash"));
 

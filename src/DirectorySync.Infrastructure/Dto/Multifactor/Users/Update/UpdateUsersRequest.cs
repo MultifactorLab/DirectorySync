@@ -47,16 +47,8 @@ internal class ModifiedUserDto
         IEnumerable<string> signUpGroupsToAdd,
         IEnumerable<string> signUpGroupsToRemove)
     {
-        if (string.IsNullOrWhiteSpace(identity))
-        {
-            throw new ArgumentException($"'{nameof(identity)}' cannot be null or whitespace.", nameof(identity));
-        }
-
-        if (string.IsNullOrWhiteSpace(externalObjectId))
-        {
-            throw new ArgumentException($"'{nameof(externalObjectId)}' cannot be null or whitespace.", nameof(externalObjectId));
-        }
-
+        ArgumentException.ThrowIfNullOrWhiteSpace(identity);
+        ArgumentException.ThrowIfNullOrWhiteSpace(externalObjectId);
         ArgumentNullException.ThrowIfNull(properties);
 
         Identity = identity;

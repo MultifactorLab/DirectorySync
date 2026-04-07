@@ -77,23 +77,22 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
 
     private ReadOnlyCollection<MemberModel> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
         string[] requiredAttributes)
-    {
-        var (referenceGroups, searchDomains) = _ldapGroupPort.GetByGuid(trackingGroups);
-       
-       if (referenceGroups.Count == 0)
-       {
+    { 
+        var (referenceGroups, searchDomains) = _ldapGroupPort.GetByGuid(trackingGroups); 
+        if (referenceGroups.Count == 0)
+        {
            _logger.LogWarning("No reference groups found for given tracking groups");
            return ReadOnlyCollection<MemberModel>.Empty;
-       }
-       
-       var members = new List<MemberModel>();
+        }
 
-       foreach (var referenceGroup in referenceGroups)
-       {
+        var members = new List<MemberModel>();
+
+        foreach (var referenceGroup in referenceGroups)
+        {
            members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes, searchDomains.ToArray()));
-       }
-       
-       return members.AsReadOnly();
+        }
+
+        return members.AsReadOnly();
     }
     
     private IEnumerable<Identity> GetDeletedCloudUsers(

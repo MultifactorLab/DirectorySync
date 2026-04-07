@@ -1,13 +1,10 @@
 namespace DirectorySync.Application.Models.ValueObjects;
 
 /// <summary>
-/// Неизменяемый идентификатор объекта в каталоге (например AD <c>objectGUID</c>), передаётся в облако для сопоставления записей при смене логина.
+/// An immutable identifier of an object in the catalog (for example, AD <c>objectGUID</c>) is transferred to the cloud for matching records when changing the username.
 /// </summary>
 public static class ExternalDirectoryObjectId
 {
-    /// <summary>
-    /// Каноническое строковое представление GUID для API (формат "D", нижний регистр не требуется — GUID стандартный).
-    /// </summary>
     public static string ToCanonicalString(DirectoryGuid directoryGuid)
     {
         ArgumentNullException.ThrowIfNull(directoryGuid);
