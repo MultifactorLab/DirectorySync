@@ -12,7 +12,7 @@ namespace DirectorySync.Application.UseCases;
 
 public interface IInitialSynchronizeUsersUseCase
 {
-    Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default);
+    Task ExecuteAsync(DirectoryGuid[] trackingGroupGuids, CancellationToken cancellationToken = default);
 }
 
 public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
@@ -42,9 +42,9 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
        _logger = logger;
     }
 
-    public async Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(DirectoryGuid[] trackingGroupGuids, CancellationToken cancellationToken = default)
     {
-       if (trackingGroupGuids.Count() == 0)
+       if (trackingGroupGuids.Length == 0)
        {
            _logger.LogDebug("No tracking groups provided, skipping synchronization");
            throw new InvalidOperationException("No tracking groups provided");
@@ -64,7 +64,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
        var requiredAttributes = _syncSettingsOptions.GetRequiredAttributeNames();
        _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
 
-       var adMembers = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes, cancellationToken);
+       var adMembers = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes);
 
        var toDelete = GetDeletedCloudUsers(cloudUsers, adMembers)
            .ToList()
@@ -76,8 +76,7 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
     } 
 
     private ReadOnlyCollection<MemberModel> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
-        string[] requiredAttributes,
-        CancellationToken cancellationToken = default)
+        string[] requiredAttributes)
     {
         var (referenceGroups, searchDomains) = _ldapGroupPort.GetByGuid(trackingGroups);
        

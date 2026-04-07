@@ -41,7 +41,7 @@ public class InitialSynchronizeUsersUseCaseTests
     {
         // Act + Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _useCase.ExecuteAsync(Enumerable.Empty<DirectoryGuid>()));
+            _useCase.ExecuteAsync([]));
     }
 
     [Fact]
