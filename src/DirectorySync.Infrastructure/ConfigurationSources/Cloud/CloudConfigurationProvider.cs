@@ -3,17 +3,21 @@ using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.ConfigurationProviders;
 using DirectorySync.Infrastructure.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace DirectorySync.Infrastructure.ConfigurationSources.Cloud;
 
 public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigurationProvider
 {
     private ISyncSettingsCloudPort? _settingsCloudPort;
+    private ILogger? _logger;
     private readonly Dictionary<string, int> _collectionLengths = new();
 
-    public void Init(ISyncSettingsCloudPort settingsCloudPort, ILogger logger)
+    public void Init(ISyncSettingsCloudPort settingsCloudPort,
+        ILogger logger)
     {
         _settingsCloudPort = settingsCloudPort;
+        _logger = logger;
         Load();
     }
     
@@ -67,6 +71,7 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         for (int index = 0; index < elements.Length; index++)
         {
             Data[$"{key}:{index}"] = elements[index];
+            _logger?.LogDebug("{0}:{1}:{2}", key, index, Data[$"{key}:{index}"]);
         }
 
         if (_collectionLengths.TryGetValue(key, out var previousLength) && previousLength > elements.Length)
@@ -119,7 +124,7 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
     
     private void ResetCollection(string prefix)
     {
-        var keysToRemove = Data.Keys.Where(k => k.StartsWith(prefix)).ToList();
+        var keysToRemove = Data.Keys.Where(k => k.StartsWith(prefix + ':')).ToList();
         foreach (var k in keysToRemove)
         {
             Data.Remove(k);

@@ -7,7 +7,7 @@ namespace DirectorySync.Infrastructure.Adapters.Options
     public class SyncSettingsOptions : ISyncSettingsOptions
     {
         private readonly object _locker = new();
-        private string[] _requiredLdapAttributes = [];
+        private IReadOnlyList<string> _requiredLdapAttributes = [];
         
         public SyncSettings? Current => _monitor.CurrentValue;
         private readonly IOptionsMonitor<SyncSettings?> _monitor;
@@ -29,7 +29,7 @@ namespace DirectorySync.Infrastructure.Adapters.Options
         {
             lock (_locker)
             {
-                return _requiredLdapAttributes;
+                return _requiredLdapAttributes.ToArray();
             }
         }
         

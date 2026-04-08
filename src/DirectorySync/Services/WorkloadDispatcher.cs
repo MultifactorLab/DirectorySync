@@ -231,7 +231,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
                 _logger.LogWarning("No cloud settings provider configured");
             }
             
-            provider.Init(_syncSettingsCloudPort);
+            provider.Init(_syncSettingsCloudPort, _logger);
             
             await _synchronizeCloudSettings.ExecuteAsync(true, provider, _cts.Token);
         }
