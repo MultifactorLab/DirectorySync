@@ -37,7 +37,6 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         {
             CloudInteractionLogger.Error(ex, "Failed to refresh settings from Multifactor Cloud. Local Directory Sync service settings may be out of date.");
         }
-        
     }
 
     private void SetData(SyncSettings settings)
@@ -104,21 +103,6 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
             {
                 Data[$"{baseKey}:SignUpGroups:{signUpIndex}"] = mapping.SignUpGroups[signUpIndex];
             }
-        }
-    }
-
-    private void RemoveTheRestArrayItems(string key, int startIndex)
-    {
-        while (true)
-        {
-            var k = $"{key}:{startIndex}";
-            if (!Data.TryGetValue(k, out var _))
-            {
-                return;
-            }
-
-            Data.Remove(k);
-            startIndex++;
         }
     }
     
