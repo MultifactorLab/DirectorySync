@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using DirectorySync.Application.Models.Core;
+using DirectorySync.Infrastructure.Adapters.Helpers;
 
 namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
 {
@@ -22,8 +23,8 @@ namespace DirectorySync.Infrastructure.Dto.Multifactor.SyncSettings
             {
                 IdentityAttribute = dto.IdentityAttribute,
                 NameAttribute = dto.NameAttribute,
-                EmailAttributes = dto.EmailAttributes,
-                PhoneAttributes = dto.PhoneAttributes,
+                EmailAttributes = LdapAttributeMappingNormalizer.NormalizeOrdered(dto.EmailAttributes),
+                PhoneAttributes = LdapAttributeMappingNormalizer.NormalizeOrdered(dto.PhoneAttributes),
             };
         }
     }

@@ -11,7 +11,6 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
 {
     private ISyncSettingsCloudPort? _settingsCloudPort;
     private ILogger? _logger;
-    private readonly Dictionary<string, int> _collectionLengths = new();
 
     public void Init(ISyncSettingsCloudPort settingsCloudPort,
         ILogger logger)
@@ -67,21 +66,13 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
     
     private void SetCollection(string key, string?[] elements)
     {
+        ResetCollection(key);
+        
         for (int index = 0; index < elements.Length; index++)
         {
             Data[$"{key}:{index}"] = elements[index];
             _logger?.LogDebug("{0}:{1}:{2}", key, index, Data[$"{key}:{index}"]);
         }
-
-        if (_collectionLengths.TryGetValue(key, out var previousLength) && previousLength > elements.Length)
-        {
-            for (var index = elements.Length; index < previousLength; index++)
-            {
-                Data[$"{key}:{index}"] = string.Empty;
-            }
-        }
-
-        _collectionLengths[key] = elements.Length;
     }
 
     private void SetCollection(string key, GroupMapping?[] elements)

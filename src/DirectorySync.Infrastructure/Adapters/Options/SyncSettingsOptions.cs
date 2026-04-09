@@ -1,5 +1,6 @@
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Ports.Options;
+using DirectorySync.Infrastructure.Adapters.Helpers;
 using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Infrastructure.Adapters.Options
@@ -42,12 +43,12 @@ namespace DirectorySync.Infrastructure.Adapters.Options
                 yield return options.NameAttribute;
             }
 
-            foreach (var emailAttrName in options.EmailAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
+            foreach (var emailAttrName in LdapAttributeMappingNormalizer.NormalizeOrdered(options.EmailAttributes))
             {
                 yield return emailAttrName;
             }
 
-            foreach (var phoneAttrName in options.PhoneAttributes.Where(x => !string.IsNullOrWhiteSpace(x)))
+            foreach (var phoneAttrName in LdapAttributeMappingNormalizer.NormalizeOrdered(options.PhoneAttributes))
             {
                 yield return phoneAttrName;
             }

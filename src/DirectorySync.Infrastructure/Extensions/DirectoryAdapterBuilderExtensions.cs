@@ -5,6 +5,7 @@ using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
 using Multifactor.Core.Ldap.Schema;
 
@@ -26,7 +27,8 @@ public static class DirectoryAdapterBuilderExtensions
         
         builder.Services.AddOptions<LdapAttributeMappingOptions>()
             .BindConfiguration("Sync:PropertyMapping")
-        .ValidateDataAnnotations();
+            .ValidateDataAnnotations();
+        builder.Services.AddSingleton<IPostConfigureOptions<LdapAttributeMappingOptions>, LdapAttributeMappingPostConfigure>();
 
         builder.Services.AddSingleton(_ => LdapConnectionFactory.Create());
 
