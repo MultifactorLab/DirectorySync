@@ -10,13 +10,10 @@ namespace DirectorySync.Infrastructure.ConfigurationSources.Cloud;
 public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigurationProvider
 {
     private ISyncSettingsCloudPort? _settingsCloudPort;
-    private ILogger? _logger;
 
-    public void Init(ISyncSettingsCloudPort settingsCloudPort,
-        ILogger logger)
+    public void Init(ISyncSettingsCloudPort settingsCloudPort)
     {
         _settingsCloudPort = settingsCloudPort;
-        _logger = logger;
         Load();
     }
     
@@ -29,80 +26,127 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         
         try
         {
-            var data = _settingsCloudPort.GetConfigAsync().GetAwaiter().GetResult();
-            SetData(data);
+            var data = _settingsCloudPort
+                .GetConfigAsync()
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            Data = BuildData(data);
+            
+            OnReload();
         }
         catch (Exception ex)
         {
             CloudInteractionLogger.Error(ex, "Failed to refresh settings from Multifactor Cloud. Local Directory Sync service settings may be out of date.");
         }
     }
-
-    private void SetData(SyncSettings settings)
-    {
-        Data["Sync:Enabled"] = settings.Enabled.ToString();
-        Data["Sync:SyncTimer"] = settings.SyncTimer.ToString();
-        Data["Sync:ScanTimer"] = settings.ScanTimer.ToString();
-        Data["Sync:CloudConfigRefreshTimer"] = settings.CloudConfigRefreshTimer.ToString();
-        
-
-        SetCollection("Sync:DirectoryGroupMappings", settings.DirectoryGroupMappings);
-        SetCollection("Sync:TrackingGroups", settings.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
-        Data["Sync:IncludeNestedGroups"] = "True";
-
-        Data["Sync:PropertyMapping:IdentityAttribute"] = settings.PropertyMapping.IdentityAttribute;
-        Data["Sync:PropertyMapping:NameAttribute"] = settings.PropertyMapping.NameAttribute;
-
-        Data["Sync:SendEnrollmentLink"] = settings.SendEnrollmentLink.ToString();
-        Data["Sync:EnrollmentLinkTtl"] = settings.EnrollmentLinkTtl.ToString();
-
-        SetCollection("Sync:PropertyMapping:EmailAttributes", settings.PropertyMapping.EmailAttributes);
-        SetCollection("Sync:PropertyMapping:PhoneAttributes", settings.PropertyMapping.PhoneAttributes);
-
-        Data["Ldap:Timeout"] = settings.TimeoutAd.ToString();
-        
-        OnReload();
-    }
     
-    private void SetCollection(string key, string?[] elements)
+    private static IDictionary<string, string?> BuildData(SyncSettings settings)
     {
-        ResetCollection(key);
+        var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        SetScalar(data, "Sync:Enabled", settings.Enabled);
+        SetScalar(data, "Sync:SyncTimer", settings.ScanTimer);
+        SetScalar(data, "Sync:ScanTimer", settings.ScanTimer);
+        SetScalar(data, "Ldap:CloudConfigRefreshTimer", settings.CloudConfigRefreshTimer);
         
-        for (int index = 0; index < elements.Length; index++)
+        SetGroupMappings(data,"Sync:DirectoryGroupMappings", settings.DirectoryGroupMappings);
+        SetArray(data,"Sync:TrackingGroups", settings.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
+        SetScalar(data, "Sync:IncludeNestedGroups", "True");
+        
+        SetScalar(data, "Sync:PropertyMapping:IdentityAttribute", settings.PropertyMapping.IdentityAttribute);
+        SetScalar(data, "Sync:PropertyMapping:NameAttribute", settings.PropertyMapping.NameAttribute);
+        
+        SetScalar(data, "Sync:SendEnrollmentLink", settings.SendEnrollmentLink);
+        SetScalar(data, "Sync:EnrollmentLinkTtl", settings.EnrollmentLinkTtl);
+        
+        SetArray(data, "Sync:PropertyMapping:EmailAttributes", NormalizeOrdered(settings.PropertyMapping.EmailAttributes));
+
+        SetArray(data, "Sync:PropertyMapping:PhoneAttributes", NormalizeOrdered(settings.PropertyMapping.PhoneAttributes));
+
+        SetScalar(data, "Ldap:Timeout", settings.TimeoutAd);
+
+        return data;
+    }
+
+    private static void SetScalar(IDictionary<string, string?> data, string key, object? value)
+    {
+        if (value is not null)
         {
-            Data[$"{key}:{index}"] = elements[index];
-            _logger?.LogDebug("{0}:{1}:{2}", key, index, Data[$"{key}:{index}"]);
+            data[key] = value.ToString();
         }
     }
-
-    private void SetCollection(string key, GroupMapping?[] elements)
+    
+    private static void SetArray(
+        IDictionary<string, string?> data,
+        string key,
+        IReadOnlyList<string> elements)
     {
-        ResetCollection(key);
-        
-        for (int index = 0; index < elements.Length; index++)
+        for (int i = 0; i < elements.Count; i++)
         {
-            var baseKey = $"{key}:{index}";
-            var mapping = elements[index];
-            if (mapping is null)
+            data[$"{key}:{i}"] = elements[i];
+        }
+    }
+    
+    private static void SetGroupMappings(
+        IDictionary<string, string?> data,
+        string key,
+        GroupMapping?[]? mappings)
+    {
+        if (mappings is null)
+        {
+            return;
+        }
+
+        var normalized = mappings
+            .Where(m => m is not null)
+            .Select(m => new
+            {
+                m!.DirectoryGroup,
+                SignUpGroups = NormalizeOrdered(m.SignUpGroups)
+            })
+            .ToArray();
+
+        for (int i = 0; i < normalized.Length; i++)
+        {
+            var baseKey = $"{key}:{i}";
+            var m = normalized[i];
+
+            data[$"{baseKey}:DirectoryGroup"] = m.DirectoryGroup;
+
+            for (int j = 0; j < m.SignUpGroups.Count; j++)
+            {
+                data[$"{baseKey}:SignUpGroups:{j}"] = m.SignUpGroups[j];
+            }
+        }
+    }
+    
+    private static IReadOnlyList<string> NormalizeOrdered(IEnumerable<string?>? source)
+    {
+        if (source is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var result = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var raw in source)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
             {
                 continue;
             }
 
-            Data[$"{baseKey}:DirectoryGroup"] = mapping.DirectoryGroup;
+            var trimmed = raw.Trim();
 
-            for (int signUpIndex = 0; signUpIndex < mapping.SignUpGroups.Length; signUpIndex++)
+            if (seen.Add(trimmed))
             {
-                Data[$"{baseKey}:SignUpGroups:{signUpIndex}"] = mapping.SignUpGroups[signUpIndex];
+                result.Add(trimmed);
             }
         }
-    }
-    
-    private void ResetCollection(string prefix)
-    {
-        var keysToRemove = Data.Keys.Where(k => k.StartsWith(prefix + ':')).ToList();
-        foreach (var k in keysToRemove)
-        {
-            Data.Remove(k);
-        }
+
+        return result;
     }
 }
