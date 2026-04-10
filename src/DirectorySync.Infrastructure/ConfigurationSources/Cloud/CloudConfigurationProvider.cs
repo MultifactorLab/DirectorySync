@@ -49,7 +49,7 @@ public class CloudConfigurationProvider : ConfigurationProvider, ICloudConfigura
         SetScalar(data, "Sync:Enabled", settings.Enabled);
         SetScalar(data, "Sync:SyncTimer", settings.ScanTimer);
         SetScalar(data, "Sync:ScanTimer", settings.ScanTimer);
-        SetScalar(data, "Ldap:CloudConfigRefreshTimer", settings.CloudConfigRefreshTimer);
+        SetScalar(data, "Sync:CloudConfigRefreshTimer", settings.CloudConfigRefreshTimer);
         
         SetGroupMappings(data,"Sync:DirectoryGroupMappings", settings.DirectoryGroupMappings);
         SetArray(data,"Sync:TrackingGroups", settings.DirectoryGroupMappings.Select(c => c.DirectoryGroup).ToArray());
