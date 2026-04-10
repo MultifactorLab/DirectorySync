@@ -1,4 +1,3 @@
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Infrastructure.Adapters.Helpers;
 using Microsoft.Extensions.Options;
 

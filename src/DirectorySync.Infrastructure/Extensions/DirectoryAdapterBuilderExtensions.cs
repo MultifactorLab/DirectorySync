@@ -1,4 +1,3 @@
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;

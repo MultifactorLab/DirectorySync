@@ -1,4 +1,4 @@
-namespace DirectorySync.Application.Models.Options;
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Options;
 
 public class LdapAttributeMappingOptions
 {
