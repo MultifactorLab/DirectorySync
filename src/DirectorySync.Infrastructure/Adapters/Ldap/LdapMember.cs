@@ -61,10 +61,35 @@ internal sealed class LdapMember : ILdapMemberPort
         _logger.LogDebug("Fetching members for {Count} GUID(s)", guidList.Count);
 
         var mainLdapConnectionString = new LdapConnectionString(_ldapOptions.Path);
-        
+        var mainOptions = new LdapConnectionOptions(mainLdapConnectionString,
+            AuthType.Basic,
+            _ldapOptions.Username,
+            _ldapOptions.Password,
+            _ldapOptions.Timeout);
+        var distinctDomains = domainsToSearch.Distinct().ToArray();
+
+        if (!_ldapOptions.AllowCrossDomainConnections)
+        {
+            var mainSchema = _ldapSchemaLoader.Load(mainOptions);
+            var primaryDnsDomain = LdapNamingContextDnsDomain.FromNamingContext(mainSchema.NamingContext.StringRepresentation);
+            var filtered = distinctDomains.Where(d => d.Equals(primaryDnsDomain)).ToArray();
+            if (filtered.Length == 0)
+            {
+                _logger.LogWarning(
+                    "Cross-domain LDAP connections disabled: requested domain(s) {RequestedDomains} do not match primary directory domain {PrimaryDomain}. Only the primary domain will be queried.",
+                    string.Join(", ", distinctDomains.Select(d => d.Value)),
+                    primaryDnsDomain.Value);
+                distinctDomains = new[] { primaryDnsDomain };
+            }
+            else
+            {
+                distinctDomains = filtered;
+            }
+        }
+
         var models = new List<MemberModel>();
 
-        foreach (var domain in domainsToSearch.Distinct())
+        foreach (var domain in distinctDomains)
         {
             if (guidList.Count == 0)
             {

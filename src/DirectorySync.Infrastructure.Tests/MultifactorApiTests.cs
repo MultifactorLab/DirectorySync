@@ -488,6 +488,93 @@ public class MultifactorApiTests
         }
     }
 
+    public class GetUsers
+    {
+        [Theory]
+        [InlineData(400)]
+        [InlineData(404)]
+        [InlineData(500)]
+        public async Task UnsuccessfulV2StatusCode_ShouldFallbackToV1AndReturnModels(int statusCode)
+        {
+            // Arrange
+            var v1Body = new { Identities = new[] { "user1@example.com", "user2@example.com" } };
+            var mocker = new AutoMocker();
+            mocker.GetMock<IHttpClientFactory>()
+                .Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(FakeMultifactorCloud.ClientMock.Get_UsersV2_FallbackToV1(
+                    v1ResponseBody: v1Body,
+                    v2StatusCode: (HttpStatusCode)statusCode));
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+
+            // Act
+            var result = await api.GetUsersAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.All(result, u => Assert.Null(u.ExternalObjectId));
+            Assert.Contains(result, u => u.Identity.Value == "user1@example.com");
+            Assert.Contains(result, u => u.Identity.Value == "user2@example.com");
+        }
+
+        [Fact]
+        public async Task V2Success_WithGuids_ShouldReturnModelsWithGuids()
+        {
+            // Arrange
+            var guid1 = Guid.NewGuid();
+            var guid2 = Guid.NewGuid();
+            var v2Body = new
+            {
+                Users = new[]
+                {
+                    new { Identity = "user1@example.com", ExternalObjectId = guid1.ToString("D") },
+                    new { Identity = "user2@example.com", ExternalObjectId = guid2.ToString("D") }
+                }
+            };
+            var mocker = new AutoMocker();
+            mocker.GetMock<IHttpClientFactory>()
+                .Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(FakeMultifactorCloud.ClientMock.Get_UsersV2(v2Body));
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+
+            // Act
+            var result = await api.GetUsersAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, u => u.Identity.Value == "user1@example.com" && u.ExternalObjectId?.Value == guid1);
+            Assert.Contains(result, u => u.Identity.Value == "user2@example.com" && u.ExternalObjectId?.Value == guid2);
+        }
+
+        [Fact]
+        public async Task V2Success_WithNullGuids_ShouldReturnModelsWithoutGuids()
+        {
+            // Arrange
+            var v2Body = new
+            {
+                Users = new[]
+                {
+                    new { Identity = "user1@example.com", ExternalObjectId = (string?)null },
+                    new { Identity = "user2@example.com", ExternalObjectId = (string?)null }
+                }
+            };
+            var mocker = new AutoMocker();
+            mocker.GetMock<IHttpClientFactory>()
+                .Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(FakeMultifactorCloud.ClientMock.Get_UsersV2(v2Body));
+            var api = mocker.CreateInstance<MultifactorUsersApi>();
+
+            // Act
+            var result = await api.GetUsersAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.All(result, u => Assert.Null(u.ExternalObjectId));
+        }
+    }
+
     internal static MultifactorUsersApi GetMockMultifactorApiWithResiliencePolisies(HttpStatusCode statusCode)
     {
 

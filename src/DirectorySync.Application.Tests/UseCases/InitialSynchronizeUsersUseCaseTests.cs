@@ -41,7 +41,7 @@ public class InitialSynchronizeUsersUseCaseTests
     {
         // Act + Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _useCase.ExecuteAsync(Enumerable.Empty<DirectoryGuid>()));
+            _useCase.ExecuteAsync([]));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class InitialSynchronizeUsersUseCaseTests
         await _useCase.ExecuteAsync(new[] { new DirectoryGuid(Guid.NewGuid()) });
 
         // Assert
-        _userCloudPortMock.Verify(x => x.GetUsersIdentitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _userCloudPortMock.Verify(x => x.GetUsersAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -63,8 +63,8 @@ public class InitialSynchronizeUsersUseCaseTests
         // Arrange
         _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
 
-        _userCloudPortMock.Setup(x => x.GetUsersIdentitiesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ReadOnlyCollection<Identity>(new List<Identity>()));
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ReadOnlyCollection<CloudUserModel>(new List<CloudUserModel>()));
 
         _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
             .Returns(Array.Empty<string>());
@@ -80,22 +80,22 @@ public class InitialSynchronizeUsersUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldNotDelete_WhenNoDeletedUsers()
+    public async Task ExecuteAsync_ShouldNotDelete_WhenAllCloudUsersFoundByIdentity()
     {
         // Arrange
         var trackingGroupGuid = new DirectoryGuid(Guid.NewGuid());
         _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
 
-        var cloudIdentities = new List<Identity>
-            {
-                new("user1@example.com"),
-                new("user2@example.com")
-            }.AsReadOnly();
+        var cloudUsers = new List<CloudUserModel>
+        {
+            new(new Identity("user1@example.com")),
+            new(new Identity("user2@example.com"))
+        }.AsReadOnly();
 
         var domain = new LdapDomain("domain.example");
 
-        _userCloudPortMock.Setup(x => x.GetUsersIdentitiesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cloudIdentities);
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cloudUsers);
 
         _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
             .Returns(Array.Empty<string>());
@@ -104,11 +104,12 @@ public class InitialSynchronizeUsersUseCaseTests
         _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), new[] { domain }.AsReadOnly()));
 
-        var memberModels = cloudIdentities.Select(identity =>
-            MemberModel.Create(Guid.NewGuid(), identity, [])).ToList();
+        var adMembers = cloudUsers
+            .Select(u => MemberModel.Create(Guid.NewGuid(), u.Identity, []))
+            .ToList();
 
         _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<LdapDomain[]>()))
-            .Returns(memberModels.AsReadOnly());
+            .Returns(adMembers.AsReadOnly());
 
         // Act
         await _useCase.ExecuteAsync(new[] { trackingGroupGuid });
@@ -118,23 +119,23 @@ public class InitialSynchronizeUsersUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldDelete_WhenDeletedUsersExist()
+    public async Task ExecuteAsync_ShouldDelete_WhenCloudUserNotFoundInAd_ByIdentity()
     {
         // Arrange
         var trackingGroupGuid = new DirectoryGuid(Guid.NewGuid());
         _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
 
-        var cloudIdentities = new List<Identity>
-            {
-                new("user1@example.com"),
-                new("user2@example.com"),
-                new("deleted@example.com")
-            }.AsReadOnly();
+        var cloudUsers = new List<CloudUserModel>
+        {
+            new(new Identity("user1@example.com")),
+            new(new Identity("user2@example.com")),
+            new(new Identity("deleted@example.com"))
+        }.AsReadOnly();
         
         var domain = new LdapDomain("domain.example");
 
-        _userCloudPortMock.Setup(x => x.GetUsersIdentitiesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cloudIdentities);
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cloudUsers);
 
         _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
             .Returns(Array.Empty<string>());
@@ -143,18 +144,171 @@ public class InitialSynchronizeUsersUseCaseTests
         _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
             .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), new[] { domain }.AsReadOnly()));
 
-        var existingIdentities = cloudIdentities
-            .Where(i => i.Value != "deleted@example.com")
-            .Select(identity => MemberModel.Create(Guid.NewGuid(), identity, []))
+        var existingAdMembers = cloudUsers
+            .Where(u => u.Identity.Value != "deleted@example.com")
+            .Select(u => MemberModel.Create(Guid.NewGuid(), u.Identity, []))
             .ToList();
 
         _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), It.IsAny<LdapDomain[]>()))
-            .Returns(existingIdentities.AsReadOnly());
+            .Returns(existingAdMembers.AsReadOnly());
 
         // Act
         await _useCase.ExecuteAsync(new[] { trackingGroupGuid });
 
         // Assert
-        _userDeleterMock.Verify(x => x.DeleteManyAsync(It.Is<List<MemberModel>>(l => l.Count == 1), It.IsAny<CancellationToken>()), Times.Once);
+        _userDeleterMock.Verify(
+            x => x.DeleteManyAsync(It.Is<List<MemberModel>>(l => l.Count == 1), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotDelete_WhenCloudUserFoundByGuid_DespiteIdentityChange()
+    {
+        // Arrange
+        var trackingGroupGuid = new DirectoryGuid(Guid.NewGuid());
+        _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
+
+        var adMemberGuid = Guid.NewGuid();
+        var oldIdentity = new Identity("old.name@example.com");
+        var newIdentity = new Identity("new.name@example.com");
+
+        var cloudUsers = new List<CloudUserModel>
+        {
+            new(oldIdentity, new DirectoryGuid(adMemberGuid))
+        }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
+
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cloudUsers);
+
+        _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
+            .Returns(Array.Empty<string>());
+
+        var groupModel = GroupModel.Create(trackingGroupGuid, [new DirectoryGuid(adMemberGuid)]);
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), domainsToSearch.AsReadOnly()));
+
+        var adMember = MemberModel.Create(adMemberGuid, newIdentity, []);
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
+            .Returns(new List<MemberModel> { adMember }.AsReadOnly());
+
+        // Act
+        await _useCase.ExecuteAsync(new[] { trackingGroupGuid });
+
+        // Assert
+        _userDeleterMock.Verify(x => x.DeleteManyAsync(It.IsAny<List<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldDelete_WhenCloudUserGuidRemovedFromAd()
+    {
+        // Arrange
+        var trackingGroupGuid = new DirectoryGuid(Guid.NewGuid());
+        _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
+
+        var removedGuid = Guid.NewGuid();
+        var removedIdentity = new Identity("removed@example.com");
+
+        var cloudUsers = new List<CloudUserModel>
+        {
+            new(removedIdentity, new DirectoryGuid(removedGuid))
+        }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
+
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cloudUsers);
+
+        _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
+            .Returns(Array.Empty<string>());
+
+        var groupModel = GroupModel.Create(trackingGroupGuid, []);
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), domainsToSearch.AsReadOnly()));
+
+        // AD has different member
+        var otherMember = MemberModel.Create(Guid.NewGuid(), new Identity("other@example.com"), []);
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
+            .Returns(new List<MemberModel> { otherMember }.AsReadOnly());
+
+        // Act
+        await _useCase.ExecuteAsync(new[] { trackingGroupGuid });
+
+        // Assert
+        _userDeleterMock.Verify(
+            x => x.DeleteManyAsync(It.Is<List<MemberModel>>(l => l.Count == 1), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotDelete_WhenIdentityFormatDiffersBetweenCloudAndAd()
+    {
+        // Arrange
+        var trackingGroupGuid = new DirectoryGuid(Guid.NewGuid());
+        _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
+
+        var cloudUsers = new List<CloudUserModel>
+        {
+            new(new Identity("user@company.com"))
+        }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
+
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cloudUsers);
+
+        _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
+            .Returns(Array.Empty<string>());
+
+        var groupModel = GroupModel.Create(trackingGroupGuid, []);
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(), domainsToSearch.AsReadOnly()));
+
+        var adMember = MemberModel.Create(Guid.NewGuid(), new Identity("COMPANY\\user"), []);
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
+            .Returns(new List<MemberModel> { adMember }.AsReadOnly());
+
+        // Act
+        await _useCase.ExecuteAsync(new[] { trackingGroupGuid });
+
+        // Assert
+        _userDeleterMock.Verify(x => x.DeleteManyAsync(It.IsAny<List<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldMatchByIdentity_WhenCloudUserHasNoGuid()
+    {
+        // Arrange
+        var trackingGroupGuid = new DirectoryGuid(Guid.NewGuid());
+        _systemDatabaseMock.Setup(x => x.IsDatabaseInitialized()).Returns(false);
+
+        var identity = new Identity("user@example.com");
+        var cloudUsers = new List<CloudUserModel>
+        {
+            new(identity)
+        }.AsReadOnly();
+        
+        var domainsToSearch = new[] { new LdapDomain("domain.example") };
+
+        _userCloudPortMock.Setup(x => x.GetUsersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cloudUsers);
+
+        _syncSettingsOptionsMock.Setup(x => x.GetRequiredAttributeNames())
+            .Returns(Array.Empty<string>());
+
+        var groupModel = GroupModel.Create(trackingGroupGuid, []);
+        _ldapGroupPortMock.Setup(x => x.GetByGuid(It.IsAny<IEnumerable<DirectoryGuid>>()))
+            .Returns((new List<GroupModel> { groupModel }.AsReadOnly(),  domainsToSearch.AsReadOnly()));
+
+        var adMember = MemberModel.Create(Guid.NewGuid(), identity, []);
+        _ldapMemberPortMock.Setup(x => x.GetByGuids(It.IsAny<IEnumerable<DirectoryGuid>>(), It.IsAny<string[]>(), domainsToSearch))
+            .Returns(new List<MemberModel> { adMember }.AsReadOnly());
+
+        // Act
+        await _useCase.ExecuteAsync(new[] { trackingGroupGuid });
+
+        // Assert
+        _userDeleterMock.Verify(x => x.DeleteManyAsync(It.IsAny<List<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

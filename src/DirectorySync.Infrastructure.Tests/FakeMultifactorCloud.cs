@@ -16,13 +16,38 @@ internal static class FakeMultifactorCloud
         /// <summary>
         /// GET https://api.multifactor.dev/ds/users
         /// </summary>
-        /// <returns></returns>
         public static HttpClient Get_UsersIdentities(object? responseBody = null,
             HttpStatusCode statusCode = HttpStatusCode.OK)
         {
             return GetHttpClientMock(handler =>
             {
                 handler.SetupRequest(HttpMethod.Get, $"{Uri}/ds/users").ReturnsJsonResponse(statusCode, responseBody);
+            });
+        }
+
+        /// <summary>
+        /// GET https://api.multifactor.dev/v2/ds/users
+        /// </summary>
+        public static HttpClient Get_UsersV2(object? responseBody = null,
+            HttpStatusCode statusCode = HttpStatusCode.OK)
+        {
+            return GetHttpClientMock(handler =>
+            {
+                handler.SetupRequest(HttpMethod.Get, $"{Uri}/v2/ds/users").ReturnsJsonResponse(statusCode, responseBody);
+            });
+        }
+
+        /// <summary>
+        /// GET v2/ds/users returns non-success → falls back to GET ds/users.
+        /// </summary>
+        public static HttpClient Get_UsersV2_FallbackToV1(object? v1ResponseBody = null,
+            HttpStatusCode v2StatusCode = HttpStatusCode.NotFound,
+            HttpStatusCode v1StatusCode = HttpStatusCode.OK)
+        {
+            return GetHttpClientMock(handler =>
+            {
+                handler.SetupRequest(HttpMethod.Get, $"{Uri}/v2/ds/users").ReturnsJsonResponse(v2StatusCode, (object?)null);
+                handler.SetupRequest(HttpMethod.Get, $"{Uri}/ds/users").ReturnsJsonResponse(v1StatusCode, v1ResponseBody);
             });
         }
         /// <summary>
