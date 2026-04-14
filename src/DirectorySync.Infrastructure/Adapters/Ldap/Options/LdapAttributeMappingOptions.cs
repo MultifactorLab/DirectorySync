@@ -1,12 +1,12 @@
-namespace DirectorySync.Application.Models.Options;
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Options;
 
 public class LdapAttributeMappingOptions
 {
-    public string IdentityAttribute { get; init; }
-    
-    public string? NameAttribute { get; init; }
+    public string IdentityAttribute { get; set; } = string.Empty;
 
-    public string[] EmailAttributes { get; init; } = [];
+    public string? NameAttribute { get; set; }
 
-    public string[] PhoneAttributes { get; init; } = [];
+    public string[] EmailAttributes { get; set; } = [];
+
+    public string[] PhoneAttributes { get; set; } = [];
 }
