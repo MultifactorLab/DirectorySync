@@ -33,7 +33,7 @@
 
 				<Control Id="LabelApiUrl" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="API url" />
 				<?if $(var.Configuration) = Debug ?>
-					<Control Id="EditApiUrl" Disabled="yes" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
+					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
 				<?else?>
 					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
 				<?endif?>
