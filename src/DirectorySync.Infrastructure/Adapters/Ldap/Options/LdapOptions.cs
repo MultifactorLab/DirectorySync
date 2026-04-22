@@ -1,21 +1,22 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DirectorySync.Infrastructure.Adapters.Ldap.Options
+namespace DirectorySync.Infrastructure.Adapters.Ldap.Options;
+
+public class LdapOptions
 {
-    public class LdapOptions
-    {
-        [Required]
-        public string Path { get; set; }
+    [Required]
+    public string Path { get; set; }
 
-        [Required]
-        public string Username { get; set; }
+    [Required]
+    public string Username { get; set; }
 
-        [Required]
-        public string Password { get; set; }
+    [Required]
+    public string Password { get; set; }
 
-        [Range(1, 5000)]
-        public int PageSize { get; set; } = 500;
+    [Range(1, 5000)]
+    public int PageSize { get; set; } = 500;
 
-        public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
-    }
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
+
+    public bool AllowCrossDomainConnections { get; set; } = true;
 }

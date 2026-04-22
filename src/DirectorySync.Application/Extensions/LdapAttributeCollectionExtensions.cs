@@ -1,4 +1,4 @@
-﻿using DirectorySync.Application.Models.ValueObjects;
+using DirectorySync.Application.Models.ValueObjects;
 
 namespace DirectorySync.Application.Extensions;
 
@@ -65,15 +65,16 @@ public static class LdapAttributeCollectionExtensions
         return values[0];
     }
 
-    public static string? GetFirstOrDefault(this LdapAttributeCollection attrs, string[] names)
+    public static string? GetFirstOrDefault(this LdapAttributeCollection attrs, IReadOnlyList<string> names)
     {
-        if (names.Length == 0)
+        if (names.Count == 0)
         {
             return default;
         }
 
-        foreach (var name in names)
+        for (var i = 0; i < names.Count; i++)
         {
+            var name = names[i];
             var attr = attrs[name];
             if (attr is null)
             {

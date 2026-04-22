@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using DirectorySync.Application.Measuring;
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Options;
+using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Cloud;
 using DirectorySync.Application.Ports.Databases;
 using Microsoft.Extensions.Logging;
@@ -64,6 +65,16 @@ public class UserUpdater : IUserUpdater
             timer.Stop();
             
             timer = _codeTimer.Start("Update Cached Group: Modified Users");
+            foreach (var member in res)
+            {
+                if (member.NewIdentity is not null)
+                {
+                    _logger.LogInformation(ApplicationEvent.UserLoginChanged,
+                        "User updated (login changed): {OldLogin} to {NewLogin} (externalObjectId: {ExternalObjectId})",
+                        member.Identity, member.NewIdentity, ExternalDirectoryObjectId.ToCanonicalString(member.Id));
+                    member.ApplyIdentityChange();
+                }
+            }
             _memberDatabase.UpdateMany(res);
             timer.Stop();
             

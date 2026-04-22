@@ -22,7 +22,7 @@ public class SynchronizeUsersUseCaseTests
     private readonly Mock<IUserUpdater> _userUpdater = new();
     private readonly Mock<ISyncSettingsOptions> _syncSettingsOptions = new();
     private readonly CodeTimer _codeTimer;
-    private readonly Mock<ILogger<SynchronizeGroupsUseCase>> _logger = new();
+    private readonly Mock<ILogger<SynchronizeUsersUseCase>> _logger = new();
 
     private readonly SynchronizeUsersUseCase _useCase;
 
@@ -132,5 +132,73 @@ public class SynchronizeUsersUseCaseTests
         // Assert
         _userUpdater.Verify(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Once);
         _logger.VerifyLog(LogLevel.Information, Times.Once(), "Complete users synchronization");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSetNewIdentityAndMarkForIdentityUpdate_WhenLoginChanged()
+    {
+        // Arrange
+        var memberId = new DirectoryGuid(Guid.NewGuid());
+        var cached = MemberModel.Create(memberId, new Identity("ivanov"), []);
+        cached.SetProperties([new MemberProperty("cn", "Ivan Ivanov")], new AttributesHash("oldHash"));
+        var domain = new LdapDomain("domain.example");
+
+        _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns(["cn"]);
+        _memberDatabase.Setup(x => x.FindAll()).Returns(new[] { cached }.AsReadOnly());
+        _directoryDomainDatabase.Setup(x => x.FindAll()).Returns(new[] { domain }.AsReadOnly());
+        
+        var reference = MemberModel.Create(memberId, new Identity("petrov"), []);
+        reference.SetProperties([new MemberProperty("cn", "Ivan Petrov")], new AttributesHash("newHash"));
+
+        _memberPort.Setup(x => x.GetByGuids(It.IsAny<DirectoryGuid[]>(), It.IsAny<string[]>(), It.IsAny<LdapDomain[]>()))
+            .Returns(new[] { reference }.AsReadOnly());
+
+        MemberModel? capturedMember = null;
+        _userUpdater.Setup(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()))
+            .Callback((IEnumerable<MemberModel> members, CancellationToken _) => capturedMember = members.FirstOrDefault())
+            .Returns((IEnumerable<MemberModel> input, CancellationToken _) => Task.FromResult(input.ToList().AsReadOnly()));
+
+        // Act
+        await _useCase.ExecuteAsync();
+
+        // Assert
+        _userUpdater.Verify(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.NotNull(capturedMember);
+        Assert.Equal("ivanov", capturedMember!.Identity.Value);
+        Assert.NotNull(capturedMember.NewIdentity);
+        Assert.Equal("petrov", capturedMember.NewIdentity!.Value);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotSetNewIdentity_WhenOnlyAttributesChangedButLoginIsSame()
+    {
+        // Arrange
+        var memberId = new DirectoryGuid(Guid.NewGuid());
+        var cached = MemberModel.Create(memberId, new Identity("user1"), []);
+        cached.SetProperties([new MemberProperty("cn", "Old Name")], new AttributesHash("oldHash"));
+        var domain = new LdapDomain("domain.example");
+
+        _syncSettingsOptions.Setup(x => x.GetRequiredAttributeNames()).Returns(["cn"]);
+        _memberDatabase.Setup(x => x.FindAll()).Returns(new[] { cached }.AsReadOnly());
+        _directoryDomainDatabase.Setup(x => x.FindAll()).Returns(new[] { domain }.AsReadOnly());
+        
+        var reference = MemberModel.Create(memberId, new Identity("user1"), []);
+        reference.SetProperties([new MemberProperty("cn", "New Name")], new AttributesHash("newHash"));
+
+        _memberPort.Setup(x => x.GetByGuids(It.IsAny<DirectoryGuid[]>(), It.IsAny<string[]>(), It.IsAny<LdapDomain[]>()))
+            .Returns(new[] { reference }.AsReadOnly());
+
+        MemberModel? capturedMember = null;
+        _userUpdater.Setup(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()))
+            .Callback((IEnumerable<MemberModel> members, CancellationToken _) => capturedMember = members.FirstOrDefault())
+            .Returns((IEnumerable<MemberModel> input, CancellationToken _) => Task.FromResult(input.ToList().AsReadOnly()));
+
+        // Act
+        await _useCase.ExecuteAsync();
+
+        // Assert
+        _userUpdater.Verify(x => x.UpdateManyAsync(It.IsAny<IEnumerable<MemberModel>>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.NotNull(capturedMember);
+        Assert.Null(capturedMember!.NewIdentity);
     }
 }

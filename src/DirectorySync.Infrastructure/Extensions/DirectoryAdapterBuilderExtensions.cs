@@ -1,4 +1,3 @@
-using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
@@ -26,7 +25,7 @@ public static class DirectoryAdapterBuilderExtensions
         
         builder.Services.AddOptions<LdapAttributeMappingOptions>()
             .BindConfiguration("Sync:PropertyMapping")
-        .ValidateDataAnnotations();
+            .ValidateDataAnnotations();
 
         builder.Services.AddSingleton(_ => LdapConnectionFactory.Create());
 

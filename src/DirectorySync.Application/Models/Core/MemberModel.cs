@@ -6,7 +6,10 @@ namespace DirectorySync.Application.Models.Core;
 
 public class MemberModel : BaseModel
 {
-    public Identity Identity { get; }
+    public Identity Identity { get; private set; }
+    
+    public Identity? NewIdentity { get; private set; }
+    
     public AttributesHash AttributesHash { get; private set; }
     
     private readonly HashSet<MemberProperty> _memberProperties = new HashSet<MemberProperty>();
@@ -85,6 +88,7 @@ public class MemberModel : BaseModel
     {
         ArgumentNullException.ThrowIfNull(groupIds);
 
+        
         var duplicates  = _groupIds.Intersect(groupIds).ToArray();
         if (duplicates.Length != 0)
         {
@@ -135,6 +139,24 @@ public class MemberModel : BaseModel
         AttributesHash = newHash;
     }
     
+    public void MarkForIdentityUpdate(Identity newIdentity)
+    {
+        ArgumentNullException.ThrowIfNull(newIdentity);
+        NewIdentity = newIdentity;
+        Operation = ChangeOperation.Update;
+    }
+
+    public void ApplyIdentityChange()
+    {
+        if (NewIdentity is null)
+        {
+            return;
+        }
+
+        Identity = NewIdentity;
+        NewIdentity = null;
+    }
+
     public void MarkForCreate() => Operation = ChangeOperation.Create;
     public void MarkForUpdate() => Operation = ChangeOperation.Update;
     public void MarkForDelete() => Operation = ChangeOperation.Delete;

@@ -3,9 +3,10 @@
 	<Fragment>
 		<UI>
 			
-			<Property Id="PROP_LDAP_PATH" Value="!(loc.PropLdapPathValue)" />
-			<Property Id="PROP_LDAP_USERNAME" Value="!(loc.PropLdapUsernameValue)" />
-			<Property Id="PROP_LDAP_PASSWORD" Value="!(loc.PropLdapPasswordValue)" Secure="yes"/>
+		<Property Id="PROP_LDAP_PATH" Value="!(loc.PropLdapPathValue)" />
+		<Property Id="PROP_LDAP_USERNAME" Value="!(loc.PropLdapUsernameValue)" />
+		<Property Id="PROP_LDAP_PASSWORD" Value="!(loc.PropLdapPasswordValue)" Secure="yes"/>
+		<Property Id="PROP_LDAP_ALLOW_CROSS_DOMAIN" Value="true" />
 			
 			<Dialog Id="LdapDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				
@@ -29,12 +30,16 @@
 				<Control Id="EditLdapPassword" Type="Edit" X="140" Y="137" Height="17" Width="150" Password="yes" Property="PROP_LDAP_PASSWORD" Indirect="no"/>
 
 				
-				<Control Id="LdapTest" Type="PushButton" X="190" Y="160" Width="100" Height="17"  Text="!(loc.LdapTestButton)">
-					<Publish Event="DoAction" Value="BindToLdapServer" />
-				</Control>
+			<Control Id="LdapTest" Type="PushButton" X="190" Y="160" Width="100" Height="17"  Text="!(loc.LdapTestButton)">
+				<Publish Event="DoAction" Value="BindToLdapServer" />
+			</Control>
 
-				
-				<Control Id="LabelRequiredFields" Type="Text" X="20" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogRequiredFieldsLabel)" />
+			<Control Id="CheckAllowCrossDomain" Type="CheckBox" X="20" Y="183" Width="280" Height="17"
+				Property="PROP_LDAP_ALLOW_CROSS_DOMAIN" CheckBoxValue="true"
+				Text="!(loc.LdapDialogAllowCrossDomainLabel)" />
+
+			
+			<Control Id="LabelRequiredFields" Type="Text" X="20" Y="220" Height="17" Width="120" Transparent="yes" Text="!(loc.ApiDialogRequiredFieldsLabel)" />
 				<Control Id="LabelVersion" Type="Text" X="309" Y="220" Height="17" Width="61" Transparent="yes" Text="!(loc.LabelVersionLabel) !(bind.Property.ProductVersion)" />
 
 				

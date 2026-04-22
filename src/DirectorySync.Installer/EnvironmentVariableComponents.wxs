@@ -12,6 +12,7 @@
                 <Environment Id="EnvVarLdapPath" Name="DIRECTORYSYNC_LDAP__PATH" Value="[PROP_LDAP_PATH]" Permanent="no" Part="all" Action="set" System="yes" />
                 <Environment Id="EnvVarLdapUsername" Name="DIRECTORYSYNC_LDAP__USERNAME" Value="[PROP_LDAP_USERNAME]" Permanent="no" Part="all" Action="set" System="yes" />
                 <Environment Id="EnvVarLdapPassword" Name="DIRECTORYSYNC_LDAP__PASSWORD" Value="[PROP_LDAP_PASSWORD]" Permanent="no" Part="all" Action="set" System="yes" />
+                <Environment Id="EnvVarLdapAllowCrossDomain" Name="DIRECTORYSYNC_LDAP__ALLOWCROSSDOMAINCONNECTIONS" Value="[PROP_LDAP_ALLOW_CROSS_DOMAIN]" Permanent="no" Part="all" Action="set" System="yes" />
                 
             </Component>
 

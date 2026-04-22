@@ -12,7 +12,7 @@ namespace DirectorySync.Application.UseCases;
 
 public interface IInitialSynchronizeUsersUseCase
 {
-    Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default);
+    Task ExecuteAsync(DirectoryGuid[] trackingGroupGuids, CancellationToken cancellationToken = default);
 }
 
 public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
@@ -42,9 +42,9 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
        _logger = logger;
     }
 
-    public async Task ExecuteAsync(IEnumerable<DirectoryGuid> trackingGroupGuids, CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(DirectoryGuid[] trackingGroupGuids, CancellationToken cancellationToken = default)
     {
-       if (trackingGroupGuids.Count() == 0)
+       if (trackingGroupGuids.Length == 0)
        {
            _logger.LogDebug("No tracking groups provided, skipping synchronization");
            throw new InvalidOperationException("No tracking groups provided");
@@ -58,61 +58,71 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
            return;
        }
 
-       var cloudIdentities = await _userCloudPort.GetUsersIdentitiesAsync(cancellationToken);
-       _logger.LogDebug("Fetched {Count} identities from cloud",
-           cloudIdentities.Count);
+       var cloudUsers = await _userCloudPort.GetUsersAsync(cancellationToken);
+       _logger.LogDebug("Fetched {Count} users from cloud", cloudUsers.Count);
 
        var requiredAttributes = _syncSettingsOptions.GetRequiredAttributeNames();
        _logger.LogDebug("Required attributes: {Attrs:l}", string.Join(",", requiredAttributes));
 
-       var refIdentitiesMap = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes);
-       
-       if (refIdentitiesMap.Count == 0)
-       {
-           _logger.LogWarning("No reference members found for given tracking groups");
-           return;
-       }
+       var adMembers = GetTrackingReferenceMembers(trackingGroupGuids, requiredAttributes);
 
-       var toDelete = GetDeletedMembersIdentities(cloudIdentities, refIdentitiesMap)
+       var toDelete = GetDeletedCloudUsers(cloudUsers, adMembers)
            .ToList()
            .AsReadOnly();
        
        _logger.LogInformation("Identified {Count} deleted members to handle", toDelete.Count);
        
-       await HandleDeletedMembers(toDelete.ToList().AsReadOnly(), cancellationToken);
+       await HandleDeletedMembers(toDelete, cancellationToken);
     } 
 
-    private HashSet<Identity> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
+    private ReadOnlyCollection<MemberModel> GetTrackingReferenceMembers(IEnumerable<DirectoryGuid> trackingGroups,
         string[] requiredAttributes)
-    {
-       var (referenceGroups, searchDomains) = _ldapGroupPort.GetByGuid(trackingGroups);
-       
-       if (referenceGroups is null || referenceGroups.Count == 0)
-       {
+    { 
+        var (referenceGroups, searchDomains) = _ldapGroupPort.GetByGuid(trackingGroups); 
+        if (referenceGroups.Count == 0)
+        {
            _logger.LogWarning("No reference groups found for given tracking groups");
-           return new HashSet<Identity>();
-       }
-       
-       var members = new List<MemberModel>();
+           return ReadOnlyCollection<MemberModel>.Empty;
+        }
 
-       foreach (var referenceGroup in referenceGroups)
-       {
+        var members = new List<MemberModel>();
+
+        foreach (var referenceGroup in referenceGroups)
+        {
            members.AddRange(_ldapMemberPort.GetByGuids(referenceGroup.MemberIds, requiredAttributes, searchDomains.ToArray()));
-       }
-       
-       return members.Select(m => m.Identity).ToHashSet(); 
+        }
+
+        return members.AsReadOnly();
     }
     
-    private IEnumerable<Identity> GetDeletedMembersIdentities(ReadOnlyCollection<Identity> cloudIdentities, HashSet<Identity> refIdentitiesMap)
+    private IEnumerable<Identity> GetDeletedCloudUsers(
+        ReadOnlyCollection<CloudUserModel> cloudUsers,
+        ReadOnlyCollection<MemberModel> adMembers)
     {
-        foreach (var cloudIdentity in cloudIdentities)
+        var adGuidSet = adMembers
+            .Select(m => m.Id.Value)
+            .ToHashSet();
+        
+        var adIdentitySet = adMembers
+            .Select(m => m.Identity)
+            .ToHashSet();
+
+        foreach (var cloudUser in cloudUsers)
         {
-            if (!refIdentitiesMap.Contains(cloudIdentity))
+            var presentByGuid = cloudUser.ExternalObjectId is not null
+                && adGuidSet.Contains(cloudUser.ExternalObjectId.Value);
+
+            if (presentByGuid)
             {
-                yield return cloudIdentity;
+                continue;
+            }
+
+            if (!adIdentitySet.Contains(cloudUser.Identity))
+            {
+                yield return cloudUser.Identity;
             }
         }
-    } 
+    }
     
     private async Task HandleDeletedMembers(ReadOnlyCollection<Identity> toDeleteIdentities,
         CancellationToken cancellationToken = default)
@@ -130,6 +140,5 @@ public class InitialSynchronizeUsersUseCase : IInitialSynchronizeUsersUseCase
         _logger.LogDebug("Found deleted users: {Deleted}", toDeleteIdentities.Count);
         await _userDeleter.DeleteManyAsync(toDelete, cancellationToken);
         _logger.LogDebug("Deleted members are synchronized");
-        
     }
 }

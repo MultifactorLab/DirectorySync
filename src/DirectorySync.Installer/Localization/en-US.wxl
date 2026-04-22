@@ -34,6 +34,7 @@
     <String Id="LdapDialogLdapUsernameLabel" Value="Username*" />
     <String Id="LdapDialogLdapPasswordLabel" Value="Password*" />
     <String Id="LdapTestButton" Value="Bind to server" />
+    <String Id="LdapDialogAllowCrossDomainLabel" Value="Allow cross-domain connections" />
 	<String Id="LdapDialogRequiredFieldsLabel" Value="* - required fields" />
 	
     <String Id="PropLdapPathValue" Value="" />
