@@ -1,0 +1,16 @@
+{
+  "solution": {
+    "path": "DirectorySync.sln",
+    "projects": [
+      "DirectorySync\\DirectorySync.csproj",
+      "DirectorySync.Infrastructure\\DirectorySync.Infrastructure.csproj",
+      "DirectorySync.Application\\DirectorySync.Application.csproj",
+      "..\\tests\\DirectorySync.Application.Tests\\DirectorySync.Application.Tests.csproj",
+      "..\\tests\\DirectorySync.Infrastructure.Tests\\DirectorySync.Infrastructure.Tests.csproj",
+      "..\\tests\\DirectorySync.Tests\\DirectorySync.Tests.csproj",
+      "DirectorySync.Infrastructure.Shared\\DirectorySync.Infrastructure.Shared.csproj",
+      "DirectorySync.Shared\\DirectorySync.Shared.csproj",
+      "hosts\\DirectorySync.Host.Console\\DirectorySync.Host.Console.csproj"
+    ]
+  }
+}

@@ -3,6 +3,10 @@ namespace DirectorySync.Application;
 public static class ApplicationEvent
 {
     public const ushort ApplicationStarted = 10000;
+    public const ushort ApplicationShutdownRequested = 19901;
+    public const ushort ApplicationWorkloadDraining = 19902;
+    public const ushort ApplicationWorkloadDrainTimedOut = 19903;
+    public const ushort ApplicationWorkloadDrainCompleted = 19904;
     public const ushort ApplicationStopped = 19999;
 
     public const ushort InvalidServiceConfiguration = 10010;

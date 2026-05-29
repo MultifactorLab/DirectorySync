@@ -1,0 +1,39 @@
+services:
+
+  directorysync:
+
+    build:
+      context: ../../..
+      dockerfile: ./deploy/docker/Dockerfile
+      target: dev
+
+    image: directorysync:dev
+
+    container_name: directorysync-dev
+
+    working_dir: /workspace
+
+    env_file:
+      - ../env/.env.dev
+
+    ports:
+      - "8080:8080"
+
+    stop_grace_period: 30s
+
+    volumes:
+      - ../../../src:/workspace/src
+      #- ../../../nuget.config.local:/workspace/nuget.config:ro
+      - ../../../nuget.config:/workspace/nuget.config:ro
+      - ../../../nuget:/workspace/nuget:ro
+      - ../../../certs:/certs:ro
+      - directorysync-nuget:/root/.nuget/packages
+      - ./dev-data:/workspace/data
+      - ./dev-logs:/workspace/logs
+
+    command: >
+      sh -c "dotnet restore src/hosts/DirectorySync.Host.Console/DirectorySync.Host.Console.csproj --configfile /workspace/nuget.config &&
+      dotnet watch --project src/hosts/DirectorySync.Host.Console/DirectorySync.Host.Console.csproj run --urls=http://0.0.0.0:8080"
+
+volumes:
+  directorysync-nuget:

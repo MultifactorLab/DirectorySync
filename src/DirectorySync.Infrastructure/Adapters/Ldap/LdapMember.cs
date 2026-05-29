@@ -6,7 +6,6 @@ using DirectorySync.Application.Models.Options;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
-using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.NameResolving;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
@@ -91,33 +90,45 @@ internal sealed class LdapMember : ILdapMemberPort
 
         foreach (var domain in distinctDomains)
         {
-            if (guidList.Count == 0)
+            try
             {
-                break;
+                if (guidList.Count == 0)
+                {
+                    break;
+                }
+                
+                var domainOptions = LdapDomainConnectionOptionsFactory.Create(mainLdapConnectionString,
+                    domain,
+                    _ldapOptions.Username,
+                    _ldapOptions.Password,
+                    _ldapOptions.Timeout);
+                var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+                
+                using var connection = _connectionFactory.CreateConnection(domainOptions);
+                
+                // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
+                // поэтому формируем фильтр с OR-условиями.
+                var filter = LdapFilters.FindEntriesByGuids(guidList);
+
+                LogFilter(guidList, domain, filter);
+
+                var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
+                var entries = _ldapFinder.Find(filter,
+                    attributesToLoad,
+                    domainSchema.NamingContext.StringRepresentation,
+                    connection);
+                
+                foreach (var entry in entries)
+                {
+                    var member = MapToMemberModel(entry, requiredAttributes);
+                    models.Add(member);
+                    guidList.RemoveAll(g => g.Equals(member.Id));
+                }
             }
-            
-            var domainOptions = GetDomainConnectionOptions(mainLdapConnectionString, domain, _ldapOptions.Username, _ldapOptions.Password);
-            var domainSchema = _ldapSchemaLoader.Load(domainOptions);
-            
-            using var connection = _connectionFactory.CreateConnection(domainOptions);
-            
-            // В Active Directory нет возможности искать сразу по множеству objectGuid напрямую — 
-            // поэтому формируем фильтр с OR-условиями.
-            var filter = LdapFilters.FindEntriesByGuids(guidList);
-
-            LogFilter(guidList, domain, filter);
-
-            var attributesToLoad = requiredAttributes.Concat(["objectGuid"]).Distinct().ToArray();
-            var entries = _ldapFinder.Find(filter,
-                attributesToLoad,
-                domainSchema.NamingContext.StringRepresentation,
-                connection);
-            
-            foreach (var entry in entries)
+            catch (Exception ex)
             {
-                var member = MapToMemberModel(entry, requiredAttributes);
-                models.Add(member);
-                guidList.RemoveAll(g => g.Equals(member.Id));
+                _logger.LogError(ex, "Exception occured while searching in {Domain}.",
+                    domain);
             }
         }
         
@@ -182,25 +193,6 @@ internal sealed class LdapMember : ILdapMemberPort
         return properties.AsReadOnly();
     }
 
-    private LdapConnectionOptions GetDomainConnectionOptions(LdapConnectionString mainConnectionString,
-        LdapDomain domain,
-        string username,
-        string password)
-    {
-        var ldapIdentityFormat = NameTypeDetector.GetType(username);
-
-        var trustUsername = LdapUsernameChanger.ChangeDomain(username, domain, ldapIdentityFormat.Value);
-        
-        var newLdapConnectionString = LdapUriChanger.ReplaceHostInLdapConnectionString(mainConnectionString, domain);
-        
-        return new LdapConnectionOptions(newLdapConnectionString,
-            AuthType.Basic,
-            trustUsername,
-            password,
-            _ldapOptions.Timeout
-        );
-    }
-    
     private void LogFilter(List<DirectoryGuid?> guidList, LdapDomain domain, string filter)
     {
         var previewGuids = guidList.Take(3).Select(g => g.ToString()).ToArray();

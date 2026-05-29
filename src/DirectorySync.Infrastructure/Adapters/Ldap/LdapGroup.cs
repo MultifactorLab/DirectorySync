@@ -2,7 +2,6 @@ using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
-using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.NameResolving;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
 using DirectorySync.Infrastructure.Integrations.Ldap;
 using Microsoft.Extensions.Logging;
@@ -73,7 +72,7 @@ internal sealed class LdapGroup : ILdapGroupPort
         return (groups.AsReadOnly(), domains.AsReadOnly());
     }
 
-    private (List<GroupModel> groups, List<LdapDomain> domains)FindGroups(IEnumerable<DirectoryGuid> objectGuids)
+    private (List<GroupModel> groups, List<LdapDomain> domains) FindGroups(IEnumerable<DirectoryGuid> objectGuids)
     {
         var foundGroups = new List<GroupModel>();
         var searchDomains = new HashSet<LdapDomain>();
@@ -99,38 +98,51 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         foreach (var domain in domainsToSearch)
         {
-            var domainOptions = GetDomainConnectionOptions(mainOptions.ConnectionString, domain, _ldapOptions.Username, _ldapOptions.Password);
-            var domainSchema = _ldapSchemaLoader.Load(domainOptions);
-
-            using var connection = _connectionFactory.CreateConnection(domainOptions);
-            foreach (var guid in guidSet)
+            try
             {
-                try
+                var domainOptions = LdapDomainConnectionOptionsFactory.Create(mainOptions.ConnectionString,
+                    domain,
+                    _ldapOptions.Username,
+                    _ldapOptions.Password,
+                    _ldapOptions.Timeout);
+                var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+
+                using var connection = _connectionFactory.CreateConnection(domainOptions);
+                foreach (var guid in guidSet)
                 {
-                    var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains, primaryDnsDomain);
-                    if (group is null)
+                    try
                     {
-                        continue;
-                    }
+                        var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains, primaryDnsDomain);
+                        if (group is null)
+                        {
+                            continue;
+                        }
                         
-                    foundGroups.Add(group);
-                    _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
+                        foundGroups.Add(group);
+                        _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
 
-                    if (foundGroups.Count != guidSet.Count)
-                    {
-                        continue;
+                        if (foundGroups.Count != guidSet.Count)
+                        {
+                            continue;
+                        }
+
+                        _logger.LogDebug("All requested groups found. Ending search.");
+                        return (foundGroups, searchDomains.ToList());
                     }
-
-                    _logger.LogDebug("All requested groups found. Ending search.");
-                    return (foundGroups, searchDomains.ToList());
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Exception occured while searching group {GroupGuid} in {Domain}.",
-                        guid, 
-                        domain);
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Exception occured while searching group {GroupGuid} in {Domain}.",
+                            guid, 
+                            domain);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception occured while searching in {Domain}.",
+                    domain);
+            }
+           
         }
 
         return (foundGroups, searchDomains.ToList());
@@ -228,7 +240,11 @@ internal sealed class LdapGroup : ILdapGroupPort
                     continue;
                 }
 
-                var domainOptions = GetDomainConnectionOptions(initialConnectionString, targetDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var domainOptions = LdapDomainConnectionOptionsFactory.Create(initialConnectionString,
+                    targetDomain,
+                    _ldapOptions.Username,
+                    _ldapOptions.Password,
+                    _ldapOptions.Timeout);
                 var domainSchema = _ldapSchemaLoader.Load(domainOptions);
                 var domainConn = _connectionFactory.CreateConnection(domainOptions);
 
@@ -319,7 +335,11 @@ internal sealed class LdapGroup : ILdapGroupPort
         {
             try
             {
-                var trustedOptions = GetDomainConnectionOptions(options.ConnectionString, trustedDomain, _ldapOptions.Username, _ldapOptions.Password);
+                var trustedOptions = LdapDomainConnectionOptionsFactory.Create(options.ConnectionString,
+                    trustedDomain,
+                    _ldapOptions.Username,
+                    _ldapOptions.Password,
+                    _ldapOptions.Timeout);
                 var trustedSchema = _ldapSchemaLoader.Load(trustedOptions);
                 domains.AddRange(_ldapDomainDiscovery.GetForestDomains(trustedOptions, trustedSchema));
             }
@@ -332,22 +352,4 @@ internal sealed class LdapGroup : ILdapGroupPort
         return domains;
     }
 
-    private LdapConnectionOptions GetDomainConnectionOptions(LdapConnectionString mainConnectionString,
-        LdapDomain domain,
-        string username,
-        string password)
-    {
-        var ldapIdentityFormat = NameTypeDetector.GetType(username);
-
-        var trustUsername = LdapUsernameChanger.ChangeDomain(username, domain, ldapIdentityFormat.Value);
-        
-        var newLdapConnectionString = LdapUriChanger.ReplaceHostInLdapConnectionString(mainConnectionString, domain);
-        
-        return new LdapConnectionOptions(newLdapConnectionString,
-            AuthType.Basic,
-            trustUsername,
-            password,
-            _ldapOptions.Timeout
-        );
-    }
 }

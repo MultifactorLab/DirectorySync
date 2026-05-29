@@ -11,7 +11,23 @@
 *.sln.docstates
 
 # User-specific files (MonoDevelop/Xamarin Studio)
+.docker/
 *.userprefs
+.env
+.env.*
+!deploy/docker/env/.env.example
+!deploy/docker/env/.env.dev.example
+!deploy/docker/env/.env.prod.example
+deploy/docker/env/.env
+deploy/docker/env/.env.dev
+deploy/docker/env/.env.prod
+
+releases/
+
+deploy/docker/release/image-metadata.json
+
+certs/*
+!certs/.gitkeep
 
 # Mono auto generated files
 mono_crash.*

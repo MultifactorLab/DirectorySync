@@ -1,0 +1,7 @@
+deploy/docker/scripts/*.sh text eol=lf
+deploy/linux/*.sh text eol=lf
+deploy/linux/lib/*.sh text eol=lf
+deploy/linux/tests/*.sh text eol=lf
+deploy/linux/templates/* text eol=lf
+build/*.sh text eol=lf
+build/scripts/*.sh text eol=lf

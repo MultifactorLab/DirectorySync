@@ -11,6 +11,12 @@ public class LoggingOptions
 
 public class FileLoggingOptions
 {
+    /// <summary>
+    /// When null, file logging is enabled for all modes except <see cref="DirectorySync.Hosting.DirectorySyncRuntimeMode.Docker"/>.
+    /// Set explicitly to override (e.g. enable file logs in Docker with a mounted volume).
+    /// </summary>
+    public bool? Enabled { get; set; }
+
     public string? Path { get; set; }
 
     public string RollingInterval { get; set; } = "Day";

@@ -1,5 +1,7 @@
 using DirectorySync.Infrastructure.ConfigurationSources.Cloud;
 using DirectorySync.Infrastructure.ConfigurationSources.SystemEnvironmentVariables;
+using System.Collections;
+using Microsoft.Extensions.Configuration;
 
 namespace DirectorySync.Configuration;
 
@@ -28,5 +30,46 @@ internal static class ConfigurationBuilderExtensions
     {
         var source = new CloudConfigurationSource();
         configurationBuilder.Add(source);
+    }
+
+    /// <summary>
+    /// Adds process environment variables with the given prefix, but ignores null/empty/whitespace values.
+    /// </summary>
+    /// <param name="configurationBuilder">The <see cref="IConfigurationBuilder"/> to add to.</param>
+    /// <param name="prefix">Environment variable prefix.</param>
+    public static void AddEnvironmentVariablesNonEmpty(
+        this IConfigurationBuilder configurationBuilder,
+        string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            throw new ArgumentException($"'{nameof(prefix)}' cannot be null or whitespace.", nameof(prefix));
+        }
+
+        var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            if (entry.Key is not string rawKey || !rawKey.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = entry.Value?.ToString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            var key = rawKey[prefix.Length..].Replace("__", ConfigurationPath.KeyDelimiter, StringComparison.Ordinal);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                continue;
+            }
+
+            data[key] = value;
+        }
+
+        configurationBuilder.AddInMemoryCollection(data);
     }
 }

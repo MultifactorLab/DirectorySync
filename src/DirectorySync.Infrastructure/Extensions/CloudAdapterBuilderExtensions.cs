@@ -17,9 +17,11 @@ internal static class CloudAdapterBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.Services.AddSingleton<IValidateOptions<MultifactorApiOptions>, MultifactorApiOptionsValidator>();
         builder.Services.AddOptions<MultifactorApiOptions>()
             .BindConfiguration("Multifactor")
-            .ValidateDataAnnotations();
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         builder.Services.TryAddTransient<HttpLogger>();
         builder.Services.TryAddTransient<MfTraceIdHeaderSetter>();

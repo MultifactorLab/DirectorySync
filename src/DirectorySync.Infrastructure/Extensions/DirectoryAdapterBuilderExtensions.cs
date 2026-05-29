@@ -2,8 +2,10 @@ using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
+using DirectorySync.Infrastructure.Configurations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
 using Multifactor.Core.Ldap.Schema;
 
@@ -15,9 +17,11 @@ public static class DirectoryAdapterBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.Services.AddSingleton<IValidateOptions<LdapOptions>, LdapOptionsValidator>();
         builder.Services.AddOptions<LdapOptions>()
             .BindConfiguration("Ldap")
-            .ValidateDataAnnotations();            
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
             
         builder.Services.AddOptions<LdapRequestOptions>()
             .BindConfiguration("Sync")

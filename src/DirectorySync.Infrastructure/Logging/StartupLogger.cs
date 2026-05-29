@@ -11,7 +11,6 @@ namespace DirectorySync.Infrastructure.Logging;
 /// </summary>
 public static class StartupLogger
 {
-    private const string _logDirectory = "logs";
     private const string _startupLogFile = "startup.log";
     private const long _fileSizeLimitBytes = 1024 * 1024 * 5;
     private const string _fileLogTemplate = "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}|{Level:u3}|{SourceContext:l}] {Message:lj}{NewLine}{Exception}{Properties}{NewLine}";
@@ -21,29 +20,25 @@ public static class StartupLogger
     {
         SelfLog.Enable(Console.WriteLine);
 
-        var baseDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-        var dir = Path.Combine(baseDir!, _logDirectory);
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-
-        var path = Path.Combine(dir, _startupLogFile);
         var loggerConfig = new LoggerConfiguration()
-
-            .WriteTo.File(path: path,
-                LogEventLevel.Verbose,
-                _fileLogTemplate,
-                fileSizeLimitBytes: _fileSizeLimitBytes,
-                rollOnFileSizeLimit: true)
-
-            .WriteTo.Console(LogEventLevel.Verbose, _consoleLogTemplate)
-
             .Enrich.FromLogContext()
-
             .Enrich.With(new MfTraceIdEnricher());
 
-        return loggerConfig.CreateLogger();
+        if (DirectorySyncPathBootstrap.UseEarlyLoggerFileSinks)
+        {
+            var dir = DirectorySyncPathBootstrap.DefaultLogDirectory();
+            var path = Path.Combine(dir, _startupLogFile);
+            loggerConfig = loggerConfig
+                .WriteTo.File(path: path,
+                    LogEventLevel.Verbose,
+                    _fileLogTemplate,
+                    fileSizeLimitBytes: _fileSizeLimitBytes,
+                    rollOnFileSizeLimit: true);
+        }
+
+        return loggerConfig
+            .WriteTo.Console(LogEventLevel.Verbose, _consoleLogTemplate)
+            .CreateLogger();
     });
 
     /// <inheritdoc cref="Logger.Verbose"/>

@@ -1,9 +1,10 @@
 using System.Runtime.InteropServices;
+using DirectorySync.Hosting;
+using DirectorySync.Infrastructure.Configurations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 
@@ -11,7 +12,10 @@ namespace DirectorySync.Infrastructure.Logging;
 
 public static class RegisterLoggerExtension
 {
-    public static void RegisterLogger(this HostApplicationBuilder builder, params string[] args)
+    public static void RegisterLogger(
+        this HostApplicationBuilder builder,
+        DirectorySyncRuntimeMode runtimeMode,
+        params string[] args)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -21,11 +25,10 @@ public static class RegisterLoggerExtension
         {
             throw new Exception("Unable to read logging option");
         }
-        
+
         DataAnnotationsValidator.Validate(options);
 
         SelfLog.Enable(Console.WriteLine);
-        var sw = new LoggingLevelSwitch(LogEventLevel.Verbose);
         var loggerConfig = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .MinimumLevel.Verbose()
@@ -42,7 +45,12 @@ public static class RegisterLoggerExtension
             ConfigureEventLogger(loggerConfig);
         }
 
-        ConfigureFileLogging(loggerConfig, options.File);
+        var fileLoggingEnabled = options.File.Enabled
+            ?? (runtimeMode != DirectorySyncRuntimeMode.Docker);
+        if (fileLoggingEnabled)
+        {
+            ConfigureFileLogging(loggerConfig, options.File);
+        }
 
         Log.Logger = loggerConfig.CreateLogger();
 
@@ -80,7 +88,8 @@ public static class RegisterLoggerExtension
 
     private static void ConfigureFileLogging(LoggerConfiguration logger, FileLoggingOptions options)
     {
-        var path = GetLogFilePath(options);
+        var path = ApplicationPathResolver.ResolveRollingLogFilePath(options.Path);
+        ApplicationPathResolver.EnsureParentDirectoryExists(path);
         var rollingInterval = GetInterval(options);
         var minimalLevel = GetMinimalLevel(options.MinimalLevel);
         var fileTemplate = !string.IsNullOrWhiteSpace(options.Template)
@@ -100,22 +109,6 @@ public static class RegisterLoggerExtension
             });
     }
 
-    private static string GetLogFilePath(FileLoggingOptions options)
-    {
-        if (!string.IsNullOrWhiteSpace(options.Path))
-        {
-            return options.Path;
-        }
-        
-        var baseDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-        var dir = Path.Combine(baseDir!, "logs");
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-        return Path.Combine(dir, "log-.txt");
-    }
-    
     private static RollingInterval GetInterval(FileLoggingOptions options)
     {
         if (Enum.TryParse<RollingInterval>(options.RollingInterval, true, out var parsedInterval))

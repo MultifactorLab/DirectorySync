@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "DirectorySync.Host.Console": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "localhost"
+      },
+      "dotnetRunMessages": true
+    }
+  },
+  "$schema": "http://json.schemastore.org/launchsettings.json"
+}

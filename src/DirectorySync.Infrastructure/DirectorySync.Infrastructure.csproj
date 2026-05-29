@@ -7,25 +7,26 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="LiteDB" Version="5.0.20" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.10.0" />
-      <PackageReference Include="Multifactor.Core.Ldap" Version="1.7.0" />
-      <PackageReference Include="Polly.Core" Version="8.4.2" />
-      <PackageReference Include="Polly.Extensions" Version="8.4.2" />
-      <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
-      <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
-      <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.1" />
-      <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-      <PackageReference Include="Serilog.Sinks.EventLog" Version="3.1.0" />
-      <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-      <PackageReference Include="System.DirectoryServices.Protocols" Version="8.0.0" />
+      <PackageReference Include="LiteDB" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" />
+      <PackageReference Include="Microsoft.Extensions.Http" />
+      <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+      <PackageReference Include="Multifactor.Core.Ldap" />
+      <PackageReference Include="Polly.Core" />
+      <PackageReference Include="Polly.Extensions" />
+      <PackageReference Include="Serilog.Expressions" />
+      <PackageReference Include="Serilog.Extensions.Logging" />
+      <PackageReference Include="Serilog.Settings.Configuration" />
+      <PackageReference Include="Serilog.Sinks.Console" />
+      <PackageReference Include="Serilog.Sinks.EventLog" />
+      <PackageReference Include="Serilog.Sinks.File" />
+      <PackageReference Include="System.DirectoryServices.Protocols" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DirectorySync.Application\DirectorySync.Application.csproj" />
       <ProjectReference Include="..\DirectorySync.Infrastructure.Shared\DirectorySync.Infrastructure.Shared.csproj" />
+      <ProjectReference Include="..\DirectorySync.Shared\DirectorySync.Shared.csproj" />
     </ItemGroup>
 
 </Project>

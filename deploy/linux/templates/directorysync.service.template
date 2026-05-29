@@ -1,0 +1,30 @@
+[Unit]
+Description=Multifactor Directory Sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=directorysync
+Group=directorysync
+WorkingDirectory={{INSTALL_PREFIX}}/current
+ExecStart={{INSTALL_PREFIX}}/current/DirectorySync.Host.Console
+EnvironmentFile=-{{CONFIG_DIR}}/directorysync.env
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=130
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths={{DATA_DIR}} {{LOG_DIR}} {{CONFIG_DIR}}
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

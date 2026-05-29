@@ -21,8 +21,9 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private readonly CodeTimer _timer;
     private readonly IOptionsMonitor<SyncSettings> _syncSettings;
     private readonly ILogger<WorkloadDispatcher> _logger;
-    
+
     private readonly CancellationTokenSource _cts = new();
+    private IDisposable? _syncSettingsChangeRegistration;
     private Timer? _syncUsersTimer;
     private Timer? _syncGroupsTimer;
     private Timer? _syncSettingsTimer;
@@ -48,7 +49,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         _logger = logger;
         _syncSettings = syncSettings;
     }
-    
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -59,17 +60,40 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         InitialSync(cancellationToken).Wait(cancellationToken);
 
         SetTimers(_syncSettings.CurrentValue);
+        _syncSettingsChangeRegistration = _syncSettings.OnChange(SetTimers);
         _task = Task.Run(ProcessWorkloads, _cts.Token);
-        _syncSettings.OnChange(SetTimers);
 
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        return Task.WhenAny(
-            _task ?? Task.CompletedTask,
-            Task.Run(() => { }, cancellationToken));
+        _logger.LogInformation(ApplicationEvent.ApplicationWorkloadDraining,
+            "Cancelling workload loop and awaiting in-flight sync operations");
+
+        try
+        {
+            _cts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+
+        if (_task is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation(ApplicationEvent.ApplicationWorkloadDrainCompleted, "Workload loop exited cleanly");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning(ApplicationEvent.ApplicationWorkloadDrainTimedOut,
+                "Workload drain did not complete before the host shutdown timeout; sync operations may have been interrupted");
+        }
     }
 
     private void SetTimers(SyncSettings options)
@@ -78,7 +102,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
         _syncUsersTimer = new Timer(_ => _board.Place(WorkloadKind.SynchronizeUsers), null, TimeSpan.Zero, options.SyncTimer);
         _syncSettingsTimer = new Timer(_ => _board.Place(WorkloadKind.SynchronizeSettings), null, TimeSpan.Zero, options.CloudConfigRefreshTimer);
     }
-    
+
     private async Task ProcessWorkloads()
     {
         await Task.Delay(TimeSpan.FromSeconds(3), _cts.Token);
@@ -118,30 +142,30 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
                     {
                         _board.Done(WorkloadKind.SynchronizeGroups);
                         break;
-                    } 
+                    }
 
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncGroups();
                     break;
-                
+
                 case WorkloadKind.SynchronizeSettings:
                     if (!_syncSettings.CurrentValue.SyncSettingsEnabled)
                     {
                         _board.Done(WorkloadKind.SynchronizeSettings);
                         break;
-                    } 
+                    }
 
                     ActivityContext.Create(Guid.NewGuid().ToString());
                     await SyncSettings();
                     break;
 
                 case WorkloadKind.Empty:
-                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    await Task.Delay(TimeSpan.FromSeconds(2), _cts.Token);
                     break;
 
                 default:
                     _logger.LogDebug("Unknown workload kind: {Workload}", workload);
-                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    await Task.Delay(TimeSpan.FromSeconds(2), _cts.Token);
                     break;
             }
         }
@@ -150,43 +174,53 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private async Task SyncUsers()
     {
         _logger.LogDebug("Start of users synchronization");
-        
+
         var timer = _timer.Start($"Users synchronization: Total");
-        
+
         try
         {
             await _synchronizeUsers.ExecuteAsync(_cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStopping,
+                "Users synchronization cancelled due to shutdown");
         }
         catch (Exception ex)
         {
             _logger.LogError(ApplicationEvent.UserSynchronizationServiceError, ex, "Error occured while synchronizing users. Details: {0}", ex.Message);
         }
-        
+
         timer.Stop();
-                    
+
         _board.Done(WorkloadKind.SynchronizeUsers);
         _logger.LogDebug("End of users synchronization");
     }
-    
+
     private async Task SyncGroups()
     {
         _logger.LogDebug("Start of user scanning");
-        
+
         var trackingGroups = _syncSettings.CurrentValue.TrackingGroups.Select(c => new DirectoryGuid(c));
-        
+
         var timer = _timer.Start($"Groups {String.Join(", ", trackingGroups)}");
-                    
+
         try
         {
             await _synchronizeGroups.ExecuteAsync(trackingGroups, _cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(ApplicationEvent.SynchronizeGrpousServiceStopping,
+                "Groups synchronization cancelled due to shutdown");
         }
         catch (Exception ex)
         {
             _logger.LogError(ApplicationEvent.SynchronizeGrpousServiceError, ex, "Error occured while  synchronizing groups. Details: {0}", ex.Message);
         }
-            
+
         timer.Stop();
-                    
+
         _board.Done(WorkloadKind.SynchronizeGroups);
         _logger.LogDebug("End of groups synchronization");
     }
@@ -194,7 +228,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
     private async Task SyncSettings()
     {
         _logger.LogDebug("Start of settings synchronization");
-        
+
         var timer = _timer.Start($"Settings synchronization: Total");
 
         try
@@ -205,46 +239,65 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             {
                 _logger.LogWarning("No cloud settings provider configured");
             }
-            
+
             await _synchronizeCloudSettings.ExecuteAsync(false, provider, _cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(ApplicationEvent.CloudSettingSynchronizationServiceStopping,
+                "Cloud settings synchronization cancelled due to shutdown");
         }
         catch (Exception ex)
         {
             _logger.LogError(ApplicationEvent.CloudSettingSynchronizationServiceError, ex, "Error occured while  synchronizing cloud settings. Details: {0}", ex.Message);
         }
-        
+
         timer.Stop();
-                    
+
         _board.Done(WorkloadKind.SynchronizeSettings);
         _logger.LogDebug("End of cloud settings synchronization");
     }
 
     private async Task InitialSync(CancellationToken cancellationToken)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cts.Token);
+        var token = linked.Token;
+
         try
         {
             _logger.LogDebug("Start of initial cloud settings synchronization");
             var provider = CloudConfigurationSource.CurrentProvider;
-            
+
             if (provider is null)
             {
                 _logger.LogWarning("No cloud settings provider configured");
             }
-            
-            provider.Init(_syncSettingsCloudPort);
-            
-            await _synchronizeCloudSettings.ExecuteAsync(true, provider, _cts.Token);
+
+            provider?.Init(_syncSettingsCloudPort);
+
+            await _synchronizeCloudSettings.ExecuteAsync(true, provider, token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(ApplicationEvent.CloudSettingSynchronizationServiceStopping,
+                "Initial cloud settings synchronization cancelled due to shutdown");
         }
         catch (Exception ex)
         {
             _logger.LogError(ApplicationEvent.CloudSettingSynchronizationServiceError, "End of initial cloud settings synchronization. Details: {0}", ex.Message);
         }
+
         var trackingGroups = _syncSettings.CurrentValue.TrackingGroups.Select(c => new DirectoryGuid(c)).ToArray();
 
         try
         {
             _logger.LogDebug("Start of intial cloud users synchronization");
-            await _initialSynchronizeUsers.ExecuteAsync(trackingGroups, cancellationToken);
+            await _initialSynchronizeUsers.ExecuteAsync(trackingGroups, token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStopping,
+                "Initial cloud users synchronization cancelled due to shutdown");
         }
         catch (Exception ex)
         {
@@ -254,13 +307,16 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _syncSettingsChangeRegistration?.Dispose();
+        _syncSettingsChangeRegistration = null;
+
         if (_syncUsersTimer is IAsyncDisposable syncUsersTimer)
         {
             _logger.LogInformation(ApplicationEvent.UserSynchronizationServiceStopping, "SYNC is now stopping");
             await syncUsersTimer.DisposeAsync();
         }
         _syncUsersTimer = null;
-        
+
         if (_syncGroupsTimer is IAsyncDisposable syncGroupsTimer)
         {
             _logger.LogInformation(ApplicationEvent.SynchronizeGrpousServiceStopping, "SCAN is now stopping");
@@ -274,5 +330,7 @@ internal class WorkloadDispatcher : IHostedService, IAsyncDisposable
             await syncSettingsTimer.DisposeAsync();
         }
         _syncSettingsTimer = null;
+
+        _cts.Dispose();
     }
 }

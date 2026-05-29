@@ -1,35 +1,41 @@
-﻿using System.Runtime.InteropServices;
-using DirectorySync.Application.Ports.Databases;
+﻿using DirectorySync.Application.Ports.Databases;
+using DirectorySync.Hosting;
 using DirectorySync.Infrastructure.Adapters.LiteDb;
 using DirectorySync.Infrastructure.Adapters.LiteDb.Configuration;
+using DirectorySync.Infrastructure.Configurations;
 using DirectorySync.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DirectorySync.Infrastructure.Extensions;
 
 internal static class DatabaseAdapterBuilderExtensions
 {
-    public static void AddLiteDbAdapter(this HostApplicationBuilder builder, params string[] args)
+    public static void AddLiteDbAdapter(
+        this HostApplicationBuilder builder,
+        DirectorySyncRuntimeMode runtimeMode,
+        params string[] args)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        
-        var localAppData = GetLocalAppData();
-        var dir = Path.Combine(localAppData, "Multifactor", "Directory Sync");
-        
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
 
-        builder.Services.Configure<LiteDbConfig>(x =>
-        {
-            var path = Path.Combine(dir, "storage.db");
-            x.ConnectionString = $"Filename={path};Upgrade=true";
+        builder.Services.AddSingleton<IValidateOptions<StorageOptions>, StorageOptionsValidator>();
+        builder.Services.AddOptions<StorageOptions>()
+            .BindConfiguration("Storage")
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-            StartupLogger.Information("Database location: {Location:l}", path);
-        });
+        builder.Services.AddOptions<LiteDbConfig>()
+            .PostConfigure<IOptions<StorageOptions>>((liteDb, storageAccessor) =>
+            {
+                var path = ResolveLiteDbPath(storageAccessor.Value, runtimeMode);
+                liteDb.ConnectionString = $"Filename={path};Upgrade=true";
+                StartupLogger.Information("Database location: {Location:l}", path);
+            })
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         builder.Services.AddSingleton<LiteDbConnection>();
         builder.Services.AddSingleton((Func<IServiceProvider, ILiteDbConnection>)(prov =>
         {
@@ -53,14 +59,19 @@ internal static class DatabaseAdapterBuilderExtensions
         builder.Services.AddTransient<IDirectoryDomainDatabase, DirectoryDomainLiteDb>();
     }
 
-    private static string GetLocalAppData()
+    private static string ResolveLiteDbPath(StorageOptions storage, DirectorySyncRuntimeMode runtimeMode)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        var fileName = string.IsNullOrWhiteSpace(storage.LiteDbFileName)
+            ? "storage.db"
+            : storage.LiteDbFileName.Trim();
+
+        var baseDir = ApplicationPathResolver.ResolveStorageBaseDirectory(storage, runtimeMode);
+        if (!Directory.Exists(baseDir))
         {
-            return Environment.ExpandEnvironmentVariables("%localappdata%");
+            Directory.CreateDirectory(baseDir);
         }
 
-        throw new PlatformNotSupportedException("Only Windows platform");
+        return Path.Combine(baseDir, fileName);
     }
 
     private static bool DatabaseCleanupRequested(params string[] args)

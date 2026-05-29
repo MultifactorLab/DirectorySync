@@ -1,0 +1,24 @@
+{
+  "Host": {
+    "ShutdownTimeout": "${DIRECTORYSYNC_HOST__SHUTDOWNTIMEOUT}"
+  },
+  "Storage": {
+    "Directory": "${DIRECTORYSYNC_STORAGE__DIRECTORY}",
+    "LiteDbFileName": "${DIRECTORYSYNC_STORAGE__LITEDBFILENAME}"
+  },
+  "Logging": {
+    "File": {
+      "Path": "${DIRECTORYSYNC_LOGGING__FILE__PATH}"
+    }
+  },
+  "Ldap": {
+    "Path": "${DIRECTORYSYNC_LDAP__PATH}",
+    "Username": "${DIRECTORYSYNC_LDAP__USERNAME}",
+    "Password": "${DIRECTORYSYNC_LDAP__PASSWORD}"
+  },
+  "Multifactor": {
+    "Url": "${DIRECTORYSYNC_MULTIFACTOR__URL}",
+    "Key": "${DIRECTORYSYNC_MULTIFACTOR__KEY}",
+    "Secret": "${DIRECTORYSYNC_MULTIFACTOR__SECRET}"
+  }
+}

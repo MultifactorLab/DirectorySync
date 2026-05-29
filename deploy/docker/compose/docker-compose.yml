@@ -1,0 +1,20 @@
+services:
+
+  directorysync:
+
+    networks:
+      - directorysync-network
+
+    environment:
+      DOTNET_RUNNING_IN_CONTAINER: "true"
+      DIRECTORYSYNC_RUNTIME_MODE: Docker
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+networks:
+  directorysync-network:
+    name: directorysync-network

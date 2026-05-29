@@ -1,0 +1,4 @@
+# ShellCheck defaults for DirectorySync Linux installer
+shell=bash
+external-sources=true
+enable=add-quote-safety
