@@ -1,0 +1,201 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      sha: ${{ steps.meta.outputs.sha }}
+      sha_short: ${{ steps.meta.outputs.sha_short }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: meta
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sha="$(git rev-parse HEAD)"
+          sha_short="$(git rev-parse --short HEAD)"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "sha_short=${sha_short}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release version: ${version} (${sha_short})"
+
+  test:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore NuGet packages
+        run: |
+          chmod +x build/build.sh build/scripts/*.sh
+          ./build/build.sh restore
+
+      - name: Build solution
+        run: ./build/build.sh build
+
+      - name: Run tests
+        run: ./build/build.sh test
+
+  linux-artifacts:
+    needs: [resolve-version, test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [linux-x64, linux-arm64]
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish and package
+        run: |
+          chmod +x build/build.sh build/scripts/*.sh
+          ./build/build.sh publish-linux --rid "${RID}" --version "${VERSION}"
+          ./build/build.sh package-linux --rid "${RID}" --version "${VERSION}" --no-stage-release-assets
+        env:
+          RID: ${{ matrix.rid }}
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.rid }}
+          path: artifacts/packages/linux/directorysync_*.tar.gz
+
+  windows-msi:
+    needs: [resolve-version, test]
+    runs-on: windows-2022
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Windows MSI
+        shell: pwsh
+        run: ./build/build.ps1 -Command package-msi -Version $env:VERSION
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: artifacts/packages/windows/*.msi
+
+  release:
+    needs: [resolve-version, linux-artifacts, windows-msi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Linux tarballs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: linux-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download Windows MSI
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-msi
+          path: artifacts/packages/windows
+
+      - name: Prepare release assets
+        run: |
+          chmod +x build/build.sh build/scripts/*.sh
+          mkdir -p artifacts/packages/linux artifacts/packages/windows
+          find dist -name 'directorysync_*.tar.gz' -exec cp -t artifacts/packages/linux/ {} +
+          export VERSION="${VERSION}"
+          ./build/build.sh stage-linux-release
+          ./build/build.sh package-linux-offline --version "${VERSION}"
+
+      - name: Build summary
+        run: |
+          {
+            echo "## Release ${VERSION}"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| Commit | \`${{ needs.resolve-version.outputs.sha_short }}\` |"
+            echo "| Manifest | \`release-manifest.json\` |"
+            echo ""
+            echo "### Linux offline kits"
+            sha256sum artifacts/packages/linux/directorysync_*-offline.tar.gz || true
+            echo ""
+            echo "### Docker"
+            if [ -f deploy/docker/release/image-metadata.json ]; then
+              python3 -c "import json; m=json.load(open('deploy/docker/release/image-metadata.json')); print(f\"- Image: \`{m.get('image')}\`\"); print(f\"- Primary tag: \`{m.get('primaryTag')}\`\"); print(f\"- Digest: \`{m.get('digest') or 'n/a'}\`\")"
+            else
+              echo "- Docker metadata not present (GitLab deploy-prod-docker may have been skipped)"
+            fi
+            if compgen -G "artifacts/packages/windows/*.msi" > /dev/null; then
+              echo ""
+              echo "### Windows MSI"
+              ls -la artifacts/packages/windows/*.msi
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          fail_on_unmatched_files: false
+          files: |
+            artifacts/packages/linux/directorysync_*-offline.tar.gz
+            artifacts/packages/linux/release-manifest.json
+            artifacts/packages/windows/*.msi
+          generate_release_notes: true
