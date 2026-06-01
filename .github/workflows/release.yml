@@ -173,6 +173,9 @@ jobs:
             echo "| Commit | \`${{ needs.resolve-version.outputs.sha_short }}\` |"
             echo "| Manifest | \`release-manifest.json\` |"
             echo ""
+            echo "### Linux app tarballs (online install)"
+            sha256sum artifacts/packages/linux/directorysync_*_linux-*.tar.gz 2>/dev/null | grep -v offline || true
+            echo ""
             echo "### Linux offline kits"
             sha256sum artifacts/packages/linux/directorysync_*-offline.tar.gz || true
             echo ""
@@ -195,6 +198,9 @@ jobs:
           draft: true
           fail_on_unmatched_files: false
           files: |
+            artifacts/packages/linux/directorysync_*_linux-x64.tar.gz
+            artifacts/packages/linux/directorysync_*_linux-arm64.tar.gz
+            artifacts/packages/linux/checksums.txt
             artifacts/packages/linux/directorysync_*-offline.tar.gz
             artifacts/packages/linux/release-manifest.json
             artifacts/packages/windows/*.msi
