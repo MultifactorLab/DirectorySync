@@ -193,13 +193,16 @@ extract_release() {
 
 repair_release_runtime_dirs() {
   local release_dir="$1"
+  [[ -n "$release_dir" && -d "$release_dir" ]] || return 0
   getent passwd directorysync >/dev/null 2>&1 || return 0
   local sub
   for sub in data logs; do
+    install -d -o directorysync -g directorysync -m 0750 "${release_dir}/${sub}"
     if [[ -d "${release_dir}/${sub}" ]]; then
       chown -R directorysync:directorysync "${release_dir}/${sub}"
     fi
   done
+  log INFO "repair_release_runtime_dirs dir=${release_dir}"
 }
 
 set_release_payload_ownership() {

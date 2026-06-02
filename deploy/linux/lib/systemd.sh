@@ -14,6 +14,9 @@ create_user() {
   install -d -o directorysync -g directorysync -m 0750 "${DATA_DIR}/data"
   install -d -o directorysync -g directorysync -m 0750 "$LOG_DIR"
   install -d -o root -g directorysync -m 0750 "$CERTS_DIR" 2>/dev/null || true
+  if [[ -n "${RELEASE_VERSION:-}" ]]; then
+    repair_release_runtime_dirs "$(release_target_dir)"
+  fi
   log INFO "create_user ok"
 }
 

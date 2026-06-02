@@ -151,6 +151,27 @@ test_release_ownership_preserves_runtime_dirs() {
   rm -rf "$tmp"
 }
 
+test_release_ownership_creates_runtime_dirs() {
+  getent passwd directorysync >/dev/null 2>&1 || return 0
+  source_libs
+  # shellcheck source=../lib/artifacts.sh
+  source "${LIB_DIR}/artifacts.sh"
+  local tmp release_dir expected
+  tmp="$(mktemp -d)"
+  release_dir="${tmp}/rel"
+  mkdir -p "$release_dir"
+  touch "${release_dir}/DirectorySync.Host.Console"
+  expected="$(getent passwd directorysync | awk -F: '{print $3":"$4}')"
+  repair_release_runtime_dirs "$release_dir"
+  assert_eq "$expected" "$(stat -c '%u:%g' "${release_dir}/logs")" \
+    'release logs dir created for service user'
+  assert_eq "$expected" "$(stat -c '%u:%g' "${release_dir}/data")" \
+    'release data dir created for service user'
+  assert_eq '750' "$(stat -c '%a' "${release_dir}/logs")" \
+    'release logs dir mode 0750'
+  rm -rf "$tmp"
+}
+
 test_validate_tar_members() {
   source_libs
   # shellcheck source=../lib/artifacts.sh
@@ -361,6 +382,7 @@ test_apt_getent_maps_libc_bin
 test_package_names_not_commands
 test_validate_tar_members
 test_release_ownership_preserves_runtime_dirs
+test_release_ownership_creates_runtime_dirs
 test_render_service_template_add_if_not_empty
 test_native_ldap_os_key
 test_resolve_first_available_path_fallback
