@@ -189,7 +189,17 @@ internal sealed class LdapGroup : ILdapGroupPort
             return null;
         }
 
-        var objectClass = entry.Attributes[schema.ObjectClass].GetValues(typeof(string)).LastOrDefault()?.ToString();
+        var objectClasses = entry.Attributes[schema.ObjectClass]
+            .GetValues(typeof(string))
+            .Cast<string>()
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var objectClass =
+            objectClasses.Contains(schema.GroupObjectClass)
+                ? schema.GroupObjectClass
+                : objectClasses.Contains(schema.OrganizationalUnitObjectClass)
+                    ? schema.OrganizationalUnitObjectClass
+                    : schema.GroupObjectClass;
 
         return new LdapContainerEntry(entry.DistinguishedName, objectClass ?? schema.GroupObjectClass);
     }

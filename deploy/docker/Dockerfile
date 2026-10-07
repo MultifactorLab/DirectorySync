@@ -4,9 +4,9 @@ ARG BUILD_CONFIGURATION=Release
 
 WORKDIR /build
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+#RUN apt-get update \
+#    && apt-get install -y --no-install-recommends ca-certificates \
+#    && rm -rf /var/lib/apt/lists/*
 
 COPY deploy/docker/scripts/install-build-ca.sh /tmp/install-build-ca.sh
 COPY certs/ /tmp/build-certs/
@@ -93,9 +93,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/ap
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS dev
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+#RUN apt-get update \
+#    && apt-get install -y --no-install-recommends ca-certificates \
+#    && rm -rf /var/lib/apt/lists/*
 
 COPY deploy/docker/scripts/install-build-ca.sh /tmp/install-build-ca.sh
 COPY certs/ /tmp/build-certs/

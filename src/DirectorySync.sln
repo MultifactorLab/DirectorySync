@@ -24,6 +24,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorySync.Host.WindowsService", "hosts\DirectorySync.Host.WindowsService\DirectorySync.Host.WindowsService.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DB6521DC-E512-45DD-B963-5B0FA2D6C01B}"
+	ProjectSection(SolutionItems) = preProject
+		..\Directory.Packages.props = ..\Directory.Packages.props
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C01A55F0-9691-4843-ABBB-7E83BF06BE4F}"
 EndProject
@@ -54,8 +57,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "linux", "linux", "{7CB104E0-CE60-4E94-B4FB-78599A031582}"
 	ProjectSection(SolutionItems) = preProject
 		..\deploy\linux\uninstall.sh = ..\deploy\linux\uninstall.sh
-        ..\deploy\linux\directorysync.env.template = ..\deploy\linux\directorysync.env.template
-        ..\deploy\linux\templates\directorysync.service.template = ..\deploy\linux\templates\directorysync.service.template
+								..\deploy\linux\directorysync.env.template = ..\deploy\linux\directorysync.env.template
+								..\deploy\linux\templates\directorysync.service.template = ..\deploy\linux\templates\directorysync.service.template
 		..\deploy\linux\install.sh = ..\deploy\linux\install.sh
 	EndProjectSection
 EndProject

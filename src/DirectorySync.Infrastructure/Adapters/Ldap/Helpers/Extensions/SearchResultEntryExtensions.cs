@@ -5,6 +5,17 @@ namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
 
 internal static class SearchResultEntryExtensions
 {
+    // позволяем парсинг гарантировано UUID-атрибутов
+    private static readonly HashSet<string> _guidAttributes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "objectGUID",
+        "schemaIDGUID",
+        "attributeGUID",
+        "rightsGUID",
+        "msExchMailboxGUID",
+        "mS-DS-ConsistencyGuid"
+    };
+    
     public static string? GetAttributeValue(this SearchResultEntry entry, string attributeName)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -34,8 +45,31 @@ internal static class SearchResultEntryExtensions
         {
             throw new ArgumentException($"'{nameof(attr)}' cannot be null or whitespace.", nameof(attr));
         }
-
-        var value = entry.Attributes[attr]?.GetValues(typeof(string)).FirstOrDefault()?.ToString();
-        return new LdapAttribute(attr, value);
+        
+        if (TryParseGuid(entry, attr, out var guid))
+        {
+            return new LdapAttribute(attr, guid.ToString());
+        }
+        
+        var stringValue = GetFirstValue<string>(entry, attr);
+        return new LdapAttribute(attr, stringValue?.ToString());
     }
+    
+    private static bool TryParseGuid(SearchResultEntry entry, string attr, out Guid guid)
+    {
+        guid = Guid.Empty;
+        
+        if (!_guidAttributes.Contains(attr)) { return false; }
+        
+        var bytes = GetFirstValue<byte[]>(entry, attr);
+
+        if (bytes is not byte[] { Length: 16 } guidBytes) { return false; }
+
+        guid = new Guid(guidBytes);
+        return true;
+    }
+
+    // T -- либо строка, либо byte[], такие правила AD
+    private static object? GetFirstValue<T>(SearchResultEntry entry, string attr) 
+        => entry.Attributes[attr]?.GetValues(typeof(T)).FirstOrDefault();
 }
