@@ -98,51 +98,33 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         foreach (var domain in domainsToSearch)
         {
-            try
+            var domainOptions = LdapDomainConnectionOptionsFactory.Create(mainOptions.ConnectionString,
+                domain,
+                _ldapOptions.Username,
+                _ldapOptions.Password,
+                _ldapOptions.Timeout);
+            var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+            
+            using var connection = _connectionFactory.CreateConnection(domainOptions);
+            foreach (var guid in guidSet)
             {
-                var domainOptions = LdapDomainConnectionOptionsFactory.Create(mainOptions.ConnectionString,
-                    domain,
-                    _ldapOptions.Username,
-                    _ldapOptions.Password,
-                    _ldapOptions.Timeout);
-                var domainSchema = _ldapSchemaLoader.Load(domainOptions);
-
-                using var connection = _connectionFactory.CreateConnection(domainOptions);
-                foreach (var guid in guidSet)
+                var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains, primaryDnsDomain);
+                if (group is null)
                 {
-                    try
-                    {
-                        var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains, primaryDnsDomain);
-                        if (group is null)
-                        {
-                            continue;
-                        }
-                        
-                        foundGroups.Add(group);
-                        _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
-
-                        if (foundGroups.Count != guidSet.Count)
-                        {
-                            continue;
-                        }
-
-                        _logger.LogDebug("All requested groups found. Ending search.");
-                        return (foundGroups, searchDomains.ToList());
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Exception occured while searching group {GroupGuid} in {Domain}.",
-                            guid, 
-                            domain);
-                    }
+                    continue;
                 }
+
+                foundGroups.Add(group);
+                _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
+
+                if (foundGroups.Count != guidSet.Count)
+                {
+                    continue;
+                }
+
+                _logger.LogDebug("All requested groups found. Ending search.");
+                return (foundGroups, searchDomains.ToList());
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception occured while searching in {Domain}.",
-                    domain);
-            }
-           
         }
 
         return (foundGroups, searchDomains.ToList());
