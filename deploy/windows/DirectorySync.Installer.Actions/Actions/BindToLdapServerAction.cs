@@ -41,7 +41,7 @@ namespace DirectorySync.Installer.Actions.Actions
                 return;
             }
 
-            if (string.IsNullOrEmpty(username))
+            if (string.IsNullOrEmpty(password))
             {
                 logger.Log(_passwordIsEmpty);
                 Notification.Warning($"{_passwordIsEmpty}{Environment.NewLine}Log file: {logger.FilePath}");
@@ -49,7 +49,7 @@ namespace DirectorySync.Installer.Actions.Actions
                 return;
             }
 
-            if (string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(username))
             {
                 logger.Log(_usernameIsEmpty);
                 Notification.Warning($"{_usernameIsEmpty}{Environment.NewLine}Log file: {logger.FilePath}");

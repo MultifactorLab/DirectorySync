@@ -29,6 +29,7 @@
         <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
         <PackageReference Include="Microsoft.Extensions.Hosting" />
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
+        <PackageReference Include="Multifactor.Core.Ldap" />
     </ItemGroup>
 
     <ItemGroup>

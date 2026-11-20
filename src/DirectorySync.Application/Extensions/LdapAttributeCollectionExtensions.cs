@@ -1,31 +1,9 @@
-using DirectorySync.Application.Models.ValueObjects;
+using Multifactor.Core.Ldap.Attributes;
 
 namespace DirectorySync.Application.Extensions;
 
 public static class LdapAttributeCollectionExtensions
 {
-    public static string GetSingle(this LdapAttributeCollection attrs, string name)
-    {
-        var attr = attrs[name];
-        if (attr is null)
-        {
-            throw new InvalidOperationException($"'{name}' attribute is required");
-        }
-
-        var values = attr.GetNotEmptyValues();
-        if (values.Length == 0)
-        {
-            throw new InvalidOperationException($"'{name}' attribute is required");
-        }
-
-        if (values.Length != 1)
-        {
-            throw new InvalidOperationException($"Single '{name}' attribute is required, but more than one was found");
-        }
-
-        return values[0];
-    }
-
     public static string? GetSingleOrDefault(this LdapAttributeCollection attrs, string name)
     {
         var attr = attrs[name];

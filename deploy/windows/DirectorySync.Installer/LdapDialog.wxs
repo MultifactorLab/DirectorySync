@@ -2,11 +2,11 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 	<Fragment>
 		<UI>
-			
-		<Property Id="PROP_LDAP_PATH" Value="!(loc.PropLdapPathValue)" />
-		<Property Id="PROP_LDAP_USERNAME" Value="!(loc.PropLdapUsernameValue)" />
-		<Property Id="PROP_LDAP_PASSWORD" Value="!(loc.PropLdapPasswordValue)" Secure="yes"/>
-		<Property Id="PROP_LDAP_ALLOW_CROSS_DOMAIN" Value="true" />
+
+			<Property Id="PROP_LDAP_PATH" Secure="yes" />
+			<Property Id="PROP_LDAP_USERNAME" Secure="yes" />
+			<Property Id="PROP_LDAP_PASSWORD" Secure="yes" />
+			<Property Id="PROP_LDAP_ALLOW_CROSS_DOMAIN" Secure="yes" />
 			
 			<Dialog Id="LdapDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
 				

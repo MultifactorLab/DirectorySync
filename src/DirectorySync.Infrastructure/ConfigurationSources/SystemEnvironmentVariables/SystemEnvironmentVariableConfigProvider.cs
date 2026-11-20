@@ -62,10 +62,18 @@ public class SystemEnvironmentVariableConfigProvider : ConfigurationProvider
 
     private void AddIfNormalizedKeyMatchesPrefix(Dictionary<string, string?> data, string normalizedKey, string? value)
     {
-        if (normalizedKey.StartsWith(_normalizedPrefix, StringComparison.OrdinalIgnoreCase))
+        if (!normalizedKey.StartsWith(_normalizedPrefix, StringComparison.OrdinalIgnoreCase))
         {
-            data[normalizedKey.Substring(_normalizedPrefix.Length)] = value;
+            return;
         }
+
+        var key = normalizedKey[_normalizedPrefix.Length..];
+        if (key.Length == 0 || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        data[key] = value;
     }
 
     private static string Normalize(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);

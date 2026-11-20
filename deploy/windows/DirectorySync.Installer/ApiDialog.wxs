@@ -3,14 +3,13 @@
 	<Fragment>
 			
 		<UI>
-			
-			<Property Id="PROP_APIKEY" Value="!(loc.ApiKeyValue)" />
-			<Property Id="PROP_APISECRET" Value="!(loc.ApiSecretValue)" Secure="yes" />
+			<Property Id="PROP_APIKEY" Secure="yes" />
+			<Property Id="PROP_APISECRET" Secure="yes" />
 
 			<?if $(var.Configuration) = Debug ?>
-				<Property Id="PROP_APIURL" Value="https://api.multifactor.dev" />
+				<Property Id="PROP_APIURL" Value="https://api.multifactor.dev" Secure="yes" />
 			<?else?>
-				<Property Id="PROP_APIURL" Value="https://api.multifactor.ru" />
+				<Property Id="PROP_APIURL" Value="https://api.multifactor.ru" Secure="yes" />
 			<?endif?>
 			
 			<Dialog Id="ApiDialog" Width="370" Height="270" Title="!(loc.DialogHeader)">
@@ -32,11 +31,8 @@
 
 
 				<Control Id="LabelApiUrl" Type="Text" X="20" Y="140" Height="17" Width="120" Transparent="yes" Text="API url" />
-				<?if $(var.Configuration) = Debug ?>
-					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
-				<?else?>
-					<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
-				<?endif?>
+				<Control Id="EditApiUrl" Type="Edit" X="140" Y="137" Height="17" Width="150" Property="PROP_APIURL" Indirect="no"/>
+
 
 				<Control Id="ApiTest" Type="PushButton" X="190" Y="160" Width="100" Height="17"  Text="!(loc.ApiTestButton)">
 					<Publish Event="DoAction" Value="PullCloudConfig" />

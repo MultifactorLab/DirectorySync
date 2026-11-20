@@ -1,4 +1,5 @@
 using DirectorySync.Application.Models.ValueObjects;
+using Multifactor.Core.Ldap.Attributes;
 
 namespace DirectorySync.Application.Tests.Models.ValueObjects;
 

@@ -4,6 +4,7 @@ using DirectorySync.Infrastructure.Adapters.Ldap.Abstractions;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers.Extensions;
 using Microsoft.Extensions.Logging;
 using Multifactor.Core.Ldap.Connection;
+using Multifactor.Core.Ldap.Extensions;
 using Multifactor.Core.Ldap.Schema;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap.Helpers.DomainDiscoveryStrategies;
@@ -28,11 +29,13 @@ internal sealed class ActiveDirectoryDomainDiscovery : IDomainDiscoveryStrategy
         
         foreach (SearchResultEntry entry in entries)
         {
-            var value = entry.GetAttributeValue("dnsRoot");
+            var ldapEntry = entry.ToLdapEntry(schema);
+            
+            var attributes = ldapEntry.Attributes.SafeGetAttributeValues("dnsRoot");
 
-            if (!string.IsNullOrWhiteSpace(value))
+            if (attributes.Length > 0 && !string.IsNullOrWhiteSpace(attributes[0]))
             {
-                forestDomains.Add(new LdapDomain(value));
+                forestDomains.Add(new LdapDomain(attributes[0]));
             }
         }
         
@@ -50,11 +53,13 @@ internal sealed class ActiveDirectoryDomainDiscovery : IDomainDiscoveryStrategy
         
         foreach (SearchResultEntry entry in entries)
         {
-            var value = entry.GetAttributeValue("trustPartner");
+            var ldapEntry = entry.ToLdapEntry(schema);
 
-            if (!string.IsNullOrWhiteSpace(value))
+            var attributes = ldapEntry.Attributes.SafeGetAttributeValues("trustPartner");
+            
+            if (attributes.Length > 0 && !string.IsNullOrWhiteSpace(attributes[0]))
             {
-                trustedDomains.Add(new LdapDomain(value));
+                trustedDomains.Add(new LdapDomain(attributes[0]));
             }
         }
         

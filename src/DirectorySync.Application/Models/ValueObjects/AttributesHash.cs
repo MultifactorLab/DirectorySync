@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using DirectorySync.Shared.Karnel;
+using Multifactor.Core.Ldap.Attributes;
 
 namespace DirectorySync.Application.Models.ValueObjects;
 

@@ -3,7 +3,6 @@ using DirectorySync.Application.Models.ValueObjects;
 using DirectorySync.Application.Ports.Directory;
 using DirectorySync.Infrastructure.Adapters.Ldap.Helpers;
 using DirectorySync.Infrastructure.Adapters.Ldap.Options;
-using DirectorySync.Infrastructure.Integrations.Ldap;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Multifactor.Core.Ldap;
@@ -12,6 +11,9 @@ using Multifactor.Core.Ldap.Connection.LdapConnectionFactory;
 using Multifactor.Core.Ldap.Schema;
 using System.Collections.ObjectModel;
 using System.DirectoryServices.Protocols;
+using Multifactor.Core.Ldap.Attributes;
+using Multifactor.Core.Ldap.Extensions;
+using Multifactor.Core.Ldap.Name;
 
 namespace DirectorySync.Infrastructure.Adapters.Ldap;
 
@@ -19,21 +21,18 @@ internal sealed class LdapGroup : ILdapGroupPort
 {
     private readonly LdapConnectionFactory _connectionFactory;
     private readonly LdapSchemaLoader _ldapSchemaLoader;
-    private readonly LdapFinder _ldapFinder;
     private readonly LdapDomainDiscovery _ldapDomainDiscovery;
     private readonly LdapOptions _ldapOptions;
     private readonly ILogger<LdapGroup> _logger;
 
     public LdapGroup(LdapConnectionFactory connectionFactory,
         LdapSchemaLoader ldapSchemaLoader,
-        LdapFinder ldapFinder,
         LdapDomainDiscovery ldapDomainDiscovery,
         IOptions<LdapOptions> ldapOptions,
         ILogger<LdapGroup> logger)
     {
         _connectionFactory = connectionFactory;
         _ldapSchemaLoader = ldapSchemaLoader;
-        _ldapFinder = ldapFinder;
         _ldapDomainDiscovery = ldapDomainDiscovery;
         _ldapOptions = ldapOptions.Value;
         _logger = logger;
@@ -77,16 +76,15 @@ internal sealed class LdapGroup : ILdapGroupPort
         var foundGroups = new List<GroupModel>();
         var searchDomains = new HashSet<LdapDomain>();
 
-        var mainOptions = new LdapConnectionOptions(new LdapConnectionString(_ldapOptions.Path),
+        var mainOptions = new LdapConnectionOptions(
+            new LdapConnectionString(_ldapOptions.Path),
             AuthType.Basic,
             _ldapOptions.Username,
             _ldapOptions.Password,
             _ldapOptions.Timeout);
 
         var schema = _ldapSchemaLoader.Load(mainOptions);
-
         var primaryDnsDomain = LdapNamingContextDnsDomain.FromNamingContext(schema.NamingContext.StringRepresentation);
-
         var domainsToSearch = GetAllDomains(mainOptions, schema).Distinct().ToArray();
 
         if (domainsToSearch.Length == 0)
@@ -98,30 +96,24 @@ internal sealed class LdapGroup : ILdapGroupPort
 
         foreach (var domain in domainsToSearch)
         {
-            var domainOptions = LdapDomainConnectionOptionsFactory.Create(mainOptions.ConnectionString,
-                domain,
-                _ldapOptions.Username,
-                _ldapOptions.Password,
-                _ldapOptions.Timeout);
-            var domainSchema = _ldapSchemaLoader.Load(domainOptions);
+            var isPrimary = domain.Equals(primaryDnsDomain);
+            var domainOptions = isPrimary
+                ? mainOptions
+                : LdapDomainConnectionOptionsFactory.Create(
+                    mainOptions.ConnectionString, domain,
+                    _ldapOptions.Username, _ldapOptions.Password, _ldapOptions.Timeout);
+            var domainSchema = isPrimary
+                ? schema
+                : _ldapSchemaLoader.Load(domainOptions);
             
             using var connection = _connectionFactory.CreateConnection(domainOptions);
             foreach (var guid in guidSet)
             {
                 var group = GetGroup(guid, mainOptions.ConnectionString, domain, connection, domainSchema, searchDomains, primaryDnsDomain);
-                if (group is null)
-                {
-                    continue;
-                }
-
+                if (group is null) { continue; }
                 foundGroups.Add(group);
                 _logger.LogDebug("Group found for GUID {Guid} in {Domain}", guid, domain);
-
-                if (foundGroups.Count != guidSet.Count)
-                {
-                    continue;
-                }
-
+                if (foundGroups.Count != guidSet.Count) { continue; }
                 _logger.LogDebug("All requested groups found. Ending search.");
                 return (foundGroups, searchDomains.ToList());
             }
@@ -159,10 +151,13 @@ internal sealed class LdapGroup : ILdapGroupPort
     {
         var filter = LdapFilters.FindContainerByGuid(guid, schema);
 
-        var result = _ldapFinder.Find(filter,
-            [schema.ObjectClass],
-            schema.NamingContext.StringRepresentation,
-            conn);
+        var result = conn.Find(
+            schema.NamingContext,
+            filter,
+            SearchScope.Subtree,
+            _ldapOptions.PageSize,
+            schema,
+            schema.ObjectClass);
         
         var entry = result.FirstOrDefault();
         
@@ -171,10 +166,10 @@ internal sealed class LdapGroup : ILdapGroupPort
             return null;
         }
 
-        var objectClasses = entry.Attributes[schema.ObjectClass]
-            .GetValues(typeof(string))
-            .Cast<string>()
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var objectClasses = entry
+            .Attributes[schema.ObjectClass]?
+            .Values
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
 
         var objectClass =
             objectClasses.Contains(schema.GroupObjectClass)
@@ -183,7 +178,7 @@ internal sealed class LdapGroup : ILdapGroupPort
                     ? schema.OrganizationalUnitObjectClass
                     : schema.GroupObjectClass;
 
-        return new LdapContainerEntry(entry.DistinguishedName, objectClass ?? schema.GroupObjectClass);
+        return new LdapContainerEntry(entry.Dn.StringRepresentation, objectClass ?? schema.GroupObjectClass);
     }
 
     private IEnumerable<DirectoryGuid> GetMembersCrossDomain(LdapContainerEntry container,
@@ -245,7 +240,8 @@ internal sealed class LdapGroup : ILdapGroupPort
         }
     }
 
-    private IEnumerable<DirectoryGuid> GetContainerUsers(LdapContainerEntry container, ILdapConnection conn, ILdapSchema schema)
+    private IEnumerable<DirectoryGuid> GetContainerUsers(LdapContainerEntry container, 
+        ILdapConnection conn, ILdapSchema schema)
     {
         var filter = container.ObjectClass == schema.GroupObjectClass ? 
             LdapFilters.FindEnabledGroupMembersByGroupDn(container.DistinguishedName, schema)
@@ -254,16 +250,27 @@ internal sealed class LdapGroup : ILdapGroupPort
         var namingContext = container.ObjectClass == schema.GroupObjectClass
             ? schema.NamingContext.StringRepresentation
             : container.DistinguishedName;
-        
+    
         var searchScope = container.ObjectClass == schema.GroupObjectClass ?
             SearchScope.Subtree : SearchScope.OneLevel;
-        
-        var results = _ldapFinder.Find(filter, ["objectGuid"], namingContext, conn, searchScope);
 
-        foreach (var entry in results)
-        {
-            yield return GetObjectGuid(entry);
-        }
+        var identifierAttr = LdapFilters.GetIdentifierAttribute(schema);
+
+        var results = conn.Find(
+            new DistinguishedName(namingContext, schema),
+            filter,
+            searchScope,
+            _ldapOptions.PageSize,
+            schema,
+            new LdapAttributeName(identifierAttr));
+
+        return results
+            .Where(r => r.Attributes.Has(identifierAttr))
+            .SelectMany(i => i.Attributes)
+            .Where(a => string.Equals(a.Name, identifierAttr, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(r => r.Values)
+            .Where(v => !string.IsNullOrWhiteSpace(v) && Guid.TryParse(v, out _))
+            .Select(v => new DirectoryGuid(Guid.Parse(v!)));
     }
 
     private IEnumerable<LdapContainerEntry> GetNestedContainers(LdapContainerEntry container, ILdapConnection conn, ILdapSchema schema)
@@ -271,15 +278,27 @@ internal sealed class LdapGroup : ILdapGroupPort
         if (container.ObjectClass == schema.GroupObjectClass)
         {
             var filter = LdapFilters.FindGroupByDn(container.DistinguishedName, schema);
-            var results = _ldapFinder.Find(filter, ["member"], schema.NamingContext.StringRepresentation, conn);
+            var results = conn.Find(
+                schema.NamingContext,
+                filter,
+                SearchScope.Subtree,
+                _ldapOptions.PageSize,
+                schema,
+                "member"); 
 
             var memberDns = results
-                .SelectMany(e => e.Attributes["member"]?.GetValues(typeof(string)).Cast<string>() ?? Enumerable.Empty<string>())
+                .SelectMany(e => e.Attributes["member"]?.Values ?? [])
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var userDns = results.SelectMany(e =>
-                _ldapFinder.Find(LdapFilters.FindGroupMembersByGroupDn(container.DistinguishedName, schema), ["distinguishedName"], schema.NamingContext.StringRepresentation, conn)
-                    .Select(u => u.DistinguishedName)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var userDns = conn
+                .Find(schema.NamingContext,
+                    LdapFilters.FindGroupMembersByGroupDn(container.DistinguishedName, schema),
+                    SearchScope.Subtree,
+                    _ldapOptions.PageSize,
+                    schema,
+                    new LdapAttributeName("distinguishedName"))
+                .Select(u => u.Dn.StringRepresentation)  
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             memberDns.ExceptWith(userDns);
             return memberDns.Select(c => new LdapContainerEntry(c, schema.GroupObjectClass));
@@ -287,30 +306,21 @@ internal sealed class LdapGroup : ILdapGroupPort
         if (container.ObjectClass == schema.OrganizationalUnitObjectClass)
         {
             var filter = LdapFilters.FindOuNestContainers(schema);
-            return _ldapFinder.Find(
+            return conn.Find(
+                new DistinguishedName(container.DistinguishedName),
                 filter,
-                ["objectClass"],
-                container.DistinguishedName,
-                conn,
-                SearchScope.OneLevel)
+                SearchScope.Subtree,
+                _ldapOptions.PageSize,
+                schema,
+                "objectClass"
+                )
                 .Select(e => new LdapContainerEntry(
-                    e.DistinguishedName,
-                    e.Attributes["objectClass"].GetValues(typeof(string)).LastOrDefault()?.ToString() ?? string.Empty
+                    e.Dn.StringRepresentation,
+                    e.Attributes["objectClass"]?.Values.LastOrDefault() ?? string.Empty
                 ));
         }
 
-        return Enumerable.Empty<LdapContainerEntry>();
-    }
-
-    private static DirectoryGuid GetObjectGuid(SearchResultEntry entry)
-    {
-        var value = entry.Attributes["objectGuid"]?[0];
-        if (value is not byte[] bytes)
-        {
-            throw new InvalidOperationException("Empty GUID");
-        }
-
-        return new Guid(bytes);
+        return [];
     }
 
     private IEnumerable<LdapDomain> GetAllDomains(LdapConnectionOptions options, ILdapSchema schema)

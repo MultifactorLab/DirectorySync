@@ -1,6 +1,7 @@
 using DirectorySync.Application.Models.Core;
 using DirectorySync.Application.Models.Enums;
 using DirectorySync.Application.Models.ValueObjects;
+using Multifactor.Core.Ldap.Attributes;
 
 namespace DirectorySync.Application.Tests.Models.Core;
 
@@ -90,10 +91,10 @@ public class MemberModelTests
     {
         var member = MemberModel.Create(Guid.NewGuid(), new Identity("test"), []);
 
-        var ldapAttributes = new LdapAttributeCollection(new LdapAttribute[] { new LdapAttribute(new LdapAttributeName("propOld1"), string.Empty), new LdapAttribute(new LdapAttributeName("propOld2"), string.Empty) });
+        var ldapAttributes = new LdapAttributeCollection([new LdapAttribute(new LdapAttributeName("propOld1"), string.Empty), new LdapAttribute(new LdapAttributeName("propOld2"), string.Empty)]);
 
         var newHash = new AttributesHash(ldapAttributes);
-        var newProperties = new MemberProperty[] { new MemberProperty("prop1", "value1") };
+        var newProperties = new[] { new MemberProperty("prop1", "value1") };
 
         member.SetProperties(newProperties, newHash);
 
@@ -105,9 +106,9 @@ public class MemberModelTests
     public void SetProperties_WithSameHash_ShouldNotChangeProperties()
     {
         var member = MemberModel.Create(Guid.NewGuid(), new Identity("test"), []);
-        var ldapAttributes = new LdapAttributeCollection(new LdapAttribute[] { new LdapAttribute(new LdapAttributeName("attr"), string.Empty) });
+        var ldapAttributes = new LdapAttributeCollection([new LdapAttribute(new LdapAttributeName("attr"), string.Empty)]);
         var hash = new AttributesHash(ldapAttributes);
-        var properties = new MemberProperty[] { new MemberProperty("prop1", "value1") };
+        var properties = new[] { new MemberProperty("prop1", "value1") };
 
         member.SetProperties(properties, hash);
         var countBefore = member.Properties.Count;

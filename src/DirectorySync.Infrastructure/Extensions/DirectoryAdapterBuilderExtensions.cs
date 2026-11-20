@@ -36,7 +36,6 @@ public static class DirectoryAdapterBuilderExtensions
         builder.Services.AddSingleton<LdapSchemaLoader>();
         
         builder.Services.AddSingleton<LdapDomainDiscovery>();
-        builder.Services.AddSingleton<LdapFinder>();
 
         builder.Services.AddTransient<ILdapGroupPort, LdapGroup>();
         builder.Services.AddTransient<ILdapMemberPort, LdapMember>();
